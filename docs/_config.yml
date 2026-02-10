@@ -23,13 +23,10 @@ email: andrew.eqian@gmail.com
 description: A set of tools for a custom TableTop RPG system
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: 
 github_username:  Tojikan
 
-# Build settings
-theme: minima
-plugins:
-  - jekyll-feed
+# Build settings - using custom layouts instead of a theme
+plugins: []
 
 # Exclude from processing.
 # The following items will not be processed, by default.

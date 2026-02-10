@@ -1,6 +1,11 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
-layout: home
+layout: default
 ---
+
+# Welcome to FarkPG
+
+A set of tools for a custom TableTop RPG system.
+
+## Getting Started
+
+Check out the [Counter](/counter/) page to see an example of adding pure JavaScript to a Jekyll page.
