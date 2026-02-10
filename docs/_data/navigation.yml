@@ -1,4 +1,2 @@
 - name: Home
   url: /
-- name: Counter
-  url: /counter/
