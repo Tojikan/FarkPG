@@ -21,7 +21,7 @@
 title: FarkPG
 email: andrew.eqian@gmail.com
 description: A set of tools for a custom TableTop RPG system
-baseurl: "" # the subpath of your site, e.g. /blog
+baseurl: "/FarkPG" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  Tojikan
 
