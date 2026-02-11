@@ -1,2 +1,4 @@
 - name: Home
   url: /
+- name: Test Generator
+  url: /testgen/
