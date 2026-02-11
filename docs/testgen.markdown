@@ -34,6 +34,8 @@ custom_css: |
   #open-builder { background: #2ecc71; color: white; }
   #export-btn { background: #3498db; color: white; }
   #import-btn { background: #9b59b6; color: white; }
+  #copy-btn { background: #e67e22; color: white; }
+  #paste-btn { background: #e67e22; color: white; }
   #print-btn { background: #95a5a6; color: white; }
   #import-file { display: none; }
 
@@ -315,27 +317,46 @@ custom_css: |
     border-radius: 8px;
     padding: 1.5rem;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
   }
   .builder-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid #1a1a1a;
+    flex-shrink: 0;
   }
   .builder-header h2 {
     margin: 0;
     font-size: 1.25rem;
   }
+  #builder-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0;
+  }
+  .builder-footer {
+    padding-top: 1rem;
+    border-top: 2px solid #1a1a1a;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    background: white;
+  }
   #close-builder {
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 2rem;
     border: none;
     border-radius: 4px;
     background: #2ecc71;
     color: white;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+  #close-builder:hover {
+    background: #27ae60;
   }
 
   /* Builder Sections */
@@ -815,6 +836,102 @@ custom_css: |
     color: #333;
   }
 
+  /* Paste Modal */
+  .paste-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1001;
+    padding: 1rem;
+  }
+  .paste-modal.open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .paste-container {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 8px;
+    padding: 1.5rem;
+  }
+  .paste-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .paste-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+  #close-paste {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+  }
+  #close-paste:hover {
+    color: #333;
+  }
+  .paste-content {
+    margin-bottom: 1rem;
+  }
+  #paste-input {
+    width: 100%;
+    height: 200px;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+  }
+  #paste-input:focus {
+    outline: none;
+    border-color: #3498db;
+  }
+  .paste-error {
+    color: #e74c3c;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    min-height: 1.2em;
+  }
+  .paste-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .paste-cancel-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+  }
+  .paste-cancel-btn:hover {
+    background: #f5f5f5;
+  }
+  .paste-confirm-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    background: #2ecc71;
+    color: white;
+    cursor: pointer;
+  }
+  .paste-confirm-btn:hover {
+    background: #27ae60;
+  }
+
   /* Print Styles */
   @media print {
     .page-header,
@@ -921,8 +1038,10 @@ custom_css: |
   <h1>Character Sheet</h1>
   <div class="controls">
     <button id="open-builder">Builder</button>
-    <button id="export-btn">Export Data</button>
-    <button id="import-btn">Import Data</button>
+    <button id="export-btn">Export</button>
+    <button id="import-btn">Import</button>
+    <button id="copy-btn">Copy JSON</button>
+    <button id="paste-btn">Paste JSON</button>
     <button id="print-btn">Print</button>
     <input type="file" id="import-file" accept=".json">
   </div>
@@ -936,8 +1055,27 @@ custom_css: |
   <div class="builder-container">
     <div class="builder-header">
       <h2>Character Builder</h2>
-      <button id="close-builder">Done</button>
     </div>
     <div id="builder-content"></div>
+    <div class="builder-footer">
+      <button id="close-builder">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="paste-modal" class="paste-modal">
+  <div class="paste-container">
+    <div class="paste-header">
+      <h2>Paste JSON</h2>
+      <button id="close-paste">&times;</button>
+    </div>
+    <div class="paste-content">
+      <textarea id="paste-input" placeholder="Paste your character JSON here..."></textarea>
+      <div id="paste-error" class="paste-error"></div>
+    </div>
+    <div class="paste-footer">
+      <button id="paste-cancel" class="paste-cancel-btn">Cancel</button>
+      <button id="paste-confirm" class="paste-confirm-btn">Load Character</button>
+    </div>
   </div>
 </div>

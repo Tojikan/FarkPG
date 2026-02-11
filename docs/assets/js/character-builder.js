@@ -8,13 +8,14 @@
   let builderMode = false;
 
   // DOM Elements
-  let sheetContainer, builderModal, builderContent;
+  let sheetContainer, builderModal, builderContent, pasteModal;
 
   // Initialize
   function init() {
     sheetContainer = document.getElementById('character-sheet');
     builderModal = document.getElementById('builder-modal');
     builderContent = document.getElementById('builder-content');
+    pasteModal = document.getElementById('paste-modal');
 
     // Load default theme
     if (window.Themes && window.Themes.Basic) {
@@ -25,8 +26,13 @@
     document.getElementById('open-builder').addEventListener('click', openBuilder);
     document.getElementById('close-builder').addEventListener('click', closeBuilder);
     document.getElementById('export-btn').addEventListener('click', exportCharacter);
+    document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
     document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
     document.getElementById('import-file').addEventListener('change', importCharacter);
+    document.getElementById('paste-btn').addEventListener('click', openPasteModal);
+    document.getElementById('close-paste').addEventListener('click', closePasteModal);
+    document.getElementById('paste-cancel').addEventListener('click', closePasteModal);
+    document.getElementById('paste-confirm').addEventListener('click', confirmPaste);
     document.getElementById('print-btn').addEventListener('click', printSheet);
 
     // Close modal on click outside or Escape key
@@ -35,9 +41,18 @@
         closeBuilder();
       }
     });
+    pasteModal.addEventListener('click', function(e) {
+      if (e.target === pasteModal) {
+        closePasteModal();
+      }
+    });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && builderMode) {
-        closeBuilder();
+      if (e.key === 'Escape') {
+        if (pasteModal.classList.contains('open')) {
+          closePasteModal();
+        } else if (builderMode) {
+          closeBuilder();
+        }
       }
     });
 
@@ -88,11 +103,10 @@
   // Calculate spent points
   function getSpentPoints(type, category) {
     if (type === 'attributes') {
-      // Use default as baseline, not min - so starting values don't cost points
+      // Count all allocated attribute points (defaults count as spent)
       let spent = 0;
       currentTheme.attributes.forEach(attr => {
-        const baseline = attr.default || attr.min || 0;
-        spent += Math.max(0, character.attributes[attr.id] - baseline);
+        spent += character.attributes[attr.id];
       });
       return spent;
     } else if (type === 'skills' && category) {
@@ -791,6 +805,79 @@
     a.download = (character.name || 'character') + '.json';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function copyToClipboard() {
+    const data = JSON.stringify(character, null, 2);
+    navigator.clipboard.writeText(data).then(() => {
+      // Brief visual feedback
+      const btn = document.getElementById('copy-btn');
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 1500);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+      alert('Failed to copy to clipboard');
+    });
+  }
+
+  function openPasteModal() {
+    document.getElementById('paste-input').value = '';
+    document.getElementById('paste-error').textContent = '';
+    pasteModal.classList.add('open');
+    document.getElementById('paste-input').focus();
+  }
+
+  function closePasteModal() {
+    pasteModal.classList.remove('open');
+  }
+
+  function confirmPaste() {
+    const input = document.getElementById('paste-input').value.trim();
+    const errorEl = document.getElementById('paste-error');
+    
+    if (!input) {
+      errorEl.textContent = 'Please paste JSON data.';
+      return;
+    }
+    
+    let data;
+    try {
+      data = JSON.parse(input);
+    } catch (err) {
+      errorEl.textContent = 'Invalid JSON format. Please check your input.';
+      return;
+    }
+    
+    // Validate structure - check for expected fields
+    if (typeof data !== 'object' || data === null) {
+      errorEl.textContent = 'Invalid format: Expected a character object.';
+      return;
+    }
+    
+    // Check for at least some expected character fields
+    const hasValidFields = data.hasOwnProperty('attributes') || 
+                           data.hasOwnProperty('skills') || 
+                           data.hasOwnProperty('abilities') ||
+                           data.hasOwnProperty('name') ||
+                           data.hasOwnProperty('health');
+    
+    if (!hasValidFields) {
+      errorEl.textContent = 'Invalid format: Missing character data fields.';
+      return;
+    }
+    
+    // Valid - load the character
+    try {
+      character = mergeCharacter(data);
+      closePasteModal();
+      renderSheet();
+      if (builderMode) renderBuilder();
+    } catch (err) {
+      errorEl.textContent = 'Error loading character: ' + err.message;
+    }
   }
 
   function importCharacter(e) {
