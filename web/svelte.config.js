@@ -14,8 +14,7 @@ const config = {
       precompress: false,
       strict: true
     }),
-    paths: { base },
-    trailingSlash: 'always'
+    paths: { base }
   }
 };
 
