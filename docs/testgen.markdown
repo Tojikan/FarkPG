@@ -32,12 +32,58 @@ custom_css: |
     font-size: 0.85rem;
   }
   #open-builder { background: #2ecc71; color: white; }
-  #export-btn { background: #3498db; color: white; }
-  #import-btn { background: #9b59b6; color: white; }
-  #copy-btn { background: #e67e22; color: white; }
-  #paste-btn { background: #e67e22; color: white; }
-  #print-btn { background: #95a5a6; color: white; }
   #import-file { display: none; }
+  /* Actions dropdown */
+  .actions-dropdown {
+    position: relative;
+  }
+  .actions-dropdown-trigger {
+    padding: 0.4rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    background: #7f8c8d;
+    color: white;
+  }
+  .actions-dropdown-trigger:hover {
+    background: #95a5a6;
+  }
+  .actions-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    min-width: 200px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+    overflow: hidden;
+  }
+  .actions-dropdown-menu.open {
+    display: block;
+  }
+  .actions-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: white;
+    text-align: left;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .actions-dropdown-menu button:hover {
+    background: #f5f5f5;
+  }
+  #export-btn { color: #3498db; }
+  #import-btn { color: #9b59b6; }
+  #copy-btn { color: #e67e22; }
+  #paste-btn { color: #e67e22; }
+  #print-btn { color: #95a5a6; }
 
   /* Character Name + Health Row */
   .sheet-header-row {
@@ -186,6 +232,7 @@ custom_css: |
   /* Skills Section - Vertical Boxes */
   .skills-section {
     flex: 1;
+    padding-top: 1rem;
   }
   .skills-section h3 {
     font-size: 0.9rem;
@@ -1037,12 +1084,17 @@ custom_css: |
 <div class="page-header no-print">
   <h1>Character Sheet</h1>
   <div class="controls">
-    <button id="open-builder">Builder</button>
-    <button id="export-btn">Export</button>
-    <button id="import-btn">Import</button>
-    <button id="copy-btn">Copy JSON</button>
-    <button id="paste-btn">Paste JSON</button>
-    <button id="print-btn">Print</button>
+    <button id="open-builder">Edit mode</button>
+    <div class="actions-dropdown">
+      <button type="button" class="actions-dropdown-trigger" id="actions-trigger">Actions</button>
+      <div class="actions-dropdown-menu" id="actions-menu">
+        <button type="button" id="export-btn">Download Character File</button>
+        <button type="button" id="import-btn">Import Character File</button>
+        <button type="button" id="copy-btn">Copy Character Data</button>
+        <button type="button" id="paste-btn">Paste Character Data</button>
+        <button type="button" id="print-btn">Print</button>
+      </div>
+    </div>
     <input type="file" id="import-file" accept=".json">
   </div>
 </div>
@@ -1066,7 +1118,7 @@ custom_css: |
 <div id="paste-modal" class="paste-modal">
   <div class="paste-container">
     <div class="paste-header">
-      <h2>Paste JSON</h2>
+      <h2>Paste Character Data</h2>
       <button id="close-paste">&times;</button>
     </div>
     <div class="paste-content">

@@ -35,6 +35,22 @@
     document.getElementById('paste-confirm').addEventListener('click', confirmPaste);
     document.getElementById('print-btn').addEventListener('click', printSheet);
 
+    // Actions dropdown
+    const actionsTrigger = document.getElementById('actions-trigger');
+    const actionsMenu = document.getElementById('actions-menu');
+    if (actionsTrigger && actionsMenu) {
+      actionsTrigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        actionsMenu.classList.toggle('open');
+      });
+      actionsMenu.addEventListener('click', function() {
+        actionsMenu.classList.remove('open');
+      });
+      document.addEventListener('click', function() {
+        actionsMenu.classList.remove('open');
+      });
+    }
+
     // Close modal on click outside or Escape key
     builderModal.addEventListener('click', function(e) {
       if (e.target === builderModal) {
