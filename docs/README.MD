@@ -1,10 +1,21 @@
-# FarkPG Doc Site
+# FarkPG – Central info source
 
-Run through [Github pages](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/creating-a-github-pages-site-with-jekyll) 
+This folder is the **single source of truth** for how FarkPG is formatted and defined. Use it when building the web site, tools, or any other consumer of FarkPG data.
 
+## Contents
 
-## Run Locally
+| Document | Purpose |
+|----------|---------|
+| [Game rules](game-rules.md) | General rules: how the game works, Farkle resolution, attributes + skills, abilities. |
+| [System data](system-data.md) | Definitions of attributes, skills, abilities, themes, and point pools. Structure and format for system/builder config. |
+| [Character schema](character-schema.md) | Structure of a character sheet and saved character data (export/import). |
+| [Creation rules](creation-rules.md) | How character building works: point allocation, limits, and builder flow. |
 
-[Info](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/testing-your-github-pages-site-locally-with-jekyll)
+## Data portability
 
-bundle exec jekyll serve
+Character and system data are designed to be **structured and portable**. The same schemas and formats should be usable by:
+
+- The static web site (e.g. `web/`)
+- Other tools (apps, scripts, editors) that may be added later
+
+Keep definitions here so all consumers stay aligned.
