@@ -10,7 +10,7 @@ A **theme** (builder config) defines:
 - **Attributes**: List of attributes with `id`, `label`, `abbr`, `min`, `max`, `default`.
 - **Skills**: Grouped by category. Each category has `label`, optional `alwaysDisplay`, `max` (per-skill cap), and a list of skills. Each skill has `id`, `label`, optional `attribute` (link to attribute id), optional `description`.
 - **Abilities**: List of abilities with `id`, `label`, `cost`, optional `levelable`, optional `maxLevel`, `description`.
-- **Health** (optional): e.g. `max` for health tracking.
+- **Health** (optional): e.g. `healthMax` for a fixed max, or **`healthFromAttribute`** to derive HP from an attribute: `{ attributeId, baseValue, atStat, perPoint }` (HP = baseValue + (attributeValue − atStat) × perPoint).
 
 ## Data format
 

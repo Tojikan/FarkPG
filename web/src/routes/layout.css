@@ -1,1 +1,12 @@
 @import 'tailwindcss';
+
+:root {
+	--gutter-max-width: 80rem;
+	--gutter-padding: 1rem;
+}
+
+main {
+	max-width: var(--gutter-max-width);
+	margin: 0 auto;
+	padding: var(--gutter-padding);
+}

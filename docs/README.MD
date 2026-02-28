@@ -10,6 +10,7 @@ This folder is the **single source of truth** for how FarkPG is formatted and de
 | [System data](system-data.md) | Definitions of attributes, skills, abilities, themes, and point pools. Structure and format for system/builder config. |
 | [Character schema](character-schema.md) | Structure of a character sheet and saved character data (export/import). |
 | [Creation rules](creation-rules.md) | How character building works: point allocation, limits, and builder flow. |
+| [Basic theme](theme-basic.md) | System reference for the default theme: attributes (STR/PER/INT/DEX/END/RIZ), Fate, skills, and abilities. |
 
 ## Data portability
 

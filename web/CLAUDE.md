@@ -39,3 +39,8 @@ Instructions for AI and developers working in this folder.
   - **Character schema** (structure of a character sheet / saved character)
   - **Creation rules** (how points are allocated and how character building works)
 - **docs-old/** contains the legacy Jekyll/vanilla JS character builder and theme data (e.g. `docs-old/assets/js/themes/basic.js`). Use it for reference when porting data shapes; it will be removed once everything lives in the site.
+
+### Builder and character persistence
+
+- **Edit mode**: The builder needs a mode that allows **editing** the character (adjusting attributes, skills, abilities, etc.), distinct from a read-only view.
+- **Save on device**: Character data should **save to the user’s device** and be **retrievable** (e.g. `localStorage` or similar). The currently edited character should **autosave** so it can be restored when the user returns.

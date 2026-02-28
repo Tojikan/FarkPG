@@ -11,6 +11,8 @@ Structure of a character sheet and of saved/exported character data. Design so t
 - **custom**: Optional custom skills per category and custom abilities (label, value, description, cost, etc.).
 - **xp** (optional): Experience value for the character (advancement, unlocks, or theme-specific use).
 - **health** (optional): Current/max health for play.
+- **fate**: Current and max Fate (resource currency). Max may be theme base + bonus.
+- **bonusFatePoints** (optional): Extra starting fate added to the theme’s base; fate max = theme.fateMax + bonusFatePoints.
 
 ## Export/import
 
