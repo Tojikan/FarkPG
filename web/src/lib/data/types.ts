@@ -61,8 +61,12 @@ export interface Theme {
 	attributes: AttributeDef[];
 	skills: Record<string, SkillCategory>;
 	abilities: AbilityDef[];
+	/** Optional second ability-like list (e.g. enhancements); shares ability point pool */
+	enhancements?: AbilityDef[];
 	points: ThemePoints;
 	fateMax?: number;
+	/** Used by some themes (e.g. cyberpunk) instead of fateMax; character still stores as fate. */
+	luckMax?: number;
 	healthMax?: number;
 	/** When set, health max is computed from the given attribute (e.g. Endurance). */
 	healthFromAttribute?: HealthFromAttribute;
@@ -75,6 +79,8 @@ export interface Character {
 	attributes: Record<string, number>;
 	skills: Record<string, Record<string, number>>;
 	abilities: Record<string, number>;
+	/** When theme has enhancements; same point pool as abilities */
+	enhancements?: Record<string, number>;
 	points: ThemePoints;
 	health?: { current: number; max: number };
 	xp?: number;
@@ -85,6 +91,8 @@ export interface Character {
 		skills?: Record<string, Array<{ label: string; value: number; attribute?: string }>>;
 		/** Custom ability definitions; id is custom1, custom2, ... */
 		abilities?: Array<{ id: string; label: string; text?: string; description: string; cost: number }>;
+		/** Custom enhancement definitions; id is enh1, enh2, ... */
+		enhancements?: Array<{ id: string; label: string; text?: string; description: string; cost: number }>;
 	};
 	schemaVersion?: number;
 }

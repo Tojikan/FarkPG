@@ -13,6 +13,12 @@
 				<span class="builder-desc">Strength, Perception, Intelligence, Dexterity, Endurance, Rizz. Fate as resource. Combat, Adventuring, Social, Knowledge, and General skills.</span>
 			</a>
 		</li>
+		<li>
+			<a href="/builders/cyberpunk" class="builder-card">
+				<span class="builder-name">Neon City (cyberpunk)</span>
+				<span class="builder-desc">Same core stats with Luck instead of Fate. Combat, Technology, Street, and Social skills. Abilities and enhancements share one point pool.</span>
+			</a>
+		</li>
 	</ul>
 </div>
 

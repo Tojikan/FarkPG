@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { basicTheme } from '$lib/data/basicTheme';
+	import { neonCityTheme } from '$lib/data/cyberpunkTheme';
 	import {
 		createEmptyCharacter,
 		loadCharacter,
 		saveCharacter,
-		STORAGE_KEY_BASIC,
+		STORAGE_KEY_NEON,
 		getRemainingAttributePoints,
 		getRemainingSkillPoints,
 		getRemainingAbilityPoints,
@@ -14,16 +14,19 @@
 	} from '$lib/data/character';
 	import type { Character, Theme } from '$lib/data/types';
 
-	let character = $state<Character>(createEmptyCharacter(basicTheme));
+	const theme: Theme = neonCityTheme;
+	let character = $state<Character>(createEmptyCharacter(theme));
 	let buildModalOpen = $state(false);
 
+	const fateLabel = $derived((theme as { luckMax?: number }).luckMax != null ? 'Luck' : 'Fate');
+
 	function load() {
-		const loaded = loadCharacter(STORAGE_KEY_BASIC, basicTheme);
-		if (loaded) character = syncHealthMaxToCharacter(loaded, basicTheme);
+		const loaded = loadCharacter(STORAGE_KEY_NEON, theme);
+		if (loaded) character = syncHealthMaxToCharacter(loaded, theme);
 	}
 
 	function persist() {
-		saveCharacter(character, STORAGE_KEY_BASIC, basicTheme);
+		saveCharacter(character, STORAGE_KEY_NEON, theme);
 	}
 
 	$effect(() => {
@@ -33,14 +36,14 @@
 	onMount(load);
 
 	function setAttribute(id: string, v: number) {
-		const attr = basicTheme.attributes.find((a) => a.id === id);
+		const attr = theme.attributes.find((a) => a.id === id);
 		if (!attr) return;
 		const n = Math.max(attr.min, Math.min(attr.max, v));
 		let next = { ...character, attributes: { ...character.attributes, [id]: n } };
 		// When endurance (or health-driving attribute) changes, update health max and clamp current
-		const healthRule = basicTheme.healthFromAttribute;
+		const healthRule = theme.healthFromAttribute;
 		if (healthRule && healthRule.attributeId === id) {
-			const newMax = getHealthMax(next, basicTheme);
+			const newMax = getHealthMax(next, theme);
 			const h = next.health ?? { current: 0, max: 0 };
 			next = { ...next, health: { current: Math.min(h.current, newMax), max: newMax } };
 		}
@@ -59,7 +62,7 @@
 	}
 
 	function getAbilityCost(abilityId: string): number {
-		const ab = basicTheme.abilities.find((a) => a.id === abilityId);
+		const ab = theme.abilities.find((a) => a.id === abilityId);
 		if (ab) return ab.cost;
 		const custom = character.custom?.abilities ?? [];
 		const c = custom.find((a) => a.id === abilityId);
@@ -69,11 +72,72 @@
 	function toggleAbility(abilityId: string) {
 		const cost = getAbilityCost(abilityId);
 		const cur = character.abilities[abilityId] ?? 0;
-		const rem = getRemainingAbilityPoints(character, basicTheme);
+		const rem = getRemainingAbilityPoints(character, theme);
 		if (cur === 0 && rem < cost) return;
 		character = {
 			...character,
 			abilities: { ...character.abilities, [abilityId]: cur === 0 ? 1 : 0 }
+		};
+	}
+
+	const themeEnhancements = $derived(theme.enhancements ?? []);
+	const customEnhancements = $derived(character.custom?.enhancements ?? []);
+
+	function getEnhancementCost(enhancementId: string): number {
+		const e = themeEnhancements.find((x) => x.id === enhancementId);
+		if (e) return e.cost;
+		const c = customEnhancements.find((x) => x.id === enhancementId);
+		return c?.cost ?? 1;
+	}
+
+	function toggleEnhancement(enhancementId: string) {
+		const cost = getEnhancementCost(enhancementId);
+		const cur = (character.enhancements ?? {})[enhancementId] ?? 0;
+		const rem = getRemainingAbilityPoints(character, theme);
+		if (cur === 0 && rem < cost) return;
+		character = {
+			...character,
+			enhancements: { ...(character.enhancements ?? {}), [enhancementId]: cur === 0 ? 1 : 0 }
+		};
+	}
+
+	function nextEnhId(): string {
+		const used = customEnhancements.map((c) => {
+			const m = c.id.match(/^enh(\d+)$/);
+			return m ? parseInt(m[1], 10) : 0;
+		});
+		const n = used.length === 0 ? 1 : Math.max(...used) + 1;
+		return `enh${n}`;
+	}
+
+	function addCustomEnhancement() {
+		const id = nextEnhId();
+		const list = [...(character.custom?.enhancements ?? []), { id, label: '', text: '', description: '', cost: 1 }];
+		character = {
+			...character,
+			custom: { ...character.custom, enhancements: list },
+			enhancements: { ...(character.enhancements ?? {}), [id]: 0 }
+		};
+	}
+
+	function updateCustomEnhancement(index: number, patch: { label?: string; text?: string; description?: string; cost?: number }) {
+		const list = [...(character.custom?.enhancements ?? [])];
+		if (index < 0 || index >= list.length) return;
+		list[index] = { ...list[index], ...patch };
+		character = { ...character, custom: { ...character.custom, enhancements: list } };
+	}
+
+	function removeCustomEnhancement(index: number) {
+		const list = character.custom?.enhancements ?? [];
+		if (index < 0 || index >= list.length) return;
+		const id = list[index].id;
+		const nextList = list.filter((_, i) => i !== index);
+		const nextEnh = { ...(character.enhancements ?? {}) };
+		delete nextEnh[id];
+		character = {
+			...character,
+			custom: { ...character.custom, enhancements: nextList },
+			enhancements: nextEnh
 		};
 	}
 
@@ -162,8 +226,8 @@
 		if (typeof window === 'undefined') return;
 		if (!window.confirm('Delete all saved character data for this builder? This cannot be undone.')) return;
 		try {
-			localStorage.removeItem(STORAGE_KEY_BASIC);
-			character = createEmptyCharacter(basicTheme);
+			localStorage.removeItem(STORAGE_KEY_NEON);
+			character = createEmptyCharacter(theme);
 			buildModalOpen = false;
 		} catch (_) {}
 	}
@@ -184,7 +248,7 @@
 </script>
 
 <svelte:head>
-	<title>Basic character builder – FarkPG</title>
+	<title>Neon City (cyberpunk) character builder – FarkPG</title>
 </svelte:head>
 
 <div class="builder">
@@ -221,7 +285,7 @@
 					</div>
 				</div>
 				<div class="stat-row stat-row-fate">
-					<label class="block-label">Fate</label>
+					<label class="block-label">{fateLabel}</label>
 					<div class="stat-display">
 						<input type="number" min="0" max={character.fate.max} class="stat-big stat-big-fate" value={character.fate.current} oninput={(e) => setFateVal(Number((e.target as HTMLInputElement).value))} />
 						<span class="stat-small">/ </span>
@@ -236,7 +300,7 @@
 			<div class="block attributes-block attributes-separator">
 				<h2 class="block-title">Attributes</h2>
 				<div class="attr-list">
-					{#each basicTheme.attributes as attr}
+					{#each theme.attributes as attr}
 						{@const val = character.attributes[attr.id] ?? attr.default}
 						<div class="attr-row">
 							<label class="attr-label">{attr.label}</label>
@@ -246,7 +310,7 @@
 				</div>
 			</div>
 			<div class="skills-grid">
-				{#each Object.entries(basicTheme.skills) as [catId, cat]}
+				{#each Object.entries(theme.skills) as [catId, cat]}
 					{#if showSkillCategory(cat, catId)}
 						<div class="block skill-block">
 							<h3 class="block-title">{cat.label}</h3>
@@ -272,7 +336,7 @@
 			<div class="block abilities-block">
 				<h2 class="block-title">Abilities</h2>
 				<ul class="ability-list">
-					{#each basicTheme.abilities.filter((ab) => (character.abilities[ab.id] ?? 0) > 0) as ab}
+					{#each theme.abilities.filter((ab) => (character.abilities[ab.id] ?? 0) > 0) as ab}
 						<li class="ability-row">
 							<span class="ability-name">{ab.label}</span>
 							<p class="ability-desc">{ab.description}</p>
@@ -286,8 +350,29 @@
 						</li>
 					{/each}
 				</ul>
-				{#if basicTheme.abilities.filter((ab) => (character.abilities[ab.id] ?? 0) > 0).length === 0 && customAbilities.filter((c) => (character.abilities[c.id] ?? 0) > 0).length === 0}
+				{#if theme.abilities.filter((ab) => (character.abilities[ab.id] ?? 0) > 0).length === 0 && customAbilities.filter((c) => (character.abilities[c.id] ?? 0) > 0).length === 0}
 					<p class="ability-empty">No abilities yet. Use Build Character to add some.</p>
+				{/if}
+			</div>
+			<div class="block abilities-block enhancements-block">
+				<h2 class="block-title">Enhancements</h2>
+				<ul class="ability-list">
+					{#each themeEnhancements.filter((e) => (character.enhancements ?? {})[e.id] > 0) as e}
+						<li class="ability-row">
+							<span class="ability-name">{e.label}</span>
+							<p class="ability-desc">{e.description}</p>
+						</li>
+					{/each}
+					{#each customEnhancements.filter((c) => (character.enhancements ?? {})[c.id] > 0) as c}
+						<li class="ability-row">
+							<span class="ability-name">{c.label || c.id}</span>
+							{#if c.text}<p class="ability-text">{c.text}</p>{/if}
+							<p class="ability-desc">{c.description}</p>
+						</li>
+					{/each}
+				</ul>
+				{#if themeEnhancements.filter((e) => (character.enhancements ?? {})[e.id] > 0).length === 0 && customEnhancements.filter((c) => (character.enhancements ?? {})[c.id] > 0).length === 0}
+					<p class="ability-empty">No enhancements yet. Use Build Character to add some.</p>
 				{/if}
 			</div>
 		</div>
@@ -328,7 +413,7 @@
 					</div>
 				</section>
 				<section class="modal-section modal-stat-row modal-stat-row-fate">
-					<label class="block-label">Fate</label>
+					<label class="block-label">{fateLabel}</label>
 					<div class="stat-display">
 						<input type="number" min="0" max={character.fate.max} class="stat-big stat-big-fate" value={character.fate.current} oninput={(e) => setFateVal(Number((e.target as HTMLInputElement).value))} />
 						<span class="stat-small">/ </span>
@@ -337,9 +422,9 @@
 				</section>
 				<section class="modal-section attributes-separator">
 					<h3 class="block-title">Attributes</h3>
-					<p class="points-hint">Available points: {getRemainingAttributePoints(character, basicTheme)} / {character.points.attributes}</p>
+					<p class="points-hint">Available points: {getRemainingAttributePoints(character, theme)} / {character.points.attributes}</p>
 					<div class="attr-list">
-						{#each basicTheme.attributes as attr}
+						{#each theme.attributes as attr}
 							{@const val = character.attributes[attr.id] ?? attr.default}
 							<div class="attr-row">
 								<label class="attr-label">{attr.label}</label>
@@ -348,9 +433,9 @@
 						{/each}
 					</div>
 				</section>
-				{#each Object.entries(basicTheme.skills) as [catId, cat]}
-					{@const rem = getRemainingSkillPoints(character, basicTheme, catId)}
-					{@const max = character.points.skills?.[catId] ?? basicTheme.points.skills[catId]}
+				{#each Object.entries(theme.skills) as [catId, cat]}
+					{@const rem = getRemainingSkillPoints(character, theme, catId)}
+					{@const max = character.points.skills?.[catId] ?? theme.points.skills[catId]}
 					<section class="modal-section">
 						<h3 class="block-title">{cat.label}</h3>
 						<p class="points-hint">Available points: {rem} / {max}</p>
@@ -367,12 +452,12 @@
 				{/each}
 				<section class="modal-section">
 					<h3 class="block-title">Abilities</h3>
-					<p class="points-hint">Available points: {getRemainingAbilityPoints(character, basicTheme)} / {character.points.abilities}</p>
+					<p class="points-hint">Available points: {getRemainingAbilityPoints(character, theme)} / {character.points.abilities}</p>
 					<ul class="ability-list ability-list-builder">
-						{#each basicTheme.abilities as ab}
+						{#each theme.abilities as ab}
 							{@const taken = (character.abilities[ab.id] ?? 0) > 0}
 							<li class="ability-row">
-								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, basicTheme) < ab.cost} onclick={() => toggleAbility(ab.id)}>
+								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, theme) < ab.cost} onclick={() => toggleAbility(ab.id)}>
 									{taken ? '✓' : '○'} {ab.label} (cost {ab.cost})
 								</button>
 								<p class="ability-desc">{ab.description}</p>
@@ -381,7 +466,32 @@
 						{#each customAbilities as c}
 							{@const taken = (character.abilities[c.id] ?? 0) > 0}
 							<li class="ability-row">
-								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, basicTheme) < (c.cost ?? 1)} onclick={() => toggleAbility(c.id)}>
+								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, theme) < (c.cost ?? 1)} onclick={() => toggleAbility(c.id)}>
+									{taken ? '✓' : '○'} {c.label || c.id} (cost {c.cost})
+								</button>
+								{#if c.text}<p class="ability-text">{c.text}</p>{/if}
+								<p class="ability-desc">{c.description}</p>
+							</li>
+						{/each}
+					</ul>
+				</section>
+				<section class="modal-section">
+					<h3 class="block-title">Enhancements</h3>
+					<p class="points-hint">Available points: {getRemainingAbilityPoints(character, theme)} / {character.points.abilities}</p>
+					<ul class="ability-list ability-list-builder">
+						{#each themeEnhancements as e}
+							{@const taken = (character.enhancements ?? {})[e.id] > 0}
+							<li class="ability-row">
+								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, theme) < e.cost} onclick={() => toggleEnhancement(e.id)}>
+									{taken ? '✓' : '○'} {e.label} (cost {e.cost})
+								</button>
+								<p class="ability-desc">{e.description}</p>
+							</li>
+						{/each}
+						{#each customEnhancements as c}
+							{@const taken = (character.enhancements ?? {})[c.id] > 0}
+							<li class="ability-row">
+								<button type="button" class="ability-btn" class:ability-taken={taken} disabled={!taken && getRemainingAbilityPoints(character, theme) < (c.cost ?? 1)} onclick={() => toggleEnhancement(c.id)}>
 									{taken ? '✓' : '○'} {c.label || c.id} (cost {c.cost})
 								</button>
 								{#if c.text}<p class="ability-text">{c.text}</p>{/if}
@@ -409,6 +519,29 @@
 								<textarea class="field-textarea" placeholder="Full description" value={c.description} oninput={(e) => updateCustomAbility(i, { description: (e.target as HTMLTextAreaElement).value })}></textarea>
 								<label class="field-label">Cost</label>
 								<input type="number" min="0" class="field-input field-input-cost" value={c.cost} oninput={(e) => updateCustomAbility(i, { cost: Math.max(0, Number((e.target as HTMLInputElement).value) || 0) })} />
+							</div>
+						</div>
+					{/each}
+				</section>
+				<section class="modal-section custom-abilities-manage">
+					<h3 class="block-title">Custom enhancements</h3>
+					<p class="block-hint">Add your own enhancements with name, text, description, and cost.</p>
+					<button type="button" class="btn-add-custom" onclick={addCustomEnhancement}>+ Add custom enhancement</button>
+					{#each customEnhancements as c, i}
+						<div class="custom-ability-card">
+							<div class="custom-ability-header">
+								<span class="custom-ability-id">{c.id}</span>
+								<button type="button" class="btn-remove-custom" aria-label="Remove" onclick={() => removeCustomEnhancement(i)}>×</button>
+							</div>
+							<div class="custom-ability-fields">
+								<label class="field-label">Name</label>
+								<input type="text" class="field-input" placeholder="Enhancement name" value={c.label} oninput={(e) => updateCustomEnhancement(i, { label: (e.target as HTMLInputElement).value })} />
+								<label class="field-label">Text</label>
+								<input type="text" class="field-input" placeholder="Short text or tagline" value={c.text ?? ''} oninput={(e) => updateCustomEnhancement(i, { text: (e.target as HTMLInputElement).value })} />
+								<label class="field-label">Description</label>
+								<textarea class="field-textarea" placeholder="Full description" value={c.description} oninput={(e) => updateCustomEnhancement(i, { description: (e.target as HTMLTextAreaElement).value })}></textarea>
+								<label class="field-label">Cost</label>
+								<input type="number" min="0" class="field-input field-input-cost" value={c.cost} oninput={(e) => updateCustomEnhancement(i, { cost: Math.max(0, Number((e.target as HTMLInputElement).value) || 0) })} />
 							</div>
 						</div>
 					{/each}
@@ -675,6 +808,10 @@
 	}
 	.abilities-block {
 		min-width: 0;
+	}
+	.enhancements-block {
+		min-width: 0;
+		margin-top: 0.5rem;
 	}
 	.ability-list {
 		list-style: none;

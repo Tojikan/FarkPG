@@ -2,6 +2,7 @@ import type { Character, Theme } from './types.js';
 
 const SCHEMA_VERSION = 1;
 const STORAGE_KEY_BASIC = 'farkpg-character-basic';
+const STORAGE_KEY_NEON = 'farkpg-character-neon';
 
 /** Fate max = theme.fateMax + character.bonusFatePoints */
 export function getFateMax(character: Character, theme: Theme): number {
@@ -43,13 +44,19 @@ export function createEmptyCharacter(theme: Theme): Character {
 	for (const ab of theme.abilities) {
 		abilities[ab.id] = 0;
 	}
-	const baseFate = theme.fateMax ?? 5;
+	const enhancements: Record<string, number> = {};
+	const themeEnh = theme.enhancements ?? [];
+	for (const e of themeEnh) {
+		enhancements[e.id] = 0;
+	}
+	const baseFate = (theme as { luckMax?: number }).luckMax ?? theme.fateMax ?? 5;
 	const baseChar: Character = {
 		name: '',
 		notes: '',
 		attributes,
 		skills,
 		abilities,
+		...(themeEnh.length > 0 ? { enhancements } : {}),
 		points: { ...theme.points },
 		health: { current: 0, max: 0 },
 		xp: 0,
@@ -80,7 +87,7 @@ export function getSpentSkillPoints(character: Character, categoryId: string): n
 	return spent;
 }
 
-/** Spent ability points */
+/** Spent ability points (includes enhancements when theme has them; same pool) */
 export function getSpentAbilityPoints(character: Character, theme: Theme): number {
 	let spent = 0;
 	for (const ab of theme.abilities) {
@@ -90,6 +97,15 @@ export function getSpentAbilityPoints(character: Character, theme: Theme): numbe
 	const custom = character.custom?.abilities ?? [];
 	for (const c of custom) {
 		if ((character.abilities[c.id] ?? 0) > 0) spent += c.cost ?? 1;
+	}
+	const themeEnh = theme.enhancements ?? [];
+	for (const e of themeEnh) {
+		const level = (character.enhancements ?? {})[e.id] ?? 0;
+		if (level > 0) spent += e.cost * (e.levelable ? level : 1);
+	}
+	const customEnh = character.custom?.enhancements ?? [];
+	for (const c of customEnh) {
+		if ((character.enhancements ?? {})[c.id] > 0) spent += c.cost ?? 1;
 	}
 	return spent;
 }
@@ -124,7 +140,8 @@ export function loadCharacter(storageKey: string = STORAGE_KEY_BASIC, theme?: Th
 				xp: data.xp ?? empty.xp,
 				bonusFatePoints: data.bonusFatePoints ?? empty.bonusFatePoints ?? 0,
 				fate: data.fate ?? empty.fate,
-				points: data.points ?? empty.points
+				points: data.points ?? empty.points,
+				enhancements: data.enhancements ?? empty.enhancements ?? undefined
 			};
 			if (theme && merged.fate) {
 				merged.fate.current = Math.min(merged.fate.current, merged.fate.max);
@@ -139,6 +156,17 @@ export function loadCharacter(storageKey: string = STORAGE_KEY_BASIC, theme?: Th
 					return { id, label: c.label, text: c.text, description: c.description, cost: c.cost ?? 1 };
 				}) };
 				merged.abilities = byId;
+			}
+			// Ensure custom enhancements have ids (enh1, enh2, ...)
+			const customEnh = merged.custom?.enhancements ?? [];
+			if (customEnh.length > 0) {
+				const byId: Record<string, number> = { ...(merged.enhancements ?? {}) };
+				merged.custom = { ...merged.custom, enhancements: customEnh.map((c: { id?: string; label: string; text?: string; description: string; cost: number }, i: number) => {
+					const id = `enh${i + 1}`;
+					byId[id] = (merged.enhancements ?? {})[c.id ?? id] ?? (merged.enhancements ?? {})[id] ?? 0;
+					return { id, label: c.label, text: c.text, description: c.description, cost: c.cost ?? 1 };
+				}) };
+				merged.enhancements = byId;
 			}
 			return merged;
 		}
@@ -158,4 +186,4 @@ export function saveCharacter(character: Character, storageKey: string = STORAGE
 	} catch (_) {}
 }
 
-export { STORAGE_KEY_BASIC };
+export { STORAGE_KEY_BASIC, STORAGE_KEY_NEON };
