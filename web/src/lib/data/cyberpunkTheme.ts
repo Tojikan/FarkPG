@@ -48,7 +48,8 @@ export const neonCityTheme: Theme = {
 				{ id: 'streetwise', label: 'Streetwise', attribute: 'perception', description: 'Rumors, routes, reading neighborhoods' },
 				{ id: 'stealth', label: 'Stealth', attribute: 'dexterity', description: 'Sneaking, tailing, staying unseen' },
 				{ id: 'lockpicking', label: 'Lockpicking', attribute: 'dexterity', description: 'Locks, doors, cuffs, quick entry' },
-				{ id: 'dangerSense', label: 'Danger Sense', attribute: 'perception', description: 'Ambush tells, bad vibes, imminent trouble' }
+				{ id: 'dangerSense', label: 'Danger Sense', attribute: 'perception', description: 'Ambush tells, bad vibes, imminent trouble' },
+				{ id: 'intelGathering', label: 'Intel Gathering', attribute: 'intelligence', description: 'Able to research and gather information' }
 			]
 		},
 
@@ -133,7 +134,7 @@ export const neonCityTheme: Theme = {
 		skills: {
 			combat: 6,
 			technology: 7,
-			street: 5,
+			street: 6,
 			social: 6
 		},
 		abilities: 10
