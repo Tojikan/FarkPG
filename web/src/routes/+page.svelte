@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { base } from '$app/paths';
+</script>
+
 <svelte:head>
 	<title>FarkPG – Tabletop RPG</title>
 	<meta name="description" content="FarkPG is a rules-lite tabletop RPG that uses Farkle dice for resolution. Find rules and build characters here." />
@@ -20,15 +24,15 @@
 			This site gives you everything you need to play:
 		</p>
 		<ul class="home-links">
-			<li><a href="/rules">Game rules</a> — How Farkle resolution works, combat, resources, and more.</li>
-			<li><a href="/builders">Character builders</a> — Point-buy character creation for different themes and settings. Each builder shares the same core but can offer different attributes, skills, and abilities.</li>
+			<li><a href="{base}/rules">Game rules</a> — How Farkle resolution works, combat, resources, and more.</li>
+			<li><a href="{base}/builders">Character builders</a> — Point-buy character creation for different themes and settings. Each builder shares the same core but can offer different attributes, skills, and abilities.</li>
 		</ul>
 	</section>
 
 	<section class="home-section">
 		<h2>Get started</h2>
 		<p>
-			Read the <a href="/rules">rules</a> to learn the system, then use a <a href="/builders">character builder</a> to create your first character.
+			Read the <a href="{base}/rules">rules</a> to learn the system, then use a <a href="{base}/builders">character builder</a> to create your first character.
 		</p>
 	</section>
 </div>

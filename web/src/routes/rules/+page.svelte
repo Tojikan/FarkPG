@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { base } from '$app/paths';
+</script>
+
 <svelte:head>
 	<title>Rules – FarkPG</title>
 	<meta name="description" content="FarkPG game rules: Farkle resolution, dice, combat, resources, attributes, skills, and abilities." />
@@ -44,7 +48,7 @@
 	<section class="rules-section">
 		<h2>Abilities</h2>
 		<p>
-			<strong>Abilities</strong> are special traits you buy during character creation. They can be one-off (bought once) or levelable (multiple ranks). Each ability has a cost in character-building points. Use the <a href="/builders">character builders</a> to assign points and choose abilities.
+			<strong>Abilities</strong> are special traits you buy during character creation. They can be one-off (bought once) or levelable (multiple ranks). Each ability has a cost in character-building points. Use the <a href="{base}/builders">character builders</a> to assign points and choose abilities.
 		</p>
 	</section>
 
@@ -58,7 +62,7 @@
 	<section class="rules-section">
 		<h2>Character building</h2>
 		<p>
-			Character building is a <strong>point buy system</strong>. You spend points from defined pools to set attribute values, skill values, and abilities. Each theme defines the pools and limits (e.g. total attribute points, points per skill category, ability points). Some themes allow <strong>custom skills</strong> (your own skill name and value in a category) and <strong>custom abilities</strong>. Use a <a href="/builders">character builder</a> to create and save characters.
+			Character building is a <strong>point buy system</strong>. You spend points from defined pools to set attribute values, skill values, and abilities. Each theme defines the pools and limits (e.g. total attribute points, points per skill category, ability points). Some themes allow <strong>custom skills</strong> (your own skill name and value in a category) and <strong>custom abilities</strong>. Use a <a href="{base}/builders">character builder</a> to create and save characters.
 		</p>
 	</section>
 </div>

@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { base } from '$app/paths';
+
 	const navLinks = [
-		{ href: '/', label: 'Home' },
-		{ href: '/rules', label: 'Rules' },
-		{ href: '/builders', label: 'Character Builders' }
+		{ href: base + '/', label: 'Home' },
+		{ href: base + '/rules', label: 'Rules' },
+		{ href: base + '/builders', label: 'Character Builders' }
 	];
 
 	let open = $state(false);
@@ -18,7 +20,7 @@
 
 <header class="nav-bar">
 	<div class="nav-inner">
-		<a href="/" class="nav-brand" onclick={close}>FarkPG</a>
+		<a href={base + '/'} class="nav-brand" onclick={close}>FarkPG</a>
 
 		<button
 			type="button"

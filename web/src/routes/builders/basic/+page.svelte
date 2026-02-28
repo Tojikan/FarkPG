@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { basicTheme } from '$lib/data/basicTheme';
 	import {
 		createEmptyCharacter,
@@ -189,7 +190,7 @@
 
 <div class="builder">
 	<div class="builder-toolbar">
-		<a href="/builders" class="back-link">← Builders</a>
+		<a href="{base}/builders" class="back-link">← Builders</a>
 		<div class="toolbar-actions">
 			<button type="button" class="btn-build" onclick={() => (buildModalOpen = true)}>Build Character</button>
 			<button type="button" class="btn-delete" onclick={deleteSavedData}>Delete saved data</button>

@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { base } from '$app/paths';
+</script>
+
 <svelte:head>
 	<title>Character builders – FarkPG</title>
 </svelte:head>
@@ -8,13 +12,13 @@
 
 	<ul class="builder-list">
 		<li>
-			<a href="/builders/basic" class="builder-card">
+			<a href="{base}/builders/basic" class="builder-card">
 				<span class="builder-name">Basic (multi-setting)</span>
 				<span class="builder-desc">Strength, Perception, Intelligence, Dexterity, Endurance, Rizz. Fate as resource. Combat, Adventuring, Social, Knowledge, and General skills.</span>
 			</a>
 		</li>
 		<li>
-			<a href="/builders/cyberpunk" class="builder-card">
+			<a href="{base}/builders/cyberpunk" class="builder-card">
 				<span class="builder-name">Neon City (cyberpunk)</span>
 				<span class="builder-desc">Same core stats with Luck instead of Fate. Combat, Technology, Street, and Social skills. Abilities and enhancements share one point pool.</span>
 			</a>
