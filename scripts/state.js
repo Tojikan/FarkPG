@@ -156,6 +156,13 @@ export function applySocketMessage(state, msg) {
             const board = ensureBoard(next, msg.targetBoardId);
             if (board.rollInProgress) return null;
             board.rollInProgress = true;
+            // Ensure the die face selector updates immediately on `startRoll`,
+            // so a system opening the roll programmatically doesn't briefly
+            // show the default d6.
+            const payload = msg.payload ?? {};
+            const requestedFaces = Number(payload.faces);
+            const legalFaces = [4, 6, 8, 10, 12, 20];
+            if (legalFaces.includes(requestedFaces)) board.faces = requestedFaces;
             return next;
         }
         case "endRoll": {

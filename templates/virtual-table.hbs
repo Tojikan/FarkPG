@@ -66,7 +66,7 @@
     <div class="vdt-toolbar">
         <div class="vdt-toolbar-start">
             <label class="vdt-field">{{vdtL10n "count"}}
-                <input type="number" name="vdt-count" min="0" max="{{maxDice}}" value="6" {{#unless canMutate}}disabled{{/unless}} />
+                <input type="number" name="vdt-count" min="0" max="{{maxDice}}" value="{{rollCountInput}}" {{#unless canMutate}}disabled{{/unless}} />
             </label>
             <label class="vdt-field">{{vdtL10n "dieType"}}
                 <select name="vdt-faces" {{#unless canMutate}}disabled{{/unless}}>

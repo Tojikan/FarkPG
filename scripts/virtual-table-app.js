@@ -226,6 +226,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             data.isGm = isGm;
             data.selectedCount = 0;
             data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
+            data.rollCountInput = 6;
             data.showRerollSelected = false;
             data.canRerollAllRolling = false;
             return data;
@@ -257,6 +258,11 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         data.isGm = isGm;
         data.selectedCount = selectedArr.length;
         data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
+        {
+            const defaultCount = Math.min(6, data.maxDice);
+            const countFromBoard = board.tableDice?.length ?? 0;
+            data.rollCountInput = countFromBoard > 0 ? countFromBoard : defaultCount;
+        }
         data.showRerollSelected = rollInProgress && data.canMutate && selectedArr.length > 0;
         data.canRerollAllRolling = rollInProgress && data.canMutate && board.tableDice.length > 0;
 
@@ -724,7 +730,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 type: "startRoll",
                 actorUserId: game.user.id,
                 targetBoardId: targetId,
-                payload: {},
+                payload: { faces },
             });
         }
 
