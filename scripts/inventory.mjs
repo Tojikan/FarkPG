@@ -8,17 +8,15 @@ import {
   MIND_SKILLS,
   SKILL_VALUE_MAX
 } from "./config.mjs";
-import { normalizeSheetSystem } from "./actor-system.mjs";
 
 export function skillGroupsFromSystem(sys) {
-  normalizeSheetSystem(sys);
   const s = sys;
   const attrs = s.attributes ?? DEFAULT_CHARACTER_ATTRIBUTES;
   const customsIndexed = [...(s.customSkills ?? [])].map((row, idx) => ({
     id: row.id,
     attrKey: row.attrKey,
     label: row.label,
-    value: row.value,
+    value: Math.max(0, Math.min(SKILL_VALUE_MAX, Number(row?.value) || 0)),
     _index: idx
   }));
   const customFor = (attrKey) => customsIndexed.filter((c) => c.attrKey === attrKey);
@@ -35,7 +33,7 @@ export function skillGroupsFromSystem(sys) {
       key: sk,
       label: game.i18n.localize(`FARKPG.Skills.${sk}.label`),
       hint: game.i18n.localize(`FARKPG.Skills.${sk}.hint`),
-      value: Math.max(0, Math.min(SKILL_VALUE_MAX, Number(s.skills[sk]) || 0)),
+      value: Math.max(0, Math.min(SKILL_VALUE_MAX, Number(s.skills?.[sk]) || 0)),
       attrKey
     })),
     customSkills: customFor(attrKey)

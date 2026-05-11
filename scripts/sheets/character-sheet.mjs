@@ -1,6 +1,5 @@
-/* global foundry, game, ui, Item, Actors */
+/* global foundry, game, ui, Item */
 
-import { normalizeSheetSystem } from "../actor-system.mjs";
 import {
   abilityItems,
   equippedGearCount,
@@ -58,73 +57,17 @@ export function registerFarkpgCharacterSheet() {
     async _prepareContext(options) {
       const context = await super._prepareContext(options);
       const actor = this.actor;
-      const sys = foundry.utils.duplicate(context.system ?? {});
+      // Keep context.system from super — replacing it breaks DocumentSheet submitOnChange.
+      const sysSnap = foundry.utils.duplicate(actor.system ?? {});
 
       let bioStr = "";
-      if (typeof sys.biography === "string") bioStr = sys.biography;
-      else if (typeof actor.system?.biography === "string") bioStr = actor.system.biography;
-      else if (typeof actor.system?.toObject === "function") {
-        try {
-          const plain = actor.system.toObject(false);
-          if (typeof plain?.biography === "string") bioStr = plain.biography;
-        } catch {
-          bioStr = "";
-        }
-      }
-      sys.biography = bioStr;
+      const rawBio = actor.system?.biography;
+      if (typeof rawBio === "string") bioStr = rawBio;
 
-      sys.resources = foundry.utils.duplicate(sys.resources ?? {});
-      sys.resources.health = foundry.utils.mergeObject(
-        { value: 0, max: 0 },
-        typeof sys.resources.health === "object" && sys.resources.health ? sys.resources.health : {}
-      );
-      sys.resources.actionPoints = foundry.utils.mergeObject(
-        { value: 0, max: 0 },
-        typeof sys.resources.actionPoints === "object" && sys.resources.actionPoints ? sys.resources.actionPoints : {}
-      );
-      const expRaw = sys.resources.exp;
-      if (typeof expRaw === "number") {
-        sys.resources.exp = { value: expRaw, max: Math.max(expRaw, 100) };
-      } else if (typeof expRaw !== "object" || expRaw == null) {
-        sys.resources.exp = { value: 0, max: 100 };
-      } else {
-        sys.resources.exp = {
-          value: Number(expRaw.value ?? 0),
-          max: Number(expRaw.max ?? 100)
-        };
-      }
-      const mov = sys.resources.movement;
-      if (typeof mov === "number" && !Number.isNaN(mov)) {
-        sys.resources.movement = mov;
-      } else if (mov && typeof mov === "object") {
-        sys.resources.movement = Number(mov.value ?? 30);
-      } else {
-        sys.resources.movement = 30;
-      }
-
-      sys.inventory = foundry.utils.mergeObject({ maxSlots: 4, layout: "grid" }, sys.inventory ?? {});
-
-      if (!Array.isArray(sys.customSkills)) sys.customSkills = [];
-      else {
-        sys.customSkills = sys.customSkills.map((row) => {
-          let attrKey = row?.attrKey;
-          if (!["body", "adroit", "mind"].includes(attrKey)) attrKey = "body";
-          return {
-            id: row?.id ?? foundry.utils.randomID(),
-            attrKey,
-            label: typeof row.label === "string" ? row.label : "Skill",
-            value: Number(row.value) || 0
-          };
-        });
-      }
-
-      normalizeSheetSystem(sys);
-
-      context.system = sys;
-      context.skillGroups = skillGroupsFromSystem(sys);
-      context.equippedPanelItems = equippedPanel(actor, sys);
+      context.skillGroups = skillGroupsFromSystem(sysSnap);
+      context.equippedPanelItems = equippedPanel(actor, sysSnap);
       context.equipmentEquippedUsed = equippedGearCount(actor);
-      context.inventoryRows = inventoryRowModel(actor, sys);
+      context.inventoryRows = inventoryRowModel(actor, sysSnap);
       context.abilityItems = abilityItems(actor).map((i) => ({
         id: i.id,
         name: i.name,
@@ -359,9 +302,7 @@ export function registerFarkpgCharacterSheet() {
       const item = actor.items.get(id);
       if (!item || !["weapon", "consumable", "equipment"].includes(item.type)) return;
       if (gearIsEquipped(item)) return;
-      const sys = foundry.utils.duplicate(actor.system);
-      normalizeSheetSystem(sys);
-      const max = Math.max(1, Number(sys.equipment?.slotCount) || 2);
+      const max = Math.max(1, Number(actor.system?.equipment?.slotCount) || 2);
       if (equippedGearCount(actor) >= max) {
         ui.notifications.warn(game.i18n.localize("FARKPG.EquipSlotsFull"));
         return;
@@ -386,5 +327,8 @@ export function registerFarkpgCharacterSheet() {
     }
   }
 
-  Actors.registerSheet("farkpg-znz", FarkpgCharacterSheet, { types: ["character"], makeDefault: true });
+  foundry.documents.collections.Actors.registerSheet("farkpg-znz", FarkpgCharacterSheet, {
+    types: ["character"],
+    makeDefault: true
+  });
 }

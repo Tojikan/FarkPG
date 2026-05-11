@@ -2,23 +2,28 @@
 
 Foundry **v13** tabletop system (`system.json`): character sheet with attributes (Body / Adroit / Mind), standard + custom skills, gear, abilities, biography.
 
+**No `TypeDataModel`:** actor/item `system` data comes from **`template.json`** and plain document behavior. **`rolls.mjs`** builds a temporary data object only when resolving `rollSkill` formulas.
+
 ## File map
 
 | Area | Paths |
 |------|--------|
-| Entry | `scripts/farkpg.mjs` — **`init`** (models, **`getRollData`** patch, register sheets), **`ready`** (**`game.farkpg`**). No `setup` hook. |
+| Entry | `scripts/farkpg.mjs` — **`init`** (register sheets only), **`ready`** (**`game.farkpg`**). |
 | Config & caps | `scripts/config.mjs` — **`ATTR_VALUE_MAX` 6**, **`SKILL_VALUE_MAX` 4**, skill lists, roll key helpers. |
-| Sheet data helpers | `scripts/actor-system.mjs` — **`normalizeSheetSystem`** only (display / inventory clones). Updates use Foundry **`TypeDataModel`** as-is; no `preUpdateActor` sanitization. |
-| Lists / equip | `scripts/inventory.mjs` — stash vs equipped panels, **`system.isEquipped`** on items, slot cap via **`system.equipment.slotCount`**. |
-| Rolls | `scripts/rolls.mjs` — `buildRollData`, `rollSkill` (`1d20 + @attr + @skill`). |
-| Weapons | `scripts/weapons.mjs` — `useWeapon`, ammo burn, delegates to `rollSkill`. |
-| Editors | `scripts/text-editor-ux.mjs` — **`textEditorUx()`** → **`foundry.applications.ux.TextEditor.implementation`** (V15-safe `enrichHTML`; sheets use it for bios / item HTML). |
-| Models | `scripts/data-models.mjs` — `TypeDataModel` for character + item types (`registerDataModels`). |
-| UI | **`ActorSheetV2` / `ItemSheetV2`** via **`HandlebarsApplicationMixin`** in `scripts/sheets/character-sheet.mjs`, `scripts/sheets/item-sheets.mjs`; templates `templates/`; **`lang/en.json`** (**`FARKPG.*`**); **`styles/farkpg.css`**. |
+| Lists / equip | `scripts/inventory.mjs` — stash vs equipped panels, **`system.isEquipped`** on items, **`system.equipment.slotCount`**. |
+| Rolls | `scripts/rolls.mjs` — internal **`rollDataPool(actor)`**, **`rollSkill`** (`1d20 + @attr [+ @skill]`). Not exposed on **`Actor#getRollData`**. |
+| Weapons | `scripts/weapons.mjs` — **`useWeapon`**, ammo burn → **`rollSkill`**. |
+| Editors | `scripts/text-editor-ux.mjs` — **`textEditorUx()`** → **`TextEditor.implementation`** (`enrichHTML`). |
+| UI | **`ActorSheetV2` / `ItemSheetV2`** + **`HandlebarsApplicationMixin`**; `templates/`; **`lang/en.json`** (**`FARKPG.*`**); **`styles/farkpg.css`**. |
+
+## Character sheet rolls (template)
+
+- **d20 buttons** (`farkpg-roll-btn`, Font Awesome **`fa-dice-d20`**) sit **between** the label and the number input (immediately left of the value field). Labels use **`farkpg-inline-label`**; custom skills use the name text field as the label area.
+- Classes **`rollable`** + **`attr-roll`** / **`skill-roll`** + `data-attr` / `data-skill` drive **`character-sheet.mjs`** click handlers (**`rollSkill`**).
 
 ## Behaviors agents should preserve
 
-- **Equip state** lives on **Items** (`weapon` / `consumable` / `equipment`): **`system.isEquipped`**. Actor holds **`equipment.slotCount`** and **`inventory.maxSlots`** only—not an equipped-id list on the actor.
-- **Public API** (after **`ready`**): **`game.farkpg`**: `{ rollSkill, useWeapon, useWeaponById, buildRollData }`.
-- **`getRollData`** is patched on the actor document class in **`init`**: merges attrs/skills/custom skills onto roll data for macros.
-- Keep changes small; ES module imports relative to `scripts/`; **`node --check`** on touched `.mjs` when editing logic.
+- **Equip state** on items: **`system.isEquipped`**. Actor **`equipment.slotCount`** and **`inventory.maxSlots`** only.
+- **Public API** (`ready`): **`game.farkpg`**: **`{ rollSkill, useWeapon, useWeaponById }`** — no **`buildRollData`**, no prototype patches.
+- For macros/charts that need totals, reference **`actor.system.attributes.*`**, **`actor.system.skills.*`**, and custom skills on **`actor.system.customSkills`** (or call **`game.farkpg.rollSkill(actor, attr, skillId)`**).
+- Small diffs; relative `scripts/` imports; **`node --check`** on edited `.mjs`.

@@ -1,4 +1,4 @@
-/* global foundry, Items */
+/* global foundry */
 
 import { textEditorUx } from "../text-editor-ux.mjs";
 import { useWeapon } from "../weapons.mjs";
@@ -152,9 +152,12 @@ export function registerFarkpgItemSheets() {
     }
   }
 
-  Items.registerSheet("farkpg-znz", FarkpgItemCardSheet, {
+  foundry.documents.collections.Items.registerSheet("farkpg-znz", FarkpgItemCardSheet, {
     types: ["weapon", "consumable", "equipment"],
     makeDefault: true
   });
-  Items.registerSheet("farkpg-znz", FarkpgAbilitySheet, { types: ["ability"], makeDefault: true });
+  foundry.documents.collections.Items.registerSheet("farkpg-znz", FarkpgAbilitySheet, {
+    types: ["ability"],
+    makeDefault: true
+  });
 }

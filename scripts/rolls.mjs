@@ -10,7 +10,8 @@ import {
   extendedSkillRollKey
 } from "./config.mjs";
 
-export function buildRollData(actor) {
+/** Internal pool for @{key} placeholders in Rolls (built from actor.system). */
+function rollDataPool(actor) {
   if (!actor || actor.type !== "character") return {};
   const s = actor.system;
   const attrs = foundry.utils.mergeObject(
@@ -38,7 +39,7 @@ export function buildRollData(actor) {
 
 export async function rollSkill(actor, attrKey, skillKey, options = {}) {
   if (!actor) return;
-  const data = buildRollData(actor);
+  const data = rollDataPool(actor);
   const formula = skillKey ? `1d20 + @${attrKey} + @${extendedSkillRollKey(skillKey)}` : `1d20 + @${attrKey}`;
   const roll = new Roll(formula, data);
   await roll.evaluate();

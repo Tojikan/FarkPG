@@ -4,7 +4,7 @@
     "character": {
       "system": {
         "biography": "",
-        "attributes": { "body": 1, "adroit": 1, "mind": 1 },
+        "attributes": { "body": 3, "adroit": 3, "mind": 3 },
         "skills": {
           "meleeWeapons": 0,
           "block": 0,
