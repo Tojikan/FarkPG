@@ -1,41 +1,132 @@
-/* --- Character sheet --- */
+/* --- Character sheet ---
+   Warm neutral surfaces + readable ink. Overrides Foundry v13 dark-theme tokens
+   (gold text, white-on-grey tables) that leak into ApplicationV2 sheet bodies. */
 .farkpg.sheet.actor {
   min-height: 560px;
+  --fp-ink: #2a231c;
+  --fp-ink-soft: #4a423a;
+  --fp-ink-muted: #5e564d;
+  --fp-surface: #f2ebe2;
+  --fp-surface-2: #ebe3d8;
+  --fp-paper: #fdfaf6;
+  --fp-tab-strip: #ddd2c6;
+  --fp-tab-inactive: #4a4038;
+  --fp-tab-active-bg: #fdfaf6;
+  --fp-tab-active-ink: #2a231c;
+  --fp-border: rgba(42, 35, 28, 0.14);
 }
+
 .farkpg.sheet.actor .window-content {
   overflow: hidden;
-  padding: 0;
+  padding: 0 !important;
+  background: var(--fp-surface);
+  color: var(--fp-ink);
+  --color-text-primary: var(--fp-ink);
+  --color-text-secondary: var(--fp-ink-soft);
+  --color-text-tertiary: var(--fp-ink-muted);
+  --color-text-highlight: var(--fp-ink);
+  --color-text-hyperlink: #3d5a80;
+  --color-heading: var(--fp-ink);
+  --color-form-label: var(--fp-ink-soft);
+  --input-background-color: var(--fp-paper);
+  --input-text-color: var(--fp-ink);
+  --table-row-color-even: transparent;
+  --table-row-color-odd: transparent;
+  --table-header-bg-color: #e3d9ce;
+  --table-header-text-color: var(--fp-ink);
+  --table-header-border-color: var(--fp-border);
 }
-.farkpg.sheet.actor .window-content > form {
+
+.farkpg.sheet.actor .window-content > form,
+.farkpg.sheet.actor .window-content form {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.farkpg.sheet.actor .window-content .farkpg.flexcol {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
 }
 
 .farkpg.sheet.actor .sheet-tabs.farkpg-tabs {
   flex: 0 0 auto;
-  flex-wrap: wrap;
-  margin: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  flex-wrap: nowrap;
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--fp-border);
+  background: var(--fp-tab-strip);
+  justify-content: flex-start !important;
+  align-items: stretch;
+  gap: 0 !important;
 }
 .farkpg.sheet.actor .sheet-tabs.farkpg-tabs > .item {
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 10px;
   border-radius: 4px 4px 0 0;
   margin: 0;
+  color: var(--fp-tab-inactive) !important;
+  -webkit-text-fill-color: var(--fp-tab-inactive);
+  text-decoration: none !important;
+  text-shadow: none !important;
+  font-weight: 600;
+}
+.farkpg.sheet.actor .sheet-tabs.farkpg-tabs > .item:hover {
+  color: var(--fp-tab-active-ink) !important;
+  -webkit-text-fill-color: var(--fp-tab-active-ink);
+  background: rgba(253, 250, 246, 0.45);
 }
 .farkpg.sheet.actor .sheet-tabs.farkpg-tabs > .item.active {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--fp-tab-active-bg) !important;
+  color: var(--fp-tab-active-ink) !important;
+  -webkit-text-fill-color: var(--fp-tab-active-ink);
   font-weight: 700;
-  box-shadow: 0 -1px 0 0 rgba(0, 0, 0, 0.15), 1px 0 0 0 rgba(0, 0, 0, 0.06);
+  text-shadow: none !important;
+  box-shadow: 0 -1px 0 0 var(--fp-border), 1px 0 0 0 rgba(42, 35, 28, 0.06);
 }
 .farkpg-tab-split {
-  flex: 0 0 1px;
+  flex: 0 0 10px;
   align-self: stretch;
-  width: 1px;
+  width: 10px;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.28);
+  position: relative;
+  flex-shrink: 0;
+  background: rgba(42, 35, 28, 0.06);
+}
+.farkpg.sheet.actor .sheet-tabs.farkpg-tabs .farkpg-tab-split::after,
+.farkpg-tab-split::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  top: 8px;
+  bottom: 8px;
+  border-radius: 1px;
+  background: rgba(42, 35, 28, 0.22);
+}
+
+.farkpg.sheet.actor .farkpg-tab-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--fp-surface);
+  color: var(--fp-ink);
 }
 
 .farkpg-tab-shell {
@@ -45,11 +136,62 @@
   flex-direction: column;
 }
 
+/* Body: force readable copy (Core inherits gold / light-on-dark for headings & links) */
+.farkpg.sheet.actor .farkpg-tab-shell :is(h1, h2, h3, h4) {
+  color: var(--fp-ink) !important;
+  -webkit-text-fill-color: var(--fp-ink);
+  text-shadow: none !important;
+}
+.farkpg.sheet.actor .farkpg-tab-shell label {
+  color: var(--fp-ink-soft);
+}
+.farkpg.sheet.actor .farkpg-tab-shell strong.attr-roll {
+  color: var(--fp-ink) !important;
+  -webkit-text-fill-color: var(--fp-ink);
+  cursor: pointer;
+}
+.farkpg.sheet.actor .farkpg-tab-shell .muted {
+  color: var(--fp-ink-muted) !important;
+  -webkit-text-fill-color: var(--fp-ink-muted);
+}
+.farkpg.sheet.actor .farkpg-tab-shell a:not(.item) {
+  color: #3d5a80;
+}
+.farkpg.sheet.actor .farkpg-tab-shell input:not([type="hidden"]),
+.farkpg.sheet.actor .farkpg-tab-shell select,
+.farkpg.sheet.actor .farkpg-tab-shell textarea {
+  color: var(--fp-ink) !important;
+  -webkit-text-fill-color: var(--fp-ink);
+  caret-color: var(--fp-ink) !important;
+  background-color: var(--fp-paper) !important;
+  background-image: none !important;
+  border: 1px solid var(--fp-border) !important;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6) !important;
+  color-scheme: light only;
+}
+.farkpg.sheet.actor .farkpg-tab-shell button:not(.skill-roll):not(.minimal-plus):not(.add-custom-skill) {
+  color: var(--fp-ink) !important;
+  -webkit-text-fill-color: var(--fp-ink);
+  background-color: #f0e9e0 !important;
+  background-image: none !important;
+  border: 1px solid var(--fp-border) !important;
+  box-shadow: 0 1px 2px rgba(42, 35, 28, 0.06) !important;
+  text-shadow: none !important;
+  filter: none !important;
+  border-radius: 4px;
+}
+.farkpg.sheet.actor .farkpg-tab-shell button:not(.skill-roll):not(.minimal-plus):not(.add-custom-skill):hover {
+  background-color: #e8dfd4 !important;
+}
+
 .farkpg-tab-panel {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
   overflow: hidden;
 }
 .farkpg-tab-panel.hidden {
@@ -168,6 +310,7 @@
 .farkpg-body {
   flex: 1;
   min-height: 0;
+  align-items: flex-start;
 }
 .farkpg-sidebar {
   flex: 0 0 30%;
@@ -176,11 +319,12 @@
   flex-shrink: 0;
   box-sizing: border-box;
   padding: 3px 4px;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  background: #f0eef5;
+  border-right: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
+  background: var(--fp-surface-2, #ebe3d8);
   overflow-y: auto;
   overflow-x: hidden;
   font-size: 0.72rem;
+  color: var(--fp-ink, #2a231c);
 }
 
 .farkpg-attrs-list {
@@ -258,7 +402,7 @@
   gap: 3px;
   margin: 1px 0;
 }
-.farkpg-skill-line .skill-roll {
+.farkpg.sheet.actor .farkpg-skill-line .skill-roll {
   flex: 1;
   min-width: 0;
   height: 20px;
@@ -269,30 +413,43 @@
   text-align: left;
   border: 1px solid transparent;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(253, 250, 246, 0.65) !important;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
-.farkpg-skill-line .skill-roll:hover {
-  border-color: #8b7aad;
-  background: rgba(255, 255, 255, 0.85);
+.farkpg.sheet.actor .farkpg-skill-line .skill-roll:hover {
+  border-color: rgba(42, 35, 28, 0.2);
+  background: var(--fp-paper, #fdfaf6) !important;
 }
 
 .farkpg-custom-skill-row {
   gap: 2px;
 }
 
-.farkpg-custom-skill-row .farkpg-custom-roll {
-  flex: 0 0 19px !important;
-  min-width: 19px;
+.farkpg.sheet.actor .farkpg-custom-skill-row .farkpg-custom-roll {
+  flex: 0 0 22px !important;
+  min-width: 22px;
   padding: 0 !important;
   text-align: center;
+  color: var(--fp-ink-muted, #5e564d) !important;
+  background: rgba(253, 250, 246, 0.75) !important;
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14)) !important;
+  border-radius: 3px;
 }
-.farkpg-custom-skill-row .farkpg-custom-roll i {
+.farkpg.sheet.actor .farkpg-custom-skill-row .farkpg-custom-roll:hover {
+  color: var(--fp-ink, #2a231c) !important;
+  background: var(--fp-paper, #fdfaf6) !important;
+}
+.farkpg.sheet.actor .farkpg-custom-skill-row .farkpg-custom-roll i {
   font-size: 0.65rem;
-  opacity: 0.85;
+  color: inherit;
+  opacity: 1;
 }
 .farkpg-custom-name {
   flex: 1;
@@ -354,10 +511,11 @@
 .farkpg-equipped.panel {
   margin-bottom: 16px;
   padding: 8px 10px;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--fp-paper, #fdfaf6);
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(42, 35, 28, 0.06);
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-lined-head {
   display: flex;
@@ -373,6 +531,8 @@
   min-width: 0;
   font-size: 0.92rem;
   font-weight: 700;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 .farkpg-slot-chip {
   flex: 0 0 auto;
@@ -380,9 +540,10 @@
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(107, 90, 140, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(107, 90, 140, 0.08);
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   white-space: nowrap;
+  color: var(--fp-ink-soft, #4a423a);
 }
 .farkpg-section-head:not(.farkpg-lined-head) {
   gap: 6px;
@@ -397,6 +558,7 @@
   height: auto !important;
   line-height: 1.2 !important;
   font-weight: 600;
+  max-width: 40px;
 }
 .create-ability-mini:hover {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
@@ -431,6 +593,7 @@
   min-width: 0;
   font-weight: 600;
   font-size: 0.85rem;
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-equipped-row .eq-type {
   font-size: 0.72rem;
@@ -451,7 +614,8 @@
   min-height: 0;
   gap: 6px;
   padding: 4px 10px;
-  background: #f7f6fa;
+  background: var(--fp-surface, #f2ebe2);
+  color: var(--fp-ink, #2a231c);
 }
 
 .farkpg-inv-header {
@@ -468,6 +632,8 @@
   flex: 1 1 auto;
   font-size: 1rem;
   min-width: 0;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 
 .farkpg-inv-toolbar {
@@ -488,11 +654,14 @@
 .farkpg-config-tab-body {
   padding: 8px 14px;
   overflow-y: auto;
-  background: #f9f9fb;
+  background: var(--fp-surface, #f2ebe2);
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-config-title {
   margin: 0 0 4px;
   font-size: 1rem;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 .farkpg-config-hint {
   margin: 0 0 12px;
@@ -501,13 +670,15 @@
 .farkpg-config-fields {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   border-radius: 6px;
-  background: #fff;
+  background: var(--fp-paper, #fdfaf6);
 }
 .farkpg-config-fields legend {
   font-size: 0.82rem;
   font-weight: 600;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 .farkpg-config-field {
   display: flex;
@@ -532,9 +703,73 @@
   min-height: 120px;
   margin-top: 0;
   overflow: auto;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   border-radius: 4px;
-  background: #fff;
+  background: var(--fp-paper, #fdfaf6);
+}
+
+/* Core v13: body.game .app table — dark overlay + white text on rows; reset for stash table */
+body.game table.farkpg-item-table.standard-table,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table {
+  background: var(--fp-paper, #fdfaf6) !important;
+  background-color: var(--fp-paper, #fdfaf6) !important;
+  background-image: none !important;
+  margin: 0 !important;
+  border: none !important;
+  color: var(--fp-ink, #2a231c) !important;
+}
+
+body.game table.farkpg-item-table.standard-table thead,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table thead {
+  background: var(--fp-surface-2, #ebe3d8) !important;
+  background-image: none !important;
+  color: var(--fp-ink, #2a231c) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14)) !important;
+  text-shadow: none !important;
+}
+
+body.game table.farkpg-item-table.standard-table thead th,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table thead th {
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
+  border: none !important;
+  padding: 8px 4px !important;
+}
+
+body.game table.farkpg-item-table.standard-table tbody tr,
+body.game table.farkpg-item-table.standard-table tbody tr:nth-child(even),
+body.game table.farkpg-item-table.standard-table tbody tr:nth-child(odd),
+.farkpg.sheet.actor table.farkpg-item-table.standard-table tbody tr,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table tbody tr:nth-child(even),
+.farkpg.sheet.actor table.farkpg-item-table.standard-table tbody tr:nth-child(odd) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--fp-ink, #2a231c) !important;
+}
+
+body.game table.farkpg-item-table.standard-table tbody tr:hover {
+  background: rgba(42, 35, 28, 0.06) !important;
+}
+
+body.game table.farkpg-item-table.standard-table tbody td,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table tbody td {
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
+  border: none !important;
+}
+
+body.game table.farkpg-item-table.standard-table .farkpg-inv-row-actions button,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table .farkpg-inv-row-actions button {
+  color: var(--fp-ink-muted, #5e564d) !important;
+  background: rgba(253, 250, 246, 0.9) !important;
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14)) !important;
+}
+
+body.game table.farkpg-item-table.standard-table .farkpg-inv-row-actions button:hover,
+.farkpg.sheet.actor table.farkpg-item-table.standard-table .farkpg-inv-row-actions button:hover {
+  color: var(--fp-ink, #2a231c) !important;
+  background: var(--fp-paper, #fdfaf6) !important;
 }
 
 .farkpg-item-table.standard-table {
@@ -571,6 +806,7 @@
   flex: 1;
   min-width: 0;
   font-weight: 600;
+  color: var(--fp-ink, #2a231c);
 }
 
 .farkpg-item-table.standard-table .col-actions,
@@ -646,7 +882,8 @@
 .farkpg-main {
   flex: 1 1 70%;
   min-width: 0;
-  background: #fafafa;
+  background: var(--fp-surface-raised, #faf7f2);
+  color: var(--fp-ink, #2a231c);
 }
 
 .farkpg-main-scroll {
@@ -658,6 +895,8 @@
 .farkpg-section-head h2 {
   margin: 0;
   font-size: 1.1rem;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 .farkpg-inv-toolbar .layout-btn {
   font-size: 0.75rem;
@@ -755,9 +994,10 @@
   height: 96px;
 }
 .farkpg-empty {
-  opacity: 0.6;
+  opacity: 1;
   font-style: italic;
   grid-column: 1 / -1;
+  color: var(--fp-ink-muted, #5e564d);
 }
 .farkpg-abilities {
   list-style: none;
@@ -771,10 +1011,11 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--fp-paper, #fdfaf6);
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(42, 35, 28, 0.05);
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-ability-row .ab-icon {
   width: 36px;
@@ -785,26 +1026,53 @@
 .farkpg-ability-row .ab-name {
   flex: 1;
   font-weight: 600;
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-ability-row .ab-meta {
   font-size: 0.8rem;
   opacity: 0.75;
 }
 .farkpg-bio {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14));
   margin-top: 8px;
   padding: 8px 0 12px;
   flex-shrink: 0;
   min-height: 160px;
   background: transparent;
+  color: var(--fp-ink, #2a231c);
 }
 .farkpg-bio h3 {
   margin: 0 0 6px;
   font-size: 0.95rem;
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
 }
 
 .farkpg.sheet.actor .farkpg-bio .farkpg-bio-editor {
   min-height: 120px;
+}
+
+.farkpg.sheet.actor .farkpg-bio .editor,
+.farkpg.sheet.actor .farkpg-bio .editor-content {
+  color: var(--fp-ink, #2a231c) !important;
+  -webkit-text-fill-color: var(--fp-ink, #2a231c);
+}
+
+.farkpg.sheet.actor .farkpg-bio .editor .editor-edit {
+  color: var(--fp-ink, #2a231c) !important;
+  background: #f0e9e0 !important;
+  border: 1px solid var(--fp-border, rgba(42, 35, 28, 0.14)) !important;
+  text-shadow: none !important;
+}
+
+body.game .application.sheet.farkpg.actor nav.sheet-tabs.farkpg-tabs.tabs {
+  margin-block: 0 !important;
+}
+
+/* Item sheets: warm frame around dark cards */
+.farkpg.sheet.item .window-content {
+  padding: 0;
+  background: #e8dfd4;
 }
 
 /* --- Item card sheets --- */
@@ -924,8 +1192,8 @@
 /* --- Ability sheet (flat) --- */
 .farkpg-ability-sheet {
   padding: 12px;
-  background: #eceaf2;
-  color: #222;
+  background: #ebe3d8;
+  color: #2a231c;
   border-radius: 8px;
 }
 .farkpg-ability-sheet .ability-header {
