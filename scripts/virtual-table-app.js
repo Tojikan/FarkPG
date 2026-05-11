@@ -241,6 +241,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             data.selectedCount = 0;
             data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
             data.rollCountInput = 6;
+            data.freeRolls = 0;
             data.showRerollSelected = false;
             data.canRerollAllRolling = false;
             return data;
@@ -277,6 +278,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             const countFromBoard = board.tableDice?.length ?? 0;
             data.rollCountInput = countFromBoard > 0 ? countFromBoard : defaultCount;
         }
+        data.freeRolls = Number(board.freeRolls ?? 0);
         data.showRerollSelected = rollInProgress && data.canMutate && selectedArr.length > 0;
         data.canRerollAllRolling = rollInProgress && data.canMutate && board.tableDice.length > 0;
 
@@ -317,6 +319,11 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         root.querySelector("[data-action='reroll-selected']")?.addEventListener(
             "click",
             () => void this._rerollSelected(),
+            { signal },
+        );
+        root.querySelector('[name="vdt-free-rolls"]')?.addEventListener(
+            "change",
+            (ev) => this._onFreeRollsInputChange(ev),
             { signal },
         );
         root.querySelectorAll(".vdt-board-tab").forEach((btn) => {
@@ -459,6 +466,10 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
                     if (this.selectedDieIds.has(id)) void this._rerollSelected();
                     else void this._rerollDieIdsFromIds([id]);
+                    // Free rolls are *only* spent by this gesture -- bulk
+                    // operations like "Reroll Board" go through the same
+                    // `rerollDieIds` mutation but don't decrement the pool.
+                    this._consumeFreeRoll();
                 },
                 { signal },
             );
@@ -643,6 +654,43 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         });
     }
 
+    /**
+     * Commit a manual edit of the free-rolls input.
+     * @param {Event} ev
+     */
+    _onFreeRollsInputChange(ev) {
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
+        const raw = Number(ev.target?.value);
+        const value = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+        commitMutation({
+            type: "setFreeRolls",
+            actorUserId: game.user.id,
+            targetBoardId: boardId,
+            payload: { value },
+        });
+    }
+
+    /**
+     * Spend one free roll from the active board's pool. No-op when the pool
+     * is already empty or the user can't mutate the target board. Called
+     * once per double-click re-roll gesture (regardless of how many dice
+     * the gesture ends up re-rolling).
+     */
+    _consumeFreeRoll() {
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
+        const board = readBoard(getSharedState(), boardId);
+        const current = Number(board?.freeRolls ?? 0);
+        if (current <= 0) return;
+        commitMutation({
+            type: "setFreeRolls",
+            actorUserId: game.user.id,
+            targetBoardId: boardId,
+            payload: { value: Math.max(0, current - 1) },
+        });
+    }
+
     _onEndRoll() {
         const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
@@ -748,9 +796,16 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
      * Programmatic entry: ensure a roll is in progress on the caller's own
      * board (GM private for GMs), then immediately roll `count` dice of
      * `faces` sides. Invoked from `api.openStartRollAndRoll(...)`.
-     * @param {{ count?: number; faces?: number }} payload
+     *
+     * `freeRolls` (optional) seeds the board's free-rolls pool so callers can
+     * communicate "I rolled X dice but only N fit on the table -- the player
+     * has (X - N) free re-rolls available via double-click". When the caller
+     * triggers this on an already-running roll, the pool is *replaced* rather
+     * than added to, matching the "this is a brand new attempt" semantics.
+     *
+     * @param {{ count?: number; faces?: number; freeRolls?: number }} payload
      */
-    async apiStartRollAndRoll({ count = 1, faces = DEFAULT_FACES } = {}) {
+    async apiStartRollAndRoll({ count = 1, faces = DEFAULT_FACES, freeRolls = 0 } = {}) {
         const isGm = !!game.user.isGM;
         const targetId = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
         if (!canMutateBoard(game.user.id, targetId, isGm)) return;
@@ -761,13 +816,23 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             await this.render(true);
         }
 
+        const fr = Math.max(0, Math.floor(Number(freeRolls) || 0));
         const board = readBoard(getSharedState(), targetId);
         if (!board.rollInProgress) {
             commitMutation({
                 type: "startRoll",
                 actorUserId: game.user.id,
                 targetBoardId: targetId,
-                payload: { faces },
+                payload: { faces, freeRolls: fr },
+            });
+        } else {
+            // A roll is already running -- update the free-rolls pool to match
+            // the new attempt so the player isn't stuck with stale values.
+            commitMutation({
+                type: "setFreeRolls",
+                actorUserId: game.user.id,
+                targetBoardId: targetId,
+                payload: { value: fr },
             });
         }
 

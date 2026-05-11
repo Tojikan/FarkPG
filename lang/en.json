@@ -6,6 +6,8 @@
     "virtual-dice-table.boardPickerAria": "Board picker",
     "virtual-dice-table.spectatorHint": "You are viewing another player's board; switch to your own tab to roll or change dice.",
     "virtual-dice-table.count": "Count",
+    "virtual-dice-table.freeRolls": "Free Rolls",
+    "virtual-dice-table.freeRollsHint": "Free re-rolls available. Each double-click re-roll consumes one (down to 0).",
     "virtual-dice-table.dieType": "Die",
     "virtual-dice-table.rollNew": "Roll",
     "virtual-dice-table.rerollAllRolling": "Reroll Board",

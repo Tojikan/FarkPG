@@ -82,6 +82,9 @@
                 title="{{vdtL10n 'rollNew'}}"><i class="fa-solid fa-dice"></i> {{vdtL10n "rollNew"}}</button>
             <button type="button" class="vdt-btn vdt-btn-reroll-all" data-action="reroll-all-rolling" {{#unless canRerollAllRolling}}disabled{{/unless}}
                 title="{{vdtL10n 'rerollAllRolling'}}"><i class="fa-solid fa-rotate"></i> {{vdtL10n "rerollAllRolling"}}</button>
+            <label class="vdt-field vdt-field-free-rolls" title="{{vdtL10n 'freeRollsHint'}}">{{vdtL10n "freeRolls"}}
+                <input type="number" name="vdt-free-rolls" min="0" step="1" value="{{freeRolls}}" {{#unless canMutate}}disabled{{/unless}} />
+            </label>
         </div>
         {{#if canMutate}}
         <div class="vdt-toolbar-end">
