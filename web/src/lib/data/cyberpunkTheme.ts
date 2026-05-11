@@ -49,7 +49,7 @@ export const neonCityTheme: Theme = {
 				{ id: 'stealth', label: 'Stealth', attribute: 'dexterity', description: 'Sneaking, tailing, staying unseen' },
 				{ id: 'lockpicking', label: 'Lockpicking', attribute: 'dexterity', description: 'Locks, doors, cuffs, quick entry' },
 				{ id: 'dangerSense', label: 'Danger Sense', attribute: 'perception', description: 'Ambush tells, bad vibes, imminent trouble' },
-				{ id: 'powerStructures', label: 'Power Structure Knowledge', attribute: 'intelligence', description: 'Corpos, gangs, syndicates, politics, who owns what' }
+				{ id: 'intelGathering', label: 'Intel Gathering', attribute: 'intelligence', description: 'Able to research and gather information' }
 			]
 		},
 
@@ -70,13 +70,13 @@ export const neonCityTheme: Theme = {
 
 	// Luck replaces Fate in Neon City
 	abilities: [
-		{ id: 'luckyBreak', label: 'Lucky Break', cost: 2, description: 'Spend 2 Luck: reroll all dice once (first roll only).' },
-		{ id: 'overclock', label: 'Overclock', cost: 2, description: 'Spend 2 Luck: roll one extra die on your next action (max 6 dice total).' },
+		{ id: 'luckyBreak', label: 'Lucky Break', cost: 3, description: 'Spend 2 Luck: reroll all dice once (first roll only).' },
+		{ id: 'overclock', label: 'Overclock', cost: 1, description: 'Spend 2 Luck: roll one extra die on your next action (max 6 dice total).' },
 		{ id: 'ghostProtocol', label: 'Ghost Protocol', cost: 2, description: 'Spend 2 Luck: ignore one detection/alert consequence from a Tech or Street action.' },
 		{ id: 'wiredReflexes', label: 'Wired Reflexes', cost: 2, description: 'Spend 2 Luck: treat a failed Dodge or Block as a partial success (reduced consequence).' },
-		{ id: 'deadManSwitch', label: 'Dead Man’s Switch', cost: 3, description: 'Spend 4 Luck: when you would go down, stay up at 1 Health instead (once per session).' },
-		{ id: 'secondWind', label: 'Second Wind', cost: 2, description: 'Once per session: restore 2 Luck (cannot exceed max).' },
-		{ id: 'loadedDice', label: 'Loaded Dice', cost: 6, description: 'Once per session: change one die to a number of your choice (costs 10 Luck to use).' }
+		{ id: 'deadManSwitch', label: 'Dead Man’s Switch', cost: 5, description: 'Spend 4 Luck: when you would go down, stay up at 1 Health instead (once per session).' },
+		{ id: 'secondWind', label: 'Second Wind', cost: 3, description: 'Once per long rest: restore 4 Luck (cannot exceed max).' },
+		{ id: 'loadedDice', label: 'Loaded Dice', cost: 5, description: 'Once per session: change one die to a number of your choice (costs 10 Luck to use).' }
 	],
 	enhancements: [
 		{
@@ -119,7 +119,7 @@ export const neonCityTheme: Theme = {
 			id: 'painEditor',
 			label: 'Pain Editor',
 			cost: 3,
-			description: 'Ignore one “stun/pain” style penalty per scene; Endurance checks vs shock are easier.'
+			description: 'Ignore one debuff or penalty per longn rest'
 		},
 		{
 			id: 'voiceMask',
