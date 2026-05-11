@@ -631,3 +631,22 @@
     filter: brightness(1.12);
     border-color: #7a2828;
 }
+
+/* Chat message: open Virtual Dice Table on a tab */
+#chat-log .vdt-chat-opener {
+    margin: 0.15rem 0;
+}
+
+#chat-log button.vdt-chat-open-board {
+    border: 1px solid var(--color-border-light-primary, #444);
+    background: var(--color-bg-option-unselected, #222);
+    color: var(--color-text-primary, #eee);
+    border-radius: 4px;
+    padding: 0.25rem 0.55rem;
+    cursor: pointer;
+    font-size: var(--font-size-12, 12px);
+}
+
+#chat-log button.vdt-chat-open-board:hover {
+    filter: brightness(1.12);
+}

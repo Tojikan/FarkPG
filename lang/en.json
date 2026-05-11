@@ -22,5 +22,10 @@
     "virtual-dice-table.overviewEmpty": "No rolls in progress.",
     "virtual-dice-table.startRoll": "Start roll",
     "virtual-dice-table.endRoll": "End roll",
-    "virtual-dice-table.rollNotStarted": "Roll not started yet."
+    "virtual-dice-table.rollNotStarted": "Roll not started yet.",
+    "virtual-dice-table.apiInvalidBoard": "That board does not exist or you cannot open it.",
+    "virtual-dice-table.chatOpenGmPrivateAsOverview": "Open dice table (overview)",
+    "virtual-dice-table.chatOpenSharedBoard": "Open shared dice table",
+    "virtual-dice-table.chatOpenMyBoard": "Open my dice table",
+    "virtual-dice-table.chatOpenUserBoard": "Open {name}'s dice table"
 }

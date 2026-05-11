@@ -48,6 +48,10 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     constructor(options = {}) {
         super(options);
+        const initBid = options?.initialBoardId;
+        /** @type {string | null} First-open tab override from `api.openVirtualTable({ boardId })`. */
+        this._pendingInitialBoardId =
+            initBid != null && String(initBid).trim().length ? String(initBid).trim() : null;
         /** @type {string | null} */
         this.viewBoardId = null;
         this._viewInitialized = false;
@@ -158,7 +162,17 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const isGm = !!game.user.isGM;
 
         if (!this._viewInitialized) {
-            this.viewBoardId = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
+            const pending = this._pendingInitialBoardId;
+            let chosen;
+            if (pending === GM_PRIVATE_BOARD_ID) {
+                chosen = OVERVIEW_TAB_ID;
+            } else if (pending && canViewBoard(pending, isGm)) {
+                chosen = pending;
+            } else {
+                chosen = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
+            }
+            this.viewBoardId = chosen;
+            this._pendingInitialBoardId = null;
             this._viewInitialized = true;
             if (!isGm && !this._requestedFullSync) {
                 this._requestedFullSync = true;
@@ -593,6 +607,29 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 window.setTimeout(done, fallbackMs);
             }
         });
+    }
+
+    /**
+     * Switch the window to a tab. GM private id opens **Overview** (read-only aggregate).
+     * @param {string} boardId
+     * @returns {boolean}
+     */
+    navigateToBoard(boardId) {
+        const id = String(boardId ?? "").trim();
+        const isGm = !!game.user.isGM;
+        if (!id) return false;
+        if (id === GM_PRIVATE_BOARD_ID) {
+            this.viewBoardId = OVERVIEW_TAB_ID;
+            this.selectedDieIds.clear();
+            return true;
+        }
+        if (!canViewBoard(id, isGm)) {
+            ui.notifications.warn(game.i18n.localize(`${MODULE_ID}.apiInvalidBoard`));
+            return false;
+        }
+        this.viewBoardId = id;
+        this.selectedDieIds.clear();
+        return true;
     }
 
     _onStartRoll() {
