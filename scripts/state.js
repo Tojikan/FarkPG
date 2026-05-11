@@ -1,9 +1,9 @@
-import { DEFAULT_FACES, GM_PRIVATE_BOARD_ID, MODULE_ID } from "./constants.js";
+import { DEFAULT_FACES, GM_PRIVATE_BOARD_ID, MODULE_ID, SHARED_BOARD_ID } from "./constants.js";
 import { canMutateBoard } from "./permissions.js";
 
-/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[] }} */
+/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[]; rollInProgress: boolean }} */
 export function emptyBoard() {
-    return { faces: DEFAULT_FACES, tableDice: [], zoneRows: [] };
+    return { faces: DEFAULT_FACES, tableDice: [], zoneRows: [], rollInProgress: false };
 }
 
 /** @returns {object} */
@@ -12,6 +12,7 @@ export function createInitialSharedState() {
         version: 2,
         playerBoards: {},
         gmPrivateBoard: emptyBoard(),
+        sharedBoard: emptyBoard(),
     };
 }
 
@@ -26,6 +27,7 @@ export function migrateBoard(board) {
         });
     }
     delete board.zoneDice;
+    if (typeof board.rollInProgress !== "boolean") board.rollInProgress = false;
 }
 
 /**
@@ -37,6 +39,11 @@ export function ensureBoard(state, boardId) {
         migrateBoard(state.gmPrivateBoard);
         return state.gmPrivateBoard;
     }
+    if (boardId === SHARED_BOARD_ID) {
+        if (!state.sharedBoard) state.sharedBoard = emptyBoard();
+        migrateBoard(state.sharedBoard);
+        return state.sharedBoard;
+    }
     if (!state.playerBoards[boardId]) {
         state.playerBoards[boardId] = emptyBoard();
     }
@@ -46,10 +53,10 @@ export function ensureBoard(state, boardId) {
 
 /** Read-only view for UI; migrates legacy structures in place once. */
 export function readBoard(state, boardId) {
-    const board =
-        boardId === GM_PRIVATE_BOARD_ID
-            ? state.gmPrivateBoard
-            : state.playerBoards[boardId] ?? emptyBoard();
+    let board;
+    if (boardId === GM_PRIVATE_BOARD_ID) board = state.gmPrivateBoard;
+    else if (boardId === SHARED_BOARD_ID) board = state.sharedBoard ?? emptyBoard();
+    else board = state.playerBoards[boardId] ?? emptyBoard();
     migrateBoard(board);
     return board;
 }
@@ -94,6 +101,10 @@ export function sortAllBoardsInState(state) {
     if (!state?.gmPrivateBoard || !state.playerBoards) return;
     migrateBoard(state.gmPrivateBoard);
     sortBoardDice(state.gmPrivateBoard);
+    if (state.sharedBoard) {
+        migrateBoard(state.sharedBoard);
+        sortBoardDice(state.sharedBoard);
+    }
     for (const b of Object.values(state.playerBoards)) {
         migrateBoard(b);
         sortBoardDice(b);
@@ -141,8 +152,24 @@ export function applySocketMessage(state, msg) {
     const next = foundry.utils.duplicate(state);
 
     switch (msg.type) {
+        case "startRoll": {
+            const board = ensureBoard(next, msg.targetBoardId);
+            if (board.rollInProgress) return null;
+            board.rollInProgress = true;
+            return next;
+        }
+        case "endRoll": {
+            const board = ensureBoard(next, msg.targetBoardId);
+            if (!board.rollInProgress) return null;
+            board.rollInProgress = false;
+            board.tableDice = [];
+            board.zoneRows = [];
+            board.faces = DEFAULT_FACES;
+            return next;
+        }
         case "rollNew": {
             const board = ensureBoard(next, msg.targetBoardId);
+            if (!board.rollInProgress) return null;
             const payload = msg.payload ?? {};
             if (Array.isArray(payload.dice)) {
                 const f = [4, 6, 8, 10, 12, 20].includes(Number(payload.faces))
@@ -168,6 +195,7 @@ export function applySocketMessage(state, msg) {
         }
         case "rerollAll": {
             const board = ensureBoard(next, msg.targetBoardId);
+            if (!board.rollInProgress) return null;
             const updates = msg.payload?.updates;
             if (Array.isArray(updates)) {
                 const map = new Map(updates.map((u) => [String(u.id), Number(u.value)]));
@@ -184,6 +212,7 @@ export function applySocketMessage(state, msg) {
         }
         case "rerollDieIds": {
             const board = ensureBoard(next, msg.targetBoardId);
+            if (!board.rollInProgress) return null;
             const updates = msg.payload?.updates;
             if (Array.isArray(updates)) {
                 const map = new Map(updates.map((u) => [String(u.id), Number(u.value)]));
@@ -214,6 +243,7 @@ export function applySocketMessage(state, msg) {
             const to = msg.payload?.to;
             if (to !== "table" && to !== "zone") return null;
             const board = ensureBoard(next, msg.targetBoardId);
+            if (!board.rollInProgress) return null;
             const moving = collectAndRemoveDice(board, ids);
             if (!moving.length) return null;
 
@@ -240,11 +270,10 @@ export function applySocketMessage(state, msg) {
             sortBoardDice(board);
             return next;
         }
-        case "resetBoard": {
+        case "resetScore": {
             const board = ensureBoard(next, msg.targetBoardId);
-            board.tableDice = [];
+            if (!board.rollInProgress) return null;
             board.zoneRows = [];
-            if (msg.payload?.resetFaces) board.faces = DEFAULT_FACES;
             return next;
         }
         default:

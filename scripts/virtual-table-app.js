@@ -1,4 +1,10 @@
-import { DEFAULT_FACES, GM_PRIVATE_BOARD_ID, MODULE_ID } from "./constants.js";
+import {
+    DEFAULT_FACES,
+    GM_PRIVATE_BOARD_ID,
+    MODULE_ID,
+    OVERVIEW_TAB_ID,
+    SHARED_BOARD_ID,
+} from "./constants.js";
 import { evaluateNdX } from "./foundry-rolls.js";
 import { canMutateBoard, canViewBoard } from "./permissions.js";
 import { readBoard } from "./state.js";
@@ -66,8 +72,75 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
      */
     queueRollAnimation(targetBoardId, ids) {
         if (!ids?.length || targetBoardId !== (this.viewBoardId ?? "")) return;
+        if (this.viewBoardId === OVERVIEW_TAB_ID) return;
         if (!this._pendingRollAnimIds) this._pendingRollAnimIds = new Set();
         for (const id of ids) this._pendingRollAnimIds.add(id);
+    }
+
+    /** @returns {string | null} */
+    _targetBoardIdForMutation() {
+        const id = this.viewBoardId;
+        if (!id || id === OVERVIEW_TAB_ID) return null;
+        return id;
+    }
+
+    /**
+     * Boards with an active roll (read-only snapshot for overview).
+     * @param {object} shared
+     * @param {boolean} isGm
+     */
+    _overviewPanels(shared, isGm) {
+        /** @type {object[]} */
+        const panels = [];
+        const users = game.users.contents
+            .filter((u) => u.active)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        for (const u of users) {
+            if (!canViewBoard(u.id, isGm)) continue;
+            const b = readBoard(shared, u.id);
+            if (!b.rollInProgress) continue;
+            panels.push({
+                boardId: u.id,
+                label: u.name,
+                faces: b.faces,
+                tableDice: b.tableDice.map((d) => ({ ...d })),
+                zoneRows: b.zoneRows.map((r) => ({
+                    id: r.id,
+                    dice: r.dice.map((d) => ({ ...d })),
+                })),
+            });
+        }
+        {
+            const b = readBoard(shared, SHARED_BOARD_ID);
+            if (b.rollInProgress) {
+                panels.push({
+                    boardId: SHARED_BOARD_ID,
+                    label: game.i18n.localize(`${MODULE_ID}.sharedBoard`),
+                    faces: b.faces,
+                    tableDice: b.tableDice.map((d) => ({ ...d })),
+                    zoneRows: b.zoneRows.map((r) => ({
+                        id: r.id,
+                        dice: r.dice.map((d) => ({ ...d })),
+                    })),
+                });
+            }
+        }
+        if (isGm) {
+            const b = readBoard(shared, GM_PRIVATE_BOARD_ID);
+            if (b.rollInProgress) {
+                panels.push({
+                    boardId: GM_PRIVATE_BOARD_ID,
+                    label: game.i18n.localize(`${MODULE_ID}.gmPrivateBoard`),
+                    faces: b.faces,
+                    tableDice: b.tableDice.map((d) => ({ ...d })),
+                    zoneRows: b.zoneRows.map((r) => ({
+                        id: r.id,
+                        dice: r.dice.map((d) => ({ ...d })),
+                    })),
+                });
+            }
+        }
+        return panels;
     }
 
     async close(options = {}) {
@@ -97,18 +170,41 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             .filter((u) => u.active)
             .sort((a, b) => a.name.localeCompare(b.name));
 
-        const boardTabs = users.map((u) => ({
+        const overviewTab = {
+            id: OVERVIEW_TAB_ID,
+            label: game.i18n.localize(`${MODULE_ID}.overviewTab`),
+            isGmPrivate: false,
+            isOverview: true,
+            isShared: false,
+            active: this.viewBoardId === OVERVIEW_TAB_ID,
+        };
+
+        const userTabs = users.map((u) => ({
             id: u.id,
             label: u.name,
             isGmPrivate: false,
+            isOverview: false,
+            isShared: false,
             active: this.viewBoardId === u.id,
         }));
 
+        /** @type {object[]} */
+        const boardTabs = [overviewTab, ...userTabs];
+        boardTabs.push({
+            id: SHARED_BOARD_ID,
+            label: game.i18n.localize(`${MODULE_ID}.sharedBoard`),
+            isGmPrivate: false,
+            isOverview: false,
+            isShared: true,
+            active: this.viewBoardId === SHARED_BOARD_ID,
+        });
         if (isGm) {
             boardTabs.push({
                 id: GM_PRIVATE_BOARD_ID,
                 label: game.i18n.localize(`${MODULE_ID}.gmPrivateBoard`),
                 isGmPrivate: true,
+                isOverview: false,
+                isShared: false,
                 active: this.viewBoardId === GM_PRIVATE_BOARD_ID,
             });
         }
@@ -116,11 +212,34 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const viewId = this.viewBoardId ?? game.user.id;
         const safeViewId = canViewBoard(viewId, isGm) ? viewId : game.user.id;
 
+        if (safeViewId === OVERVIEW_TAB_ID) {
+            data.boardTabs = boardTabs;
+            data.viewBoardId = OVERVIEW_TAB_ID;
+            data.showOverview = true;
+            data.overviewPanels = this._overviewPanels(shared, isGm);
+            data.rollInProgress = false;
+            data.tableDice = [];
+            data.zoneRows = [];
+            data.faces = DEFAULT_FACES;
+            data.canMutate = false;
+            data.spectatorHint = false;
+            data.isGm = isGm;
+            data.selectedCount = 0;
+            data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
+            data.showRerollSelected = false;
+            data.canRerollAllRolling = false;
+            return data;
+        }
+
         const board = readBoard(shared, safeViewId);
         const selectedArr = [...this.selectedDieIds];
+        const rollInProgress = !!board.rollInProgress;
 
         data.boardTabs = boardTabs;
         data.viewBoardId = safeViewId;
+        data.showOverview = false;
+        data.overviewPanels = [];
+        data.rollInProgress = rollInProgress;
         data.tableDice = board.tableDice.map((d) => ({
             ...d,
             selected: this.selectedDieIds.has(d.id),
@@ -134,12 +253,12 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         }));
         data.faces = board.faces;
         data.canMutate = canMutateBoard(game.user.id, safeViewId, isGm);
-        data.spectatorHint = !data.canMutate;
+        data.spectatorHint = rollInProgress && !data.canMutate;
         data.isGm = isGm;
         data.selectedCount = selectedArr.length;
         data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
-        data.showRerollSelected = data.canMutate && selectedArr.length > 0;
-        data.canRerollAllRolling = data.canMutate && board.tableDice.length > 0;
+        data.showRerollSelected = rollInProgress && data.canMutate && selectedArr.length > 0;
+        data.canRerollAllRolling = rollInProgress && data.canMutate && board.tableDice.length > 0;
 
         return data;
     }
@@ -154,6 +273,17 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const { signal } = this._abortController;
         const root = this.element;
 
+        root.querySelector("[data-action='start-roll']")?.addEventListener(
+            "click",
+            () => this._onStartRoll(),
+            { signal },
+        );
+        root.querySelectorAll("[data-action='end-roll']").forEach((btn) =>
+            btn.addEventListener("click", () => this._onEndRoll(), { signal }),
+        );
+        root.querySelectorAll("[data-action='reset-score']").forEach((btn) =>
+            btn.addEventListener("click", () => this._onResetScore(), { signal }),
+        );
         root.querySelector("[data-action='roll-new']")?.addEventListener(
             "click",
             () => void this._onRollNew(),
@@ -169,12 +299,6 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             () => void this._rerollSelected(),
             { signal },
         );
-        root.querySelector("[data-action='reset-board']")?.addEventListener(
-            "click",
-            () => this._onResetBoard(),
-            { signal },
-        );
-
         root.querySelectorAll(".vdt-board-tab").forEach((btn) => {
             btn.addEventListener(
                 "click",
@@ -207,7 +331,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         tableSurface?.addEventListener(
             "pointerdown",
             (ev) => {
-                if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
+                if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
                 if (ev.button !== 0) return;
                 if (ev.target.closest?.(".vdt-die")) return;
                 ev.preventDefault();
@@ -270,7 +394,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     ev.stopPropagation();
                     const id = dieEl.dataset.dieId;
                     if (!id) return;
-                    if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
+                    if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
                     if (ev.detail > 1) return;
 
                     const ctrl = !!(ev.ctrlKey || ev.metaKey);
@@ -312,7 +436,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     }
                     const id = dieEl.dataset.dieId;
                     if (!id) return;
-                    if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
+                    if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
                     if (this.selectedDieIds.has(id)) void this._rerollSelected();
                     else void this._rerollDieIdsFromIds([id]);
                 },
@@ -325,12 +449,15 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     const id = dieEl.dataset.dieId ?? "";
                     const dt = ev.dataTransfer;
                     if (!dt || !id) return;
+                    if (!this._targetBoardIdForMutation()) return;
                     const primaryRegion = dieEl.dataset.region ?? "";
                     const shell = dieEl.closest(".vdt-root") ?? root;
                     /** @type {string[]} */
                     let ids = [id];
                     if (this.selectedDieIds.has(id) && this.selectedDieIds.size > 1) {
-                        const board = readBoard(getSharedState(), this.viewBoardId ?? "");
+                        const bid = this._targetBoardIdForMutation();
+                        if (!bid) return;
+                        const board = readBoard(getSharedState(), bid);
                         const onBoard = new Set([
                             ...board.tableDice.map((d) => d.id),
                             ...board.zoneRows.flatMap((r) => r.dice.map((d) => d.id)),
@@ -380,7 +507,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 if (!dropEl) return;
                 ev.preventDefault();
                 ev.stopPropagation();
-                const can = canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM);
+                const bid = this._targetBoardIdForMutation();
+                const can = !!bid && canMutateBoard(game.user.id, bid, game.user.isGM);
                 ev.dataTransfer.dropEffect = can ? "move" : "none";
             },
             dragOpts,
@@ -396,7 +524,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 const ids = readDragDieIds(ev.dataTransfer);
                 const targetRegion = dropEl.dataset.dropRegion;
                 if (!ids.length || (targetRegion !== "table" && targetRegion !== "zone")) return;
-                if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
+                if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
                 const srcDie = findVdtDie(root, ids[0]);
                 const actualFrom = srcDie?.dataset.region;
                 if (!actualFrom) return;
@@ -461,8 +589,59 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         });
     }
 
+    _onStartRoll() {
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
+        commitMutation({
+            type: "startRoll",
+            actorUserId: game.user.id,
+            targetBoardId: boardId,
+            payload: {},
+        });
+    }
+
+    _onEndRoll() {
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
+        if (
+            commitMutation({
+                type: "endRoll",
+                actorUserId: game.user.id,
+                targetBoardId: boardId,
+                payload: {},
+            })
+        ) {
+            this.selectedDieIds.clear();
+            void this.render(true);
+        }
+    }
+
+    _onResetScore() {
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
+        if (
+            !commitMutation({
+                type: "resetScore",
+                actorUserId: game.user.id,
+                targetBoardId: boardId,
+                payload: {},
+            })
+        ) {
+            return;
+        }
+        const b = readBoard(getSharedState(), boardId);
+        const onBoard = new Set([
+            ...b.tableDice.map((d) => d.id),
+            ...b.zoneRows.flatMap((r) => r.dice.map((d) => d.id)),
+        ]);
+        for (const id of [...this.selectedDieIds]) {
+            if (!onBoard.has(id)) this.selectedDieIds.delete(id);
+        }
+        void this.render(true);
+    }
+
     async _onRerollAllRolling() {
-        const boardId = this.viewBoardId;
+        const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
         const board = readBoard(getSharedState(), boardId);
         const ids = board.tableDice.map((d) => d.id);
@@ -471,13 +650,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     async _onRollNew() {
-        const boardId = this.viewBoardId;
-        if (
-            !boardId ||
-            !canMutateBoard(game.user.id, boardId, game.user.isGM)
-        ) {
-            return;
-        }
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
         const root = this.element;
         const count = Number(root.querySelector('[name="vdt-count"]')?.value ?? 1);
         const facesRaw = Number(root.querySelector('[name="vdt-faces"]')?.value ?? 6);
@@ -517,13 +691,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
      * @returns {Promise<boolean>}
      */
     async _rerollDieIdsFromIds(ids) {
-        const boardId = this.viewBoardId;
-        if (
-            !boardId ||
-            !canMutateBoard(game.user.id, boardId, game.user.isGM)
-        ) {
-            return false;
-        }
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return false;
         const board = readBoard(getSharedState(), boardId);
         const faces = board.faces || DEFAULT_FACES;
         const idSet = new Set(ids);
@@ -567,8 +736,10 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     async _rerollSelected() {
         const ids = [...this.selectedDieIds];
         if (!ids.length) return;
+        const bid = this._targetBoardIdForMutation();
+        if (!bid) return;
         const shared = getSharedState();
-        const board = readBoard(shared, this.viewBoardId ?? "");
+        const board = readBoard(shared, bid);
         const poolIds = new Set([
             ...board.tableDice.map((d) => d.id),
             ...board.zoneRows.flatMap((r) => r.dice.map((d) => d.id)),
@@ -582,28 +753,19 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
      * @param {{ ids: string[]; to: "zone"|"table"; zoneNewRow?: boolean; zoneRowId?: string }} payload
      */
     _commitMoveDice(payload) {
-        if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
+        const boardId = this._targetBoardIdForMutation();
+        if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
         if (payload.to === "zone") {
             for (const id of payload.ids) this.selectedDieIds.delete(id);
         }
         commitMutation({
             type: "moveDice",
             actorUserId: game.user.id,
-            targetBoardId: this.viewBoardId,
+            targetBoardId: boardId,
             payload,
         });
     }
 
-    _onResetBoard() {
-        if (!canMutateBoard(game.user.id, this.viewBoardId ?? "", game.user.isGM)) return;
-        commitMutation({
-            type: "resetBoard",
-            actorUserId: game.user.id,
-            targetBoardId: this.viewBoardId,
-            payload: { resetFaces: true },
-        });
-        this.selectedDieIds.clear();
-    }
 }
 
 /**

@@ -1,15 +1,68 @@
 <section class="vdt-root">
     <nav class="vdt-board-tabs" aria-label="{{vdtL10n 'boardPickerAria'}}">
         {{#each boardTabs}}
-        <button type="button" class="vdt-board-tab {{#if active}}active{{/if}} {{#if isGmPrivate}}gm-private{{/if}}"
+        <button type="button" class="vdt-board-tab {{#if active}}active{{/if}} {{#if isGmPrivate}}gm-private{{/if}} {{#if isOverview}}vdt-board-tab-overview{{/if}} {{#if isShared}}vdt-board-tab-shared{{/if}}"
             data-board-id="{{id}}">{{label}}</button>
         {{/each}}
     </nav>
+
+    {{#if showOverview}}
+    <div class="vdt-overview">
+        {{#if overviewPanels.length}}
+        {{#each overviewPanels}}
+        <article class="vdt-overview-card">
+            <header class="vdt-overview-card-head">{{label}}</header>
+            <div class="vdt-overview-card-body">
+                <div class="vdt-overview-board">
+                    <div class="vdt-overview-label">{{vdtL10n "table"}}</div>
+                    <div class="vdt-overview-dice-row">
+                        {{#each tableDice}}
+                        <div class="vdt-die vdt-die-mini vdt-die-readonly" data-faces="{{../faces}}" data-value="{{value}}">
+                            {{#if (eq ../faces 6)}}
+                            {{{d6FaceSvg value}}}
+                            {{else}}
+                            <span class="vdt-die-num">{{value}}</span>
+                            {{/if}}
+                        </div>
+                        {{else}}
+                        <span class="vdt-overview-none">—</span>
+                        {{/each}}
+                    </div>
+                </div>
+                <aside class="vdt-overview-sidebar" aria-label="{{vdtL10n 'zone'}}">
+                    <div class="vdt-overview-label">{{vdtL10n "zone"}}</div>
+                    <div class="vdt-overview-score">
+                        {{#each zoneRows}}
+                        <div class="vdt-overview-zone-row">
+                            {{#each dice}}
+                            <div class="vdt-die vdt-die-mini vdt-die-readonly" data-faces="{{../../faces}}" data-value="{{value}}">
+                                {{#if (eq ../../faces 6)}}
+                                {{{d6FaceSvg value}}}
+                                {{else}}
+                                <span class="vdt-die-num">{{value}}</span>
+                                {{/if}}
+                            </div>
+                            {{/each}}
+                        </div>
+                        {{else}}
+                        <span class="vdt-overview-none">—</span>
+                        {{/each}}
+                    </div>
+                </aside>
+            </div>
+        </article>
+        {{/each}}
+        {{else}}
+        <p class="vdt-overview-empty">{{vdtL10n "overviewEmpty"}}</p>
+        {{/if}}
+    </div>
+    {{else}}
 
     {{#if spectatorHint}}
     <p class="vdt-hint"><i class="fa-solid fa-eye"></i> {{vdtL10n "spectatorHint"}}</p>
     {{/if}}
 
+    {{#if rollInProgress}}
     <div class="vdt-toolbar">
         <div class="vdt-toolbar-start">
             <label class="vdt-field">{{vdtL10n "count"}}
@@ -25,13 +78,17 @@
                     <option value="20" {{#if (eq faces 20)}}selected{{/if}}>d20</option>
                 </select>
             </label>
-            <button type="button" class="vdt-btn" data-action="roll-new" {{#unless canMutate}}disabled{{/unless}}
+            <button type="button" class="vdt-btn vdt-btn-roll" data-action="roll-new" {{#unless canMutate}}disabled{{/unless}}
                 title="{{vdtL10n 'rollNew'}}"><i class="fa-solid fa-dice"></i> {{vdtL10n "rollNew"}}</button>
-            <button type="button" class="vdt-btn" data-action="reroll-all-rolling" {{#unless canRerollAllRolling}}disabled{{/unless}}
+            <button type="button" class="vdt-btn vdt-btn-reroll-all" data-action="reroll-all-rolling" {{#unless canRerollAllRolling}}disabled{{/unless}}
                 title="{{vdtL10n 'rerollAllRolling'}}"><i class="fa-solid fa-rotate"></i> {{vdtL10n "rerollAllRolling"}}</button>
         </div>
-        <button type="button" class="vdt-btn danger vdt-toolbar-reset" data-action="reset-board" {{#unless canMutate}}disabled{{/unless}}
-            title="{{vdtL10n 'resetBoard'}}"><i class="fa-solid fa-broom"></i> {{vdtL10n "resetBoard"}}</button>
+        {{#if canMutate}}
+        <div class="vdt-toolbar-end">
+            <button type="button" class="vdt-btn vdt-btn-end-roll-big vdt-btn-end-roll-toolbar" data-action="end-roll"
+                title="{{vdtL10n 'endRoll'}}"><i class="fa-solid fa-stop"></i> {{vdtL10n "endRoll"}}</button>
+        </div>
+        {{/if}}
     </div>
 
     <div class="vdt-regions">
@@ -82,6 +139,29 @@
                 {{/each}}
                 <p class="vdt-zone-hint">{{vdtL10n "dragDiceToScore"}}</p>
             </div>
+            {{#if canMutate}}
+            <div class="vdt-score-footer">
+                <button type="button" class="vdt-btn vdt-btn-reset-score-footer" data-action="reset-score"
+                    title="{{vdtL10n 'resetScore'}}">{{vdtL10n "resetScore"}}</button>
+            </div>
+            {{/if}}
         </div>
     </div>
+    {{#if canMutate}}
+    <div class="vdt-end-roll-wrap">
+        <button type="button" class="vdt-btn vdt-btn-end-roll-big" data-action="end-roll"
+            title="{{vdtL10n 'endRoll'}}"><i class="fa-solid fa-stop"></i> {{vdtL10n "endRoll"}}</button>
+    </div>
+    {{/if}}
+    {{else}}
+    <div class="vdt-roll-idle">
+        {{#if canMutate}}
+        <button type="button" class="vdt-btn vdt-btn-start-roll" data-action="start-roll">{{vdtL10n "startRoll"}}</button>
+        {{else}}
+        <p class="vdt-roll-idle-msg">{{vdtL10n "rollNotStarted"}}</p>
+        {{/if}}
+    </div>
+    {{/if}}
+
+    {{/if}}
 </section>
