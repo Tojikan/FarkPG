@@ -5,6 +5,28 @@ import { VirtualTableApp } from "./virtual-table-app.js";
 /** @type {VirtualTableApp | undefined} */
 let globalVirtualTable;
 
+/** @type {boolean} */
+let openQueuedForReady = false;
+
+/**
+ * Open or bring the Virtual Dice Table window to the front.
+ * Safe from macros or systems: if `game` is not ready yet, runs once on `ready`.
+ */
+function openOrFocusVirtualTable() {
+    if (!globalThis.game?.ready) {
+        if (!openQueuedForReady) {
+            openQueuedForReady = true;
+            Hooks.once("ready", () => {
+                openQueuedForReady = false;
+                openOrFocusVirtualTable();
+            });
+        }
+        return;
+    }
+    globalVirtualTable ??= new VirtualTableApp();
+    globalVirtualTable.render(true);
+}
+
 Hooks.once("init", async () => {
     game.settings.register(MODULE_ID, "maxDice", {
         name: "Maximum dice per roll",
@@ -79,13 +101,15 @@ Hooks.once("ready", () => {
 
     const mod = game.modules.get(MODULE_ID);
     if (mod) {
-        mod.api = {
-            /** Open or focus the Virtual Dice Table window */
-            openVirtualTable() {
-                globalVirtualTable ??= new VirtualTableApp();
-                globalVirtualTable.render(true);
-            },
+        const api = {
+            openVirtualTable: openOrFocusVirtualTable,
+            /** Short alias for macros / systems */
+            open: openOrFocusVirtualTable,
         };
+        mod.api = api;
+        /** Same API for systems that avoid `game.modules` (e.g. bundled scripts). */
+        globalThis.virtualDiceTable = api;
+        Hooks.callAll("virtualDiceTableReady", api);
     }
 });
 
@@ -94,7 +118,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
     controls[SCENE_CONTROL_NAME] = {
         name: SCENE_CONTROL_NAME,
         title: game.i18n.localize(`${MODULE_ID}.sceneTitle`),
-        icon: "fa-solid fa-table-cells",
+        icon: "fa-solid fa-dice",
         order: 98,
         tools: {
             [stubTool]: {
@@ -115,7 +139,6 @@ Hooks.on("renderSceneControls", (app, html) => {
     btn.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopImmediatePropagation();
-        globalVirtualTable ??= new VirtualTableApp();
-        globalVirtualTable.render(true);
+        openOrFocusVirtualTable();
     });
 });

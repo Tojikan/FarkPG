@@ -11,6 +11,15 @@ Simple Foundry **v13** module: a window where each player has **their own dice b
 - **Sync**: changes go out on a **module socket**. The sender **also applies the change locally first** (Foundry does not echo your own emit).
 - **Open**: scene controls button opens the app (`ApplicationV2` + Handlebars).
 
+## Programmatic open (macros, systems, other modules)
+
+After **`ready`**, or any time (open is deferred until `ready` if needed):
+
+- `game.modules.get("virtual-dice-table")?.api?.openVirtualTable()` — or `.open()` (alias).
+- `globalThis.virtualDiceTable?.openVirtualTable()` / `.open()` — same functions, no `game.modules` lookup.
+
+On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", api)`** so a system can `Hooks.on("virtualDiceTableReady", (api) => { ... })` and store `api` for a toolbar button.
+
 ## Main files
 
 - `scripts/virtual-table-app.js` — UI, drag/drop, selection, marquee.
