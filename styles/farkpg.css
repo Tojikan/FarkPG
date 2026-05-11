@@ -6,15 +6,17 @@
 .farkpg.sheet {
     --farkpg-gap: 0.5rem;
     --farkpg-radius: 4px;
-    --farkpg-text: #1f2328;
-    --farkpg-muted: #4b5563;
-    --farkpg-border: #7b8794;
-    --farkpg-bg: #f4f1e8;
-    --farkpg-panel-bg: #fffaf0;
-    --farkpg-input-bg: #ffffff;
-    --farkpg-accent: #274c77;
-    --farkpg-d20-bg: #dbeafe;
-    --farkpg-d20-hover: #274c77;
+    --farkpg-text: #e6decd;
+    --farkpg-muted: #9aa4b2;
+    --farkpg-border: #3a4150;
+    --farkpg-bg: #11151b;
+    --farkpg-panel-bg: #1c2128;
+    --farkpg-panel-bg-2: #2a2f37;
+    --farkpg-input-bg: #0f1419;
+    --farkpg-accent: #c89d4a;
+    --farkpg-accent-soft: rgba(200, 157, 74, 0.18);
+    --farkpg-d20-bg: rgba(116, 129, 144, 0.16);
+    --farkpg-d20-hover: #748190;
     color: var(--farkpg-text);
 }
 
@@ -31,7 +33,34 @@
 .farkpg.sheet textarea {
     background: var(--farkpg-input-bg);
     color: var(--farkpg-text);
-    border-color: var(--farkpg-border);
+    border: 1px solid var(--farkpg-border);
+}
+
+.farkpg.sheet input:focus,
+.farkpg.sheet select:focus,
+.farkpg.sheet textarea:focus {
+    outline: none;
+    border-color: var(--farkpg-accent);
+    box-shadow: 0 0 0 1px var(--farkpg-accent-soft);
+}
+
+.farkpg.sheet input::placeholder,
+.farkpg.sheet textarea::placeholder {
+    color: var(--farkpg-muted);
+    opacity: 0.7;
+}
+
+.farkpg.sheet input[type="checkbox"] {
+    accent-color: var(--farkpg-accent);
+}
+
+.farkpg.sheet a {
+    color: var(--farkpg-text);
+}
+
+.farkpg.sheet hr {
+    border: none;
+    border-top: 1px solid var(--farkpg-border);
 }
 
 /* ------------------------- Header ------------------------- */
@@ -42,7 +71,7 @@
     gap: 0.4rem;
     padding: 0.4rem 0.55rem;
     border-bottom: 1px solid var(--farkpg-border);
-    background: #efe6d2;
+    background: var(--farkpg-panel-bg);
     flex: 0 0 auto;
 }
 
@@ -121,7 +150,12 @@
     text-align: center;
     font-size: 0.8rem;
     color: var(--farkpg-muted);
+    background: var(--farkpg-panel-bg-2);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
     padding: 1px 3px;
+    height: 1.45rem;
+    line-height: 1.35rem;
     cursor: help;
 }
 
@@ -137,7 +171,7 @@
     gap: 2px;
     padding: 0 0.5rem;
     border-bottom: 1px solid var(--farkpg-border);
-    background: #efe6d2;
+    background: var(--farkpg-panel-bg);
     flex: 0 0 auto;
 }
 
@@ -152,13 +186,24 @@
     text-decoration: none;
     color: var(--farkpg-muted);
     margin-top: 4px;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.farkpg.sheet .tabs[data-group="primary"] .item:hover {
+    color: var(--farkpg-text);
+    background: var(--farkpg-panel-bg-2);
 }
 
 .farkpg.sheet .tabs[data-group="primary"] .item.active,
 .farkpg.sheet .tabs[data-group="primary"] .item[aria-pressed="true"] {
-    background: var(--farkpg-panel-bg);
+    background: var(--farkpg-bg);
     border-color: var(--farkpg-border);
+    border-bottom-color: transparent;
     color: var(--farkpg-text);
+    box-shadow: inset 0 2px 0 var(--farkpg-accent);
 }
 
 .farkpg.sheet .tabs[data-group="primary"] .item i {
@@ -530,7 +575,8 @@
 }
 
 .farkpg-roll-btn {
-    background: linear-gradient(135deg, rgba(75, 101, 132, 0.18), rgba(75, 101, 132, 0.05));
+    background: var(--farkpg-accent-soft);
+    color: var(--farkpg-text);
 }
 
 .farkpg-roll-btn:hover,
@@ -649,10 +695,14 @@ input.farkpg-skill-name {
     line-height: 1;
 }
 
-input.farkpg-skill-name:hover,
-input.farkpg-skill-name:focus {
+input.farkpg-skill-name:hover {
     background: var(--farkpg-input-bg);
     border-color: var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+}
+
+input.farkpg-skill-name:focus {
+    background: var(--farkpg-input-bg);
     border-radius: var(--farkpg-radius);
 }
 
@@ -909,24 +959,26 @@ input.farkpg-skill-name:focus {
 
 .farkpg-tab-inventory,
 .farkpg-equipment {
-    --card-surface: #1c2128;
-    --card-surface-2: #2a2f37;
-    --card-text: #e6decd;
-    --card-muted: #9aa4b2;
-    --card-border: #3a4150;
+    /* Card-scoped aliases for the global palette so existing card styles
+       continue to work without touching every selector. */
+    --card-surface: var(--farkpg-panel-bg);
+    --card-surface-2: var(--farkpg-panel-bg-2);
+    --card-text: var(--farkpg-text);
+    --card-muted: var(--farkpg-muted);
+    --card-border: var(--farkpg-border);
 }
 
 .farkpg-tab-inventory {
-    background: #11151b;
+    background: var(--farkpg-bg);
     padding: 0.6rem 0.7rem 0.9rem;
-    color: var(--card-text);
+    color: var(--farkpg-text);
 }
 
 .farkpg-equipment {
-    background: #11151b;
-    color: var(--card-text);
+    background: var(--farkpg-panel-bg);
+    color: var(--farkpg-text);
     padding: 0.5rem 0.6rem 0.75rem;
-    border: 1px solid var(--card-border);
+    border: 1px solid var(--farkpg-border);
     border-radius: var(--farkpg-radius);
 }
 
@@ -936,7 +988,7 @@ input.farkpg-skill-name:focus {
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-bottom: 0.55rem;
-    color: var(--card-text);
+    color: var(--farkpg-text);
 }
 
 .farkpg-cards-header h2 {
@@ -944,7 +996,7 @@ input.farkpg-skill-name:focus {
     font-size: 1.05rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--card-text);
+    color: var(--farkpg-text);
 }
 
 .farkpg-cards-header .farkpg-inventory-toolbar {
@@ -953,16 +1005,16 @@ input.farkpg-skill-name:focus {
 }
 
 .farkpg-cards-header .farkpg-slot-counter-label {
-    color: var(--card-muted);
+    color: var(--farkpg-muted);
 }
 
 .farkpg-cards-header .farkpg-slot-counter-value {
-    color: var(--card-text);
+    color: var(--farkpg-text);
 }
 
 .farkpg-tab-inventory .farkpg-empty,
 .farkpg-equipment .farkpg-empty {
-    color: var(--card-muted);
+    color: var(--farkpg-muted);
     font-style: italic;
 }
 
@@ -1121,6 +1173,7 @@ input.farkpg-skill-name:focus {
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
 }
 
@@ -1274,23 +1327,13 @@ input.farkpg-skill-name:focus {
 
 /* Inventory toolbar buttons reskinned to fit the dark cards header. */
 .farkpg-cards-header .farkpg-add-btn {
-    background: var(--card-surface-2);
-    color: var(--card-text);
-    border: 1px solid var(--card-border);
+    background: var(--farkpg-panel-bg-2);
+    color: var(--farkpg-text);
+    border: 1px solid var(--farkpg-border);
 }
 
 .farkpg-cards-header .farkpg-add-btn:hover {
-    background: var(--card-accent);
-    color: #fff;
-    border-color: var(--card-accent);
-}
-
-.farkpg-tab-inventory .farkpg-ammo-section {
-    background: var(--card-surface);
-    border-color: var(--card-border);
-    color: var(--card-text);
-}
-
-.farkpg-tab-inventory .farkpg-panel-subheader h3 {
-    color: var(--card-muted);
+    background: var(--farkpg-accent);
+    color: #1c2128;
+    border-color: var(--farkpg-accent);
 }
