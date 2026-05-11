@@ -1,4 +1,5 @@
 import { FarkPGApDrawer, buildApTypeRowsForActor } from "../ap-drawer.mjs";
+import { promptCharacterImport } from "../character-import.mjs";
 import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
 
 /** Preview image when a custom AP type has no `img` path set. */
@@ -119,6 +120,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
             toggleSkillsEdit: FarkPGCharacterSheet.#onToggleSkillsEdit,
             editPortrait: FarkPGCharacterSheet.#onEditPortrait,
+            openCharacterImport: FarkPGCharacterSheet.#onOpenCharacterImport,
         },
     };
 
@@ -1057,6 +1059,21 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         event.preventDefault();
         event.stopPropagation();
         openActorPortraitPicker(this.actor, this.isEditable);
+    }
+
+    /**
+     * Import JSON from the FarkPG web ZnZ builder (clipboard export).
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onOpenCharacterImport(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.actor.canUserModify(game.user, "update")) {
+            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.noActorUpdatePermission"));
+            return;
+        }
+        await promptCharacterImport(this.actor);
+        this.render(true);
     }
 
     /**

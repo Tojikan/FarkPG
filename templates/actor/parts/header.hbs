@@ -16,11 +16,21 @@
     </div>
 
     <div class="farkpg-header-body">
-        <div class="farkpg-header-row farkpg-header-name">
+        <div class="farkpg-header-row farkpg-header-name farkpg-header-name-row">
             <input type="text"
+                   class="farkpg-header-name-input"
                    name="name"
                    value="{{actor.name}}"
                    placeholder="{{localize 'FARKPG.Header.name'}}" />
+            {{#if editable}}
+                <button type="button"
+                        class="farkpg-header-import"
+                        data-action="openCharacterImport"
+                        data-tooltip="{{localize 'FARKPG.Import.buttonTooltip'}}"
+                        aria-label="{{localize 'FARKPG.Import.buttonAria'}}">
+                    {{localize "FARKPG.Import.button"}}
+                </button>
+            {{/if}}
         </div>
 
         <div class="farkpg-header-row farkpg-resources farkpg-resources-primary">

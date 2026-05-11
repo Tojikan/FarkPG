@@ -130,14 +130,54 @@
     overflow: visible;
 }
 
-.farkpg-header-name input {
-    width: 100%;
+.farkpg-header-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.farkpg-header-name-input {
+    flex: 1;
+    min-width: 0;
     font-size: 1.15rem;
     font-weight: 700;
     padding: 0.15rem 0.4rem;
     background: var(--farkpg-input-bg);
     border: 1px solid var(--farkpg-border);
     border-radius: var(--farkpg-radius);
+}
+
+.farkpg-header-import {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--farkpg-radius);
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-panel-bg-2);
+    color: var(--farkpg-text);
+    cursor: pointer;
+}
+
+.farkpg-header-import:hover {
+    border-color: var(--farkpg-accent);
+    color: var(--farkpg-accent);
+}
+
+.farkpg-import-hint {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    color: var(--farkpg-muted, #9aa4b2);
+}
+
+.farkpg-import-textarea {
+    width: 100%;
+    min-height: 280px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    resize: vertical;
 }
 
 .farkpg-resources {

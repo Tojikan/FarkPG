@@ -8,6 +8,27 @@
       "config": "Config"
     },
 
+    "Import": {
+      "button": "Import",
+      "buttonTooltip": "Import character JSON from the FarkPG web ZnZ builder",
+      "buttonAria": "Import character from JSON",
+      "dialogTitle": "Import character JSON",
+      "dialogHint": "Paste the JSON copied from the FarkPG site (ZnZ builder → Export to clipboard). This replaces attributes, core skills, custom skills, biography, resources, experience, and ability items on this actor.",
+      "placeholder": "{ \"formatId\": \"farkpg-znz-character-export\", ... }",
+      "jsonLabel": "Character JSON",
+      "confirm": "Import",
+      "empty": "Paste JSON before importing.",
+      "success": "Character import completed.",
+      "errJson": "Invalid JSON — check for typos or truncated paste.",
+      "errNotObject": "JSON must be an object.",
+      "errFormat": "Unrecognized export (wrong formatId). Use JSON from the FarkPG ZnZ builder.",
+      "errVersion": "Unsupported formatVersion for this import.",
+      "errSystemId": "Wrong systemId in JSON (expected farkpg-znz).",
+      "unnamed": "Unnamed",
+      "addonFallback": "Imported add-on {n}",
+      "applyFailed": "Import failed: {message}"
+    },
+
     "Header": {
       "name": "Name",
       "hp": "HP",
