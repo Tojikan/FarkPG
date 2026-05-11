@@ -95,77 +95,24 @@
     <div class="farkpg-character-main">
 
         <section class="farkpg-panel farkpg-equipment">
-            <header class="farkpg-panel-header">
+            <header class="farkpg-panel-header farkpg-cards-header">
                 <h2>{{localize 'FARKPG.Equipment.title'}}</h2>
                 <div class="farkpg-slot-counter" aria-live="polite">
-                    <span>{{localize 'FARKPG.Equipment.slots'}}:</span>
-                    <input type="text" value="{{slots.equipment.count}} / {{slots.equipment.max}}" readonly tabindex="-1" />
+                    <span class="farkpg-slot-counter-label">{{localize 'FARKPG.Equipment.slots'}}:</span>
+                    <span class="farkpg-slot-counter-value {{#if (gt slots.equipment.count slots.equipment.max)}}farkpg-slot-over{{/if}}">
+                        {{slots.equipment.count}} / {{slots.equipment.max}}
+                    </span>
                 </div>
             </header>
-            <ul class="farkpg-item-list">
-                {{#each equippedItems as |item|}}
-                    <li class="farkpg-item"
-                        data-item-id="{{item.id}}"
-                        data-uuid="{{item.uuid}}"
-                        draggable="true">
-                        <img class="farkpg-item-icon" src="{{item.img}}" alt="" />
-                        <span class="farkpg-item-name">{{item.name}}</span>
-                        <span class="farkpg-item-type">{{item.type}}</span>
-                        {{#if item.isConsumable}}
-                            <span class="farkpg-item-qty">{{localize 'FARKPG.Inventory.qty'}}: {{item.system.quantity.value}}</span>
-                        {{/if}}
-                        {{#if item.isRollable}}
-                            <span class="farkpg-item-roll">
-                                <i class="fa-solid fa-dice"></i> {{item.rollLabel}}
-                            </span>
-                        {{/if}}
-                        {{#if item.ammoEnabled}}
-                            <span class="farkpg-item-ammo">
-                                <i class="fa-solid fa-link"></i>
-                                {{#if item.linkedAmmo}}
-                                    {{item.linkedAmmo.name}} ({{item.linkedAmmo.qty}})
-                                {{else}}
-                                    {{localize 'FARKPG.Items.ammoItemNone'}}
-                                {{/if}}
-                            </span>
-                        {{/if}}
-                        <span class="farkpg-item-controls">
-                            {{#if item.isRollable}}
-                                <button type="button"
-                                        class="farkpg-use-btn"
-                                        data-action="useItem"
-                                        data-tooltip="{{localize 'FARKPG.Items.useTooltip'}}"
-                                        aria-label="{{localize 'FARKPG.Items.use'}}">
-                                    <i class="fa-solid fa-bolt"></i> {{localize 'FARKPG.Items.use'}}
-                                </button>
-                            {{/if}}
-                            <button type="button"
-                                    class="farkpg-icon-btn"
-                                    data-action="toggleEquip"
-                                    data-tooltip="{{localize 'FARKPG.Items.unequip'}}"
-                                    aria-label="{{localize 'FARKPG.Items.unequip'}}">
-                                <i class="fa-solid fa-circle-minus"></i>
-                            </button>
-                            <button type="button"
-                                    class="farkpg-icon-btn"
-                                    data-action="editItem"
-                                    data-tooltip="{{localize 'FARKPG.Items.edit'}}"
-                                    aria-label="{{localize 'FARKPG.Items.edit'}}">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </button>
-                            <button type="button"
-                                    class="farkpg-icon-btn"
-                                    data-action="deleteItem"
-                                    data-tooltip="{{localize 'FARKPG.Items.delete'}}"
-                                    aria-label="{{localize 'FARKPG.Items.delete'}}">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </span>
-                    </li>
-                {{else}}
-                    <li class="farkpg-empty">{{localize 'FARKPG.Equipment.empty'}}</li>
-                {{/each}}
-            </ul>
+            {{#if equippedItems.length}}
+                <div class="farkpg-card-grid">
+                    {{#each equippedItems as |item|}}
+                        {{> "farkpg.item-card" item=item isEquipped=true}}
+                    {{/each}}
+                </div>
+            {{else}}
+                <p class="farkpg-empty">{{localize 'FARKPG.Equipment.empty'}}</p>
+            {{/if}}
         </section>
 
         <section class="farkpg-panel farkpg-abilities">

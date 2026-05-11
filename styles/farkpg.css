@@ -252,17 +252,25 @@
 .farkpg-slot-counter {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     font-size: 0.85rem;
 }
 
-.farkpg-slot-counter input {
-    width: 4.5rem;
-    text-align: center;
-    background: #eee4cf;
-    border: 1px solid var(--farkpg-border);
-    border-radius: var(--farkpg-radius);
-    pointer-events: none;
+.farkpg-slot-counter-label {
+    color: var(--farkpg-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+}
+
+.farkpg-slot-counter-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+}
+
+.farkpg-slot-counter-value.farkpg-slot-over {
+    color: #d9534f;
 }
 
 /* ------------------------- Item lists ------------------------- */
@@ -773,6 +781,18 @@ input.farkpg-skill-name:focus {
     flex-direction: column;
     gap: 0.5rem;
     height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.5rem 0.6rem;
+}
+
+.farkpg-item-sheet .farkpg-item-header {
+    flex: 0 0 auto;
+}
+
+.farkpg-item-sheet .farkpg-item-body {
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .farkpg-item-header {
@@ -860,4 +880,417 @@ input.farkpg-skill-name:focus {
     gap: 6px;
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.farkpg-item-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    margin: 0.15rem 0 0.55rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.farkpg-fieldset .farkpg-toggle {
+    display: inline-flex;
+    grid-template-columns: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.farkpg-fieldset .farkpg-toggle > input[type="checkbox"] {
+    margin: 0;
+}
+
+/* ------------------------- Card grid (inventory & equipment) ------------------------- */
+
+.farkpg-tab-inventory,
+.farkpg-equipment {
+    --card-surface: #1c2128;
+    --card-surface-2: #2a2f37;
+    --card-text: #e6decd;
+    --card-muted: #9aa4b2;
+    --card-border: #3a4150;
+}
+
+.farkpg-tab-inventory {
+    background: #11151b;
+    padding: 0.6rem 0.7rem 0.9rem;
+    color: var(--card-text);
+}
+
+.farkpg-equipment {
+    background: #11151b;
+    color: var(--card-text);
+    padding: 0.5rem 0.6rem 0.75rem;
+    border: 1px solid var(--card-border);
+    border-radius: var(--farkpg-radius);
+}
+
+.farkpg-cards-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.55rem;
+    color: var(--card-text);
+}
+
+.farkpg-cards-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--card-text);
+}
+
+.farkpg-cards-header .farkpg-inventory-toolbar {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+}
+
+.farkpg-cards-header .farkpg-slot-counter-label {
+    color: var(--card-muted);
+}
+
+.farkpg-cards-header .farkpg-slot-counter-value {
+    color: var(--card-text);
+}
+
+.farkpg-tab-inventory .farkpg-empty,
+.farkpg-equipment .farkpg-empty {
+    color: var(--card-muted);
+    font-style: italic;
+}
+
+.farkpg-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.55rem;
+}
+
+.farkpg-card {
+    --card-accent: #748190;
+    --card-accent-soft: rgba(116, 129, 144, 0.18);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-surface);
+    border: 1px solid var(--card-accent);
+    border-top: 3px solid var(--card-accent);
+    border-radius: var(--farkpg-radius);
+    color: var(--card-text);
+    overflow: hidden;
+    min-width: 0;
+    cursor: grab;
+}
+
+.farkpg-card:active {
+    cursor: grabbing;
+}
+
+.farkpg-card-weapon {
+    --card-accent: #c84545;
+    --card-accent-soft: rgba(200, 69, 69, 0.18);
+}
+
+.farkpg-card-consumable {
+    --card-accent: #4ca85e;
+    --card-accent-soft: rgba(76, 168, 94, 0.18);
+}
+
+.farkpg-card-equipment {
+    --card-accent: #4a8fc6;
+    --card-accent-soft: rgba(74, 143, 198, 0.18);
+}
+
+.farkpg-card-ability {
+    --card-accent: #9a64d6;
+    --card-accent-soft: rgba(154, 100, 214, 0.18);
+}
+
+/* Controls tab — sits on the right edge of the card, slides in on hover. */
+.farkpg-card-controls {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    background: rgba(8, 11, 16, 0.85);
+    border: 1px solid var(--card-accent);
+    border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(8px, -50%);
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+
+.farkpg-card:hover .farkpg-card-controls,
+.farkpg-card:focus-within .farkpg-card-controls {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(0, -50%);
+}
+
+@media (hover: none) {
+    /* Touch devices have no hover — keep the controls visible. */
+    .farkpg-card-controls {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(0, -50%);
+    }
+}
+
+.farkpg-card-ctrl {
+    background: transparent;
+    border: none;
+    color: var(--card-muted);
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    line-height: 1;
+}
+
+.farkpg-card-ctrl:hover {
+    color: var(--card-text);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.farkpg-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 5px 8px;
+    background: var(--card-accent-soft);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.farkpg-card-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--card-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.farkpg-card-type {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--card-accent);
+    flex: 0 0 auto;
+}
+
+.farkpg-card-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-surface-2);
+    padding: 6px;
+    min-height: 70px;
+}
+
+.farkpg-card-image img {
+    max-width: 100%;
+    max-height: 90px;
+    object-fit: contain;
+    border: none;
+    background: transparent;
+}
+
+.farkpg-card-desc {
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: var(--card-muted);
+    padding: 6px 8px 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.farkpg-card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 8px 8px;
+    margin-top: auto;
+}
+
+.farkpg-card-stat {
+    display: grid;
+    grid-template-columns: 16px 1fr auto;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: var(--card-surface-2);
+    border-radius: 3px;
+    font-size: 0.78rem;
+    line-height: 1.15;
+}
+
+.farkpg-card-stat > i {
+    color: var(--card-accent);
+    font-size: 0.85rem;
+    justify-self: center;
+}
+
+.farkpg-card-stat-label {
+    color: var(--card-muted);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+}
+
+.farkpg-card-stat-value {
+    font-weight: 700;
+    color: var(--card-text);
+    text-align: right;
+    white-space: nowrap;
+}
+
+.farkpg-card-stat-sub {
+    display: block;
+    font-weight: 600;
+    color: var(--card-muted);
+    font-size: 0.68rem;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.farkpg-card-stat-ammo {
+    grid-template-columns: 16px auto minmax(0, 1fr);
+}
+
+.farkpg-card-ammo-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    padding: 2px 5px 2px 2px;
+    background: rgba(0, 0, 0, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+}
+
+.farkpg-card-ammo-empty {
+    color: var(--card-muted);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    padding: 2px 6px;
+    gap: 5px;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.farkpg-card-ammo-empty:hover,
+.farkpg-card-ammo-empty:focus-visible {
+    background: var(--card-accent-soft);
+    border-color: var(--card-accent);
+    color: var(--card-text);
+    outline: none;
+}
+
+.farkpg-card-ammo-empty > i {
+    color: var(--card-accent);
+}
+
+.farkpg-card-ammo-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+}
+
+.farkpg-card-ammo-main img {
+    width: 20px;
+    height: 20px;
+    object-fit: cover;
+    border: 1px solid var(--card-border);
+    border-radius: 2px;
+    flex: 0 0 auto;
+}
+
+.farkpg-card-ammo-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--card-text);
+    font-weight: 600;
+    min-width: 0;
+}
+
+.farkpg-card-ammo-qty {
+    flex: 0 0 auto;
+    color: var(--card-text);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.farkpg-card-stat-roll {
+    grid-template-columns: 1fr auto;
+}
+
+.farkpg-card-use {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--card-accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.farkpg-card-use:hover {
+    filter: brightness(1.15);
+}
+
+.farkpg-card-use-value {
+    letter-spacing: 0.02em;
+}
+
+/* Inventory toolbar buttons reskinned to fit the dark cards header. */
+.farkpg-cards-header .farkpg-add-btn {
+    background: var(--card-surface-2);
+    color: var(--card-text);
+    border: 1px solid var(--card-border);
+}
+
+.farkpg-cards-header .farkpg-add-btn:hover {
+    background: var(--card-accent);
+    color: #fff;
+    border-color: var(--card-accent);
+}
+
+.farkpg-tab-inventory .farkpg-ammo-section {
+    background: var(--card-surface);
+    border-color: var(--card-border);
+    color: var(--card-text);
+}
+
+.farkpg-tab-inventory .farkpg-panel-subheader h3 {
+    color: var(--card-muted);
 }

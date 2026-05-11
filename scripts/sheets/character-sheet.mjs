@@ -25,6 +25,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             deleteItem: FarkPGCharacterSheet.#onDeleteItem,
             toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
             useItem: FarkPGCharacterSheet.#onUseItem,
+            selectAmmo: FarkPGCharacterSheet.#onSelectAmmo,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
         },
     };
@@ -94,32 +95,78 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             const sys = item.system ?? {};
             const mult = Number(sys.rollable?.multiplier ?? 0);
             const maxv = Number(sys.rollable?.max ?? 0);
-            const isRollable = mult > 0 && maxv > 0;
             const isWeapon = item.type === "weapon";
             const isConsumable = item.type === "consumable";
+            const isEquipment = item.type === "equipment";
+            const hasDurability = isWeapon || isEquipment;
             const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
             const linkedAmmo = ammoEnabled && sys.ammo?.linkedConsumableId
                 ? this.actor.items.get(sys.ammo.linkedConsumableId)
                 : null;
+
+            // Resolve attached-skill rolling: when an attached skill is set,
+            // the item rolls (attribute + skill) dice with `faces = rollMax`
+            // (defaulting to d6 if no max is configured). Otherwise the static
+            // (multiplier × max) baseline is used.
+            const usesRollEnabled = isWeapon || isEquipment;
+            const attachedSkill = usesRollEnabled
+                ? String(sys.rollable?.attachedSkill ?? "")
+                : "";
+            let rollCount = mult;
+            let rollFaces = maxv;
+            let attachedSkillLabel = "";
+            if (attachedSkill) {
+                const [attrKey, skillKey] = attachedSkill.split(".");
+                const aVal = Number(this.actor.system?.attributes?.[attrKey] ?? 0);
+                const sVal = Number(this.actor.system?.skills?.[skillKey] ?? 0);
+                rollCount = Math.max(1, aVal + sVal);
+                rollFaces = maxv > 0 ? maxv : 6;
+                const aLabel = game.i18n.localize(`FARKPG.Attributes.${attrKey}`);
+                const sLabel = game.i18n.localize(`FARKPG.Skills.${skillKey}`);
+                attachedSkillLabel = `${aLabel} — ${sLabel}`;
+            }
+
+            const rollEnabledFlag = sys.rollable?.enabled === true;
+            const isRollable = usesRollEnabled
+                ? rollEnabledFlag && (attachedSkill !== "" || (mult > 0 && maxv > 0))
+                : mult > 0 && maxv > 0;
+
+            const rawDesc = String(sys.description ?? "");
+            const descText = rawDesc
+                .replace(/<style[\s\S]*?<\/style>/gi, "")
+                .replace(/<script[\s\S]*?<\/script>/gi, "")
+                .replace(/<[^>]+>/g, " ")
+                .replace(/&nbsp;/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+            const descShort = descText.length > 140 ? `${descText.slice(0, 137)}…` : descText;
+
             return {
                 id: item.id,
                 uuid: item.uuid,
                 name: item.name,
                 img: item.img,
                 type: item.type,
+                typeLabel: game.i18n.localize(`TYPES.Item.${item.type}`),
                 system: sys,
                 isWeapon,
                 isConsumable,
+                isEquipment,
+                hasDurability,
+                descShort,
                 isRollable,
                 rollMultiplier: mult,
                 rollMax: maxv,
-                rollLabel: isRollable ? `${mult} × ${maxv}` : "",
+                rollLabel: isRollable ? `${rollCount} × ${rollFaces}` : "",
+                attachedSkill,
+                attachedSkillLabel,
                 ammoEnabled,
                 ammoPerUse: ammoEnabled ? Math.max(1, Number(sys.ammo?.perUse ?? 1)) : 0,
                 linkedAmmo: linkedAmmo
                     ? {
                           id: linkedAmmo.id,
                           name: linkedAmmo.name,
+                          img: linkedAmmo.img,
                           qty: Number(linkedAmmo.system?.quantity?.value ?? 0),
                       }
                     : null,
@@ -590,8 +637,81 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Use an item: spend ammo / durability / quantity (in that order) then open the
-     * Virtual Dice Table with `count = roll.multiplier` dice of `faces = roll.max`.
+     * Open a prompt to attach a consumable as the weapon's ammo. Filters the
+     * candidate list by the weapon's `system.ammo.requiredNames` CSV when set,
+     * so only matching consumables can be selected.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onSelectAmmo(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type !== "weapon") return;
+        if (item.system?.ammo?.enabled !== true) return;
+
+        const requiredCSV = String(item.system.ammo.requiredNames ?? "").trim();
+        const allowed = requiredCSV
+            ? requiredCSV
+                  .split(",")
+                  .map((s) => s.trim().toLowerCase())
+                  .filter(Boolean)
+            : null;
+
+        const candidates = this.actor.items.filter((i) => {
+            if (i.type !== "consumable") return false;
+            if (i.id === item.id) return false;
+            if (allowed && !allowed.includes(String(i.name).toLowerCase())) return false;
+            return true;
+        });
+
+        if (!candidates.length) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.noAmmoCandidates", {
+                    name: item.name,
+                    required: requiredCSV || game.i18n.localize("FARKPG.Items.requiredAmmoAny"),
+                }),
+            );
+            return;
+        }
+
+        const escape = foundry.utils.escapeHTML ?? ((s) => String(s));
+        const optionsHtml = candidates
+            .map((c) => {
+                const qty = Number(c.system?.quantity?.value ?? 0);
+                return `<option value="${escape(c.id)}">${escape(c.name)} (${qty})</option>`;
+            })
+            .join("");
+
+        const content = `
+            <p>${escape(game.i18n.format("FARKPG.Items.selectAmmoPrompt", { name: item.name }))}</p>
+            <div class="form-group">
+                <label for="farkpg-ammo-pick">${escape(game.i18n.localize("FARKPG.Items.ammoItem"))}</label>
+                <select id="farkpg-ammo-pick" name="ammoId">${optionsHtml}</select>
+            </div>
+        `;
+
+        const DialogV2 = foundry.applications.api.DialogV2;
+        const chosenId = await DialogV2.prompt({
+            window: { title: game.i18n.localize("FARKPG.Items.selectAmmoTitle") },
+            content,
+            modal: true,
+            rejectClose: false,
+            ok: {
+                label: game.i18n.localize("FARKPG.Items.selectAmmoConfirm"),
+                callback: (_event, button) => button.form?.elements?.ammoId?.value ?? null,
+            },
+        });
+
+        if (!chosenId) return;
+        await item.update({ "system.ammo.linkedConsumableId": chosenId });
+    }
+
+    /**
+     * Use an item: spend ammo / durability / quantity (in that order) then open
+     * the Virtual Dice Table. Weapons require `rollable.enabled`; if a skill is
+     * attached the roll becomes `(attribute + skill)` dice with `faces = max`
+     * (default 6 if unset), otherwise the static `multiplier × max` is used.
      * Any failure short-circuits with a notification and no resources are spent.
      * @this {FarkPGCharacterSheet}
      */
@@ -604,7 +724,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const sys = item.system ?? {};
         const multiplier = Number(sys.rollable?.multiplier ?? 0);
         const max = Number(sys.rollable?.max ?? 0);
-        if (!(multiplier > 0 && max > 0)) {
+        const usesRollEnabled = item.type === "weapon" || item.type === "equipment";
+        const attachedSkill = usesRollEnabled
+            ? String(sys.rollable?.attachedSkill ?? "")
+            : "";
+        const rollEnabledFlag = sys.rollable?.enabled === true;
+
+        const baselineRollable = multiplier > 0 && max > 0;
+        const rollable = usesRollEnabled
+            ? rollEnabledFlag && (attachedSkill !== "" || baselineRollable)
+            : baselineRollable;
+        if (!rollable) {
             ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.notRollable"));
             return;
         }
@@ -695,10 +825,20 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             await doc.update(data);
         }
 
+        let count = multiplier;
+        let faces = max;
+        if (attachedSkill) {
+            const [attrKey, skillKey] = attachedSkill.split(".");
+            const aVal = Number(this.actor.system?.attributes?.[attrKey] ?? 0);
+            const sVal = Number(this.actor.system?.skills?.[skillKey] ?? 0);
+            count = Math.max(1, aVal + sVal);
+            faces = max > 0 ? max : 6;
+        }
+
         const api = game.modules.get("virtual-dice-table")?.api;
         if (api?.openStartRollAndRoll) {
             try {
-                await api.openStartRollAndRoll({ count: multiplier, faces: max });
+                await api.openStartRollAndRoll({ count, faces });
                 return;
             } catch (err) {
                 console.error("FarkPG | openStartRollAndRoll failed", err);

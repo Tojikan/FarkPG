@@ -44,7 +44,7 @@
       "description": "",
       "durability": { "value": 10, "max": 10 },
       "durabilityPerUse": 0,
-      "rollable": { "multiplier": 0, "max": 0 },
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
       "weaponStyle": "melee",
       "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "", "requiredNames": "" },
       "isEquipped": false
@@ -59,7 +59,7 @@
     "equipment": {
       "description": "",
       "durability": { "value": 10, "max": 10 },
-      "rollable": { "multiplier": 0, "max": 0 },
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
       "equipmentSlots": 0,
       "inventorySlots": 0,
       "isEquipped": false

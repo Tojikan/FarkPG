@@ -1,4 +1,4 @@
-import { SYSTEM_ID } from "../config.mjs";
+import { SYSTEM_ID, ATTRIBUTE_SKILLS } from "../config.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ItemSheetV2 } = foundry.applications.sheets;
@@ -41,15 +41,41 @@ export class FarkPGItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         context.isMeleeWeapon = context.isWeapon && style === "melee";
         context.ammoEnabled = context.isWeapon && this.item.system?.ammo?.enabled === true;
 
-        // Consumables on the parent actor (if any) usable as ammo.
+        const requiredAmmoNames = String(this.item.system?.ammo?.requiredNames ?? "")
+            .split(",")
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+
+        // Consumables on the parent actor (if any) usable as ammo. If Required
+        // Ammo is set, only consumables whose names match the CSV are selectable.
         const actor = this.item.actor;
         context.actorConsumables = actor
             ? actor.items
                 .filter((i) => i.type === "consumable" && i.id !== this.item.id)
+                .filter((i) => {
+                    if (!requiredAmmoNames.length) return true;
+                    return requiredAmmoNames.includes(String(i.name).toLowerCase());
+                })
                 .map((i) => ({ id: i.id, name: i.name }))
                 .sort((a, b) => a.name.localeCompare(b.name))
             : [];
         context.hasActor = !!actor;
+
+        // (attribute, skill) pairs that can be attached to a weapon's roll.
+        // When set, using the weapon rolls (attribute + skill) dice instead of
+        // the static multiplier×max value.
+        const attachedSkillOptions = [];
+        for (const [attr, skills] of Object.entries(ATTRIBUTE_SKILLS)) {
+            const aLabel = game.i18n.localize(`FARKPG.Attributes.${attr}`);
+            for (const skill of skills) {
+                const sLabel = game.i18n.localize(`FARKPG.Skills.${skill}`);
+                attachedSkillOptions.push({
+                    value: `${attr}.${skill}`,
+                    label: `${aLabel} — ${sLabel}`,
+                });
+            }
+        }
+        context.attachedSkillOptions = attachedSkillOptions;
 
         context.descriptionHTML = await TextEditor.implementation.enrichHTML(
             this.item.system?.description ?? "",

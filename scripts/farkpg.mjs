@@ -8,6 +8,9 @@ Hooks.once("init", async () => {
     if (!Handlebars.helpers.eq) {
         Handlebars.registerHelper("eq", (a, b) => a === b);
     }
+    if (!Handlebars.helpers.gt) {
+        Handlebars.registerHelper("gt", (a, b) => Number(a) > Number(b));
+    }
 
     const { DocumentSheetConfig } = foundry.applications.apps;
 
@@ -23,11 +26,66 @@ Hooks.once("init", async () => {
         label: "FARKPG.Title",
     });
 
-    await foundry.applications.handlebars.loadTemplates([
-        `systems/${SYSTEM_ID}/templates/actor/parts/header.hbs`,
-        `systems/${SYSTEM_ID}/templates/actor/parts/tabs.hbs`,
-        `systems/${SYSTEM_ID}/templates/actor/parts/tab-character.hbs`,
-        `systems/${SYSTEM_ID}/templates/actor/parts/tab-inventory.hbs`,
-        `systems/${SYSTEM_ID}/templates/actor/parts/tab-config.hbs`,
-    ]);
+    await foundry.applications.handlebars.loadTemplates({
+        "farkpg.header": `systems/${SYSTEM_ID}/templates/actor/parts/header.hbs`,
+        "farkpg.tabs": `systems/${SYSTEM_ID}/templates/actor/parts/tabs.hbs`,
+        "farkpg.tab-character": `systems/${SYSTEM_ID}/templates/actor/parts/tab-character.hbs`,
+        "farkpg.tab-inventory": `systems/${SYSTEM_ID}/templates/actor/parts/tab-inventory.hbs`,
+        "farkpg.tab-config": `systems/${SYSTEM_ID}/templates/actor/parts/tab-config.hbs`,
+        "farkpg.item-card": `systems/${SYSTEM_ID}/templates/actor/parts/item-card.hbs`,
+    });
+});
+
+/**
+ * Default-attached-skill map for weapons (keyed by `weaponStyle`) and a single
+ * fallback for equipment. Used by the `preUpdateItem` hook below.
+ */
+const DEFAULT_ATTACHED_SKILL = {
+    weapon: {
+        melee: "body.meleeWeapons",
+        ranged: "adroit.rangedWeapons",
+        thrown: "adroit.throwing",
+        unarmed: "body.unarmed",
+    },
+    equipment: "body.block",
+};
+
+/**
+ * On the first `rollable.enabled` false → true transition, prefill an
+ * `attachedSkill` based on the item type / weapon style so users get a sensible
+ * default without having to pick from the dropdown every time.
+ *
+ * Only fires when the transition has no explicit `attachedSkill` in the change
+ * payload AND no value already stored on the item, so subsequent toggles and
+ * manual selections are preserved.
+ */
+Hooks.on("preUpdateItem", (item, changes) => {
+    if (item.type !== "weapon" && item.type !== "equipment") return;
+
+    const newEnabled = foundry.utils.getProperty(changes, "system.rollable.enabled");
+    if (newEnabled !== true) return;
+
+    const wasEnabled = item.system?.rollable?.enabled === true;
+    if (wasEnabled) return;
+
+    const explicitSkill = foundry.utils.getProperty(changes, "system.rollable.attachedSkill");
+    const currentSkill = String(item.system?.rollable?.attachedSkill ?? "");
+    const finalSkill = explicitSkill !== undefined ? String(explicitSkill ?? "") : currentSkill;
+    if (finalSkill) return;
+
+    let defaultSkill = "";
+    if (item.type === "weapon") {
+        const style = String(
+            foundry.utils.getProperty(changes, "system.weaponStyle") ??
+                item.system?.weaponStyle ??
+                "",
+        );
+        defaultSkill = DEFAULT_ATTACHED_SKILL.weapon[style] ?? "";
+    } else if (item.type === "equipment") {
+        defaultSkill = DEFAULT_ATTACHED_SKILL.equipment;
+    }
+
+    if (defaultSkill) {
+        foundry.utils.setProperty(changes, "system.rollable.attachedSkill", defaultSkill);
+    }
 });
