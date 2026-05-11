@@ -1,334 +1,355 @@
-/* global foundry, game, ui, Item */
+import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
 
-import {
-  abilityItems,
-  equippedGearCount,
-  equippedPanel,
-  gearIsEquipped,
-  inventoryCount,
-  inventoryRowModel,
-  skillGroupsFromSystem,
-  stripEquipped
-} from "../inventory.mjs";
-import { rollSkill } from "../rolls.mjs";
-import { textEditorUx } from "../text-editor-ux.mjs";
+const { HandlebarsApplicationMixin } = foundry.applications.api;
+const { ActorSheetV2 } = foundry.applications.sheets;
+const { TextEditor } = foundry.applications.ux;
 
-export function registerFarkpgCharacterSheet() {
-  const { HandlebarsApplicationMixin } = foundry.applications.api;
-  const { ActorSheetV2 } = foundry.applications.sheets;
-
-  class FarkpgCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
-    static DEFAULT_OPTIONS = foundry.utils.mergeObject(
-      foundry.utils.deepClone(ActorSheetV2.DEFAULT_OPTIONS),
-      {
+/**
+ * Character sheet. Uses the v13 native tab system: each tab is its own PART, and the
+ * `tabs` part renders Foundry's generic tab navigation template.
+ */
+export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
+    /** @inheritDoc */
+    static DEFAULT_OPTIONS = {
         classes: ["farkpg", "sheet", "actor", "character"],
-        position: { width: 920, height: 820 },
-        window: {
-          resizable: true,
-          minimizable: true
+        position: { width: 760, height: 720 },
+        window: { resizable: true, icon: "fa-solid fa-user" },
+        form: { submitOnChange: true, closeOnSubmit: false },
+        actions: {
+            rollSkill: FarkPGCharacterSheet.#onRollSkill,
+            openDiceTable: FarkPGCharacterSheet.#onOpenDiceTable,
+            addCustomSkill: FarkPGCharacterSheet.#onAddCustomSkill,
+            removeCustomSkill: FarkPGCharacterSheet.#onRemoveCustomSkill,
+            createItem: FarkPGCharacterSheet.#onCreateItem,
+            editItem: FarkPGCharacterSheet.#onEditItem,
+            deleteItem: FarkPGCharacterSheet.#onDeleteItem,
+            toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
         },
-        form: {
-          submitOnChange: true,
-          closeOnSubmit: false
-        }
-      },
-      { inplace: false }
-    );
-
-    /** @inheritdoc */
-    static PARTS = {
-      sheet: {
-        template: "systems/farkpg-znz/templates/actor-character.hbs"
-      }
     };
 
-    constructor(options = {}) {
-      super(options);
-      /** @private */
-      this._abortSheetUi = null;
-    }
-
-    async _tearDown(...args) {
-      this._abortSheetUi?.abort();
-      this._abortSheetUi = null;
-      await super._tearDown(...args);
-    }
-
-    async _prepareContext(options) {
-      const context = await super._prepareContext(options);
-      const actor = this.actor;
-      // Keep context.system from super — replacing it breaks DocumentSheet submitOnChange.
-      const sysSnap = foundry.utils.duplicate(actor.system ?? {});
-
-      let bioStr = "";
-      const rawBio = actor.system?.biography;
-      if (typeof rawBio === "string") bioStr = rawBio;
-
-      context.skillGroups = skillGroupsFromSystem(sysSnap);
-      context.equippedPanelItems = equippedPanel(actor, sysSnap);
-      context.equipmentEquippedUsed = equippedGearCount(actor);
-      context.inventoryRows = inventoryRowModel(actor, sysSnap);
-      context.abilityItems = abilityItems(actor).map((i) => ({
-        id: i.id,
-        name: i.name,
-        img: i.img,
-        system: foundry.utils.duplicate(i.system)
-      }));
-      context.inventoryCount = inventoryCount(actor);
-      const bioHtml = bioStr.trim()
-        ? await textEditorUx().enrichHTML(bioStr, {
-            secrets: actor.isOwner,
-            relativeTo: actor,
-            async: true
-          })
-        : "";
-      context.enrichedBiography = bioHtml ?? "";
-      context.document = actor;
-      context.actor = actor;
-      context.cssClass ??= [...(this.constructor.DEFAULT_OPTIONS.classes ?? [])].join(" ");
-
-      context.editable = typeof context.editable === "boolean" ? context.editable : this.isEditable;
-      return context;
-    }
-
-    async _onRender(context, options) {
-      if (
-        Array.isArray(options?.parts) &&
-        options.parts.length > 0 &&
-        options.parts.every((p) => p !== "sheet")
-      ) {
-        return super._onRender(context, options);
-      }
-      this._abortSheetUi?.abort();
-      this._abortSheetUi = new AbortController();
-      const { signal } = this._abortSheetUi;
-
-      await super._onRender(context, options);
-
-      const form = this.element?.querySelector("form") ?? this.form;
-      if (!form || !this.isEditable) return;
-
-      for (const el of form.querySelectorAll(".farkpg-tabs .item[data-tab]")) {
-        el.addEventListener(
-          "click",
-          (ev) => {
-            ev.preventDefault();
-            const tab = ev.currentTarget.dataset.tab;
-            this._savedSheetTab = tab;
-            for (const t of form.querySelectorAll(".farkpg-tabs .item")) {
-              t.classList.toggle("active", t.dataset.tab === tab);
-            }
-            for (const p of form.querySelectorAll(".farkpg-tab-panel")) {
-              const show = p.dataset.tabPanel === tab;
-              p.classList.toggle("active", show);
-              p.classList.toggle("hidden", !show);
-            }
-          },
-          { signal }
-        );
-      }
-
-      let tabRestore = this._savedSheetTab ?? "character";
-      if (tabRestore === "main") tabRestore = "character";
-      const validTabs = new Set(["character", "inventory", "config"]);
-      if (!validTabs.has(tabRestore)) tabRestore = "character";
-      if (tabRestore !== "character") {
-        form.querySelectorAll(".farkpg-tabs .item").forEach((t) =>
-          t.classList.toggle("active", t.dataset.tab === tabRestore)
-        );
-        form.querySelectorAll(".farkpg-tab-panel").forEach((p) => {
-          const show = p.dataset.tabPanel === tabRestore;
-          p.classList.toggle("active", show);
-          p.classList.toggle("hidden", !show);
-        });
-      }
-
-      form.querySelectorAll(".rollable.attr-roll").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onRollAttr(ev), { signal })
-      );
-      form.querySelectorAll(".rollable.skill-roll").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onRollSkill(ev), { signal })
-      );
-
-      form.querySelectorAll(".add-custom-skill").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onAddCustomSkill(ev), { signal })
-      );
-      form.querySelectorAll(".remove-custom-skill").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onRemoveCustomSkill(ev), { signal })
-      );
-      form.querySelectorAll(".create-item").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onCreateItem(ev), { signal })
-      );
-
-      form.querySelectorAll(".farkpg-ability-row .item-edit").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onAbilityEdit(ev), { signal })
-      );
-      form.querySelectorAll(".farkpg-ability-row .item-delete").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onAbilityDelete(ev), { signal })
-      );
-
-      form.querySelectorAll(".farkpg-equipped-row .item-edit").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onEquippedEdit(ev), { signal })
-      );
-      form.querySelectorAll(".farkpg-equipped-row .item-delete").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onEquippedDelete(ev), { signal })
-      );
-      form.querySelectorAll(".farkpg-unequip").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onUnequipEquipped(ev), { signal })
-      );
-
-      form.querySelector(".farkpg-item-table tbody")?.addEventListener(
-        "click",
-        (ev) => {
-          const t = ev.target.closest(".farkpg-equip-from-stash");
-          if (!t?.closest("tbody")) return;
-          ev.preventDefault();
-          ev.stopPropagation();
-          void this._onToggleEquipTable(ev);
+    /** @inheritDoc */
+    static PARTS = {
+        header: {
+            template: `systems/${SYSTEM_ID}/templates/actor/parts/header.hbs`,
         },
-        { signal }
-      );
+        tabs: {
+            template: `systems/${SYSTEM_ID}/templates/actor/parts/tabs.hbs`,
+        },
+        character: {
+            template: `systems/${SYSTEM_ID}/templates/actor/parts/tab-character.hbs`,
+            scrollable: [".farkpg-character-main"],
+        },
+        inventory: {
+            template: `systems/${SYSTEM_ID}/templates/actor/parts/tab-inventory.hbs`,
+            scrollable: [""],
+        },
+        config: {
+            template: `systems/${SYSTEM_ID}/templates/actor/parts/tab-config.hbs`,
+            scrollable: [""],
+        },
+    };
 
-      form.querySelectorAll(".edit-item-sheet").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onInventoryEditTable(ev), { signal })
-      );
-      form.querySelectorAll(".delete-item-sheet").forEach((el) =>
-        el.addEventListener("click", (ev) => this._onInventoryDeleteTable(ev), { signal })
-      );
+    /** @inheritDoc */
+    static TABS = {
+        primary: {
+            tabs: [
+                { id: "character", icon: "fa-solid fa-user" },
+                { id: "inventory", icon: "fa-solid fa-briefcase" },
+                { id: "config", icon: "fa-solid fa-gear" },
+            ],
+            labelPrefix: "FARKPG.Tabs",
+            initial: "character",
+        },
+    };
+
+    /* ----------------------------------------- */
+    /*  Context                                  */
+    /* ----------------------------------------- */
+
+    /** @inheritDoc */
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        const system = this.actor.system ?? {};
+
+        context.system = system;
+        context.actor = this.actor;
+        context.editable = this.isEditable;
+        context.tabs = this._prepareTabs("primary");
+
+        const items = this.actor.items.contents;
+        const isAbility = (i) => i.type === "ability";
+        const isEquipped = (i) => !isAbility(i) && i.system?.isEquipped === true;
+        const inInventory = (i) => !isAbility(i) && !isEquipped(i);
+
+        context.equippedItems = items.filter(isEquipped).sort((a, b) => a.sort - b.sort);
+        context.inventoryItems = items.filter(inInventory).sort((a, b) => a.sort - b.sort);
+        context.abilities = items.filter(isAbility).sort((a, b) => a.sort - b.sort);
+
+        context.slots = {
+            equipment: {
+                count: context.equippedItems.length,
+                max: Number(system.config?.equipmentSlots ?? 0),
+            },
+            inventory: {
+                count: context.inventoryItems.length,
+                max: Number(system.config?.inventorySlots ?? 0),
+            },
+        };
+
+        context.attributeBlocks = ATTRIBUTE_KEYS.map((key) => this.#buildAttributeBlock(key, system));
+        context.inventoryItemTypes = INVENTORY_ITEM_TYPES;
+
+        return context;
     }
 
-    _itemFromTarget(ev) {
-      const row = ev.currentTarget?.closest?.("[data-item-id]") ?? ev.target?.closest?.("[data-item-id]");
-      const id = row?.dataset.itemId;
-      return id ? this.actor.items.get(id) : null;
+    /** @inheritDoc */
+    async _preparePartContext(partId, context, options) {
+        context = await super._preparePartContext(partId, context, options);
+        if (context.tabs && context.tabs[partId]) {
+            context.tab = context.tabs[partId];
+        }
+        if (partId === "character") {
+            context.biographyHTML = await TextEditor.implementation.enrichHTML(
+                this.actor.system?.biography ?? "",
+                {
+                    secrets: this.actor.isOwner,
+                    relativeTo: this.actor,
+                    rollData: this.actor.getRollData?.() ?? {},
+                },
+            );
+        }
+        return context;
     }
 
-    async _onRollAttr(ev) {
-      ev.preventDefault();
-      const attr = ev.currentTarget.dataset.attr;
-      await rollSkill(this.actor, attr, "");
+    /**
+     * @param {"body"|"adroit"|"mind"} key
+     * @param {any} system
+     */
+    #buildAttributeBlock(key, system) {
+        const attrValue = Number(system.attributes?.[key] ?? 0);
+        const builtIn = (ATTRIBUTE_SKILLS[key] ?? []).map((skillKey) => ({
+            kind: "builtin",
+            key: skillKey,
+            id: skillKey,
+            label: game.i18n.localize(`FARKPG.Skills.${skillKey}`),
+            value: Number(system.skills?.[skillKey] ?? 0),
+            inputName: `system.skills.${skillKey}`,
+        }));
+
+        const customMap = system.customSkills ?? {};
+        const custom = Object.values(customMap)
+            .filter((s) => s && s.attribute === key)
+            .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+            .map((s) => ({
+                kind: "custom",
+                key: s.id,
+                id: s.id,
+                label: s.name || game.i18n.localize("FARKPG.Skills.customDefault"),
+                value: Number(s.value ?? 0),
+                inputName: `system.customSkills.${s.id}.value`,
+                nameInputName: `system.customSkills.${s.id}.name`,
+            }));
+
+        return {
+            key,
+            label: game.i18n.localize(`FARKPG.Attributes.${key}`),
+            value: attrValue,
+            inputName: `system.attributes.${key}`,
+            skills: [...builtIn, ...custom],
+        };
     }
 
-    async _onRollSkill(ev) {
-      ev.preventDefault();
-      const el = ev.currentTarget;
-      const skill = el.dataset.skill;
-      if (!skill) return;
-      await rollSkill(this.actor, el.dataset.attr, skill);
+    /* ----------------------------------------- */
+    /*  Form submission                          */
+    /* ----------------------------------------- */
+
+    /** @inheritDoc */
+    _prepareSubmitData(event, form, formData, updateData) {
+        const data = super._prepareSubmitData(event, form, formData, updateData);
+        const clamp = (n, min, max) => {
+            const v = Number(n);
+            if (!Number.isFinite(v)) return min;
+            return Math.min(max, Math.max(min, v));
+        };
+        for (const key of ["body", "adroit", "mind"]) {
+            const path = `system.attributes.${key}`;
+            if (foundry.utils.hasProperty(data, path)) {
+                foundry.utils.setProperty(data, path, clamp(foundry.utils.getProperty(data, path), 0, 6));
+            }
+        }
+        const skills = foundry.utils.getProperty(data, "system.skills");
+        if (skills && typeof skills === "object") {
+            for (const k of Object.keys(skills)) {
+                skills[k] = clamp(skills[k], 0, 4);
+            }
+        }
+        const customSkills = foundry.utils.getProperty(data, "system.customSkills");
+        if (customSkills && typeof customSkills === "object") {
+            for (const entry of Object.values(customSkills)) {
+                if (entry && typeof entry === "object" && "value" in entry) {
+                    entry.value = clamp(entry.value, 0, 4);
+                }
+            }
+        }
+        return data;
     }
 
-    async _onAddCustomSkill(ev) {
-      ev.preventDefault();
-      const ak = ev.currentTarget.dataset.attrKey;
-      if (!["body", "adroit", "mind"].includes(ak)) return;
-      const cur = [...(this.actor.system.customSkills ?? [])];
-      cur.push({
-        id: foundry.utils.randomID(),
-        attrKey: ak,
-        label: game.i18n.localize("FARKPG.CustomSkill"),
-        value: 0
-      });
-      await this.actor.update({ "system.customSkills": cur });
+    /* ----------------------------------------- */
+    /*  Render hooks                             */
+    /* ----------------------------------------- */
+
+    /** @inheritDoc */
+    _onRender(context, options) {
+        super._onRender?.(context, options);
+
+        for (const input of this.element.querySelectorAll(".farkpg-custom-skill-name")) {
+            input.addEventListener("change", (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                const target = ev.currentTarget;
+                const id = target.dataset.customId;
+                const value = String(target.value ?? "").trim();
+                if (!id) return;
+                this.actor.update({ [`system.customSkills.${id}.name`]: value });
+            });
+        }
     }
 
-    async _onRemoveCustomSkill(ev) {
-      ev.preventDefault();
-      const idx = Number(ev.currentTarget.dataset.index);
-      if (Number.isNaN(idx)) return;
-      const cur = [...(this.actor.system.customSkills ?? [])];
-      cur.splice(idx, 1);
-      await this.actor.update({ "system.customSkills": cur });
+    /* ----------------------------------------- */
+    /*  Actions                                  */
+    /* ----------------------------------------- */
+
+    /**
+     * Roll `1d20 + attribute + skill` to chat.
+     * @this {FarkPGCharacterSheet}
+     * @param {PointerEvent} event
+     * @param {HTMLElement} target
+     */
+    static async #onRollSkill(event, target) {
+        event.preventDefault();
+        const attr = String(target.dataset.attribute ?? "");
+        const skillKey = String(target.dataset.skill ?? "");
+        const customId = String(target.dataset.customId ?? "");
+
+        const system = this.actor.system ?? {};
+        const atr = Number(system.attributes?.[attr] ?? 0);
+
+        let skl = 0;
+        let skillLabel = "";
+        if (customId) {
+            const entry = system.customSkills?.[customId];
+            skl = Number(entry?.value ?? 0);
+            skillLabel = String(entry?.name ?? "").trim() || game.i18n.localize("FARKPG.Skills.customDefault");
+        } else if (skillKey) {
+            skl = Number(system.skills?.[skillKey] ?? 0);
+            skillLabel = game.i18n.localize(`FARKPG.Skills.${skillKey}`);
+        }
+
+        const attrLabel = game.i18n.localize(`FARKPG.Attributes.${attr}`);
+        const flavor = skillLabel
+            ? game.i18n.format("FARKPG.Rolls.skill", { skill: skillLabel, attribute: attrLabel })
+            : game.i18n.format("FARKPG.Rolls.attribute", { attribute: attrLabel });
+
+        const roll = new Roll("1d20 + @atr + @skl", { atr, skl });
+        await roll.evaluate();
+        await roll.toMessage({
+            speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+            flavor,
+        });
     }
 
-    async _onCreateItem(ev) {
-      ev.preventDefault();
-      const type = ev.currentTarget.dataset.type;
-      const fromInventory = !!ev.currentTarget.closest(".farkpg-inv-toolbar, [data-tab-panel='inventory']");
-      if (fromInventory) this._savedSheetTab = "inventory";
-      else if (type === "ability") this._savedSheetTab = "character";
-
-      const max = this.actor.system.inventory?.maxSlots ?? 4;
-      if (inventoryCount(this.actor) >= max && type !== "ability") {
-        ui.notifications.warn(`Inventory full (${max} slots).`);
-        return;
-      }
-      const itemData = { name: game.i18n.localize(`TYPES.Item.${type}`), type };
-      await Item.create(itemData, { parent: this.actor });
+    /**
+     * Open the Virtual Dice Table module window.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onOpenDiceTable(event) {
+        event?.preventDefault();
+        const direct = globalThis.virtualDiceTable;
+        if (direct?.open) {
+            direct.open();
+            return;
+        }
+        const api = game.modules.get("virtual-dice-table")?.api;
+        if (api?.openVirtualTable) {
+            api.openVirtualTable();
+            return;
+        }
+        ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
     }
 
-    _onAbilityEdit(ev) {
-      ev.stopPropagation();
-      this._savedSheetTab = "character";
-      const item = this._itemFromTarget(ev);
-      item?.sheet?.render(true);
+    /**
+     * Append a new custom skill scoped to the given attribute.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onAddCustomSkill(event, target) {
+        event.preventDefault();
+        const attribute = String(target.dataset.attribute ?? "");
+        if (!ATTRIBUTE_KEYS.includes(/** @type {any} */ (attribute))) return;
+        const id = foundry.utils.randomID();
+        await this.actor.update({
+            [`system.customSkills.${id}`]: {
+                id,
+                name: game.i18n.localize("FARKPG.Skills.customDefault"),
+                attribute,
+                value: 0,
+            },
+        });
     }
 
-    async _onAbilityDelete(ev) {
-      ev.stopPropagation();
-      const item = this._itemFromTarget(ev);
-      if (!item) return;
-      await item.deleteDialog();
+    /**
+     * Remove a custom skill by ID using the deletion path syntax.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onRemoveCustomSkill(event, target) {
+        event.preventDefault();
+        const id = String(target.dataset.customId ?? "");
+        if (!id) return;
+        await this.actor.update({ [`system.customSkills.-=${id}`]: null });
     }
 
-    _onEquippedEdit(ev) {
-      ev.stopPropagation();
-      this._savedSheetTab = "character";
-      const item = this._itemFromTarget(ev);
-      item?.sheet?.render(true);
+    /**
+     * Create a new embedded item of the given type and open its sheet.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onCreateItem(event, target) {
+        event.preventDefault();
+        const type = String(target.dataset.itemType ?? "");
+        if (!INVENTORY_ITEM_TYPES.includes(type)) return;
+        const nameKey = `FARKPG.Items.new${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+        const [created] = await this.actor.createEmbeddedDocuments("Item", [
+            { name: game.i18n.localize(nameKey), type },
+        ]);
+        created?.sheet?.render(true);
     }
 
-    async _onEquippedDelete(ev) {
-      ev.stopPropagation();
-      const item = this._itemFromTarget(ev);
-      if (!item) return;
-      await item.deleteDialog();
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static #onEditItem(event, target) {
+        event.preventDefault();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        const item = this.actor.items.get(id);
+        item?.sheet?.render(true);
     }
 
-    async _onUnequipEquipped(ev) {
-      ev.preventDefault();
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
-      if (!id) return;
-      this._savedSheetTab = "character";
-      await stripEquipped(this.actor, id);
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onDeleteItem(event, target) {
+        event.preventDefault();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        if (!id) return;
+        await this.actor.deleteEmbeddedDocuments("Item", [id]);
     }
 
-    async _onToggleEquipTable(ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const tr = ev.currentTarget.closest("tr[data-item-id]");
-      const id = tr?.dataset.itemId;
-      if (!id) return;
-      const actor = this.actor;
-      const item = actor.items.get(id);
-      if (!item || !["weapon", "consumable", "equipment"].includes(item.type)) return;
-      if (gearIsEquipped(item)) return;
-      const max = Math.max(1, Number(actor.system?.equipment?.slotCount) || 2);
-      if (equippedGearCount(actor) >= max) {
-        ui.notifications.warn(game.i18n.localize("FARKPG.EquipSlotsFull"));
-        return;
-      }
-      this._savedSheetTab = "character";
-      await item.update({ "system.isEquipped": true });
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onToggleEquip(event, target) {
+        event.preventDefault();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type === "ability") return;
+        await item.update({ "system.isEquipped": !item.system?.isEquipped });
     }
-
-    _onInventoryEditTable(ev) {
-      ev.preventDefault();
-      this._savedSheetTab = "inventory";
-      const item = this._itemFromTarget(ev);
-      item?.sheet?.render(true);
-    }
-
-    async _onInventoryDeleteTable(ev) {
-      ev.preventDefault();
-      const item = this._itemFromTarget(ev);
-      if (!item) return;
-      this._savedSheetTab = "inventory";
-      await item.deleteDialog();
-    }
-  }
-
-  foundry.documents.collections.Actors.registerSheet("farkpg-znz", FarkpgCharacterSheet, {
-    types: ["character"],
-    makeDefault: true
-  });
 }

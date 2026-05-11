@@ -1,26 +1,27 @@
-/* global foundry */
+/**
+ * Static configuration data for FarkPG-ZnZ.
+ * Imported by both the main entry module and the actor sheet.
+ */
 
-export const BODY_SKILLS = ["meleeWeapons", "block", "unarmed", "endurance", "athletics"];
-export const ADROIT_SKILLS = ["rangedWeapons", "dodge", "perception", "throwing", "coordination", "stealth"];
-export const MIND_SKILLS = ["charisma", "intelligence", "sanity", "instinct", "luck"];
-export const ALL_SKILL_KEYS = new Set([...BODY_SKILLS, ...ADROIT_SKILLS, ...MIND_SKILLS]);
-export const ATTR_VALUE_MAX = 6;
-export const SKILL_VALUE_MAX = 4;
+export const SYSTEM_ID = "farkpg-znz";
 
-export const DEFAULT_CHARACTER_ATTRIBUTES = { body: 1, adroit: 1, mind: 1 };
+/**
+ * Each attribute lists the built-in skills that belong to it, in display order.
+ * Skill keys must match `template.json` `Actor.character.skills.*`.
+ * @type {Record<"body"|"adroit"|"mind", string[]>}
+ */
+export const ATTRIBUTE_SKILLS = {
+    body: ["meleeWeapons", "block", "unarmed", "endurance", "athletics"],
+    adroit: ["rangedWeapons", "dodge", "throwing", "coordination", "thievery", "stealth"],
+    mind: ["charisma", "intelligence", "perception", "sanity", "instinct", "luck"],
+};
 
-export function customRollKey(id) {
-  return `cust_${String(id).replace(/[^a-zA-Z0-9_]/g, "_")}`;
-}
+export const ATTRIBUTE_KEYS = /** @type {("body"|"adroit"|"mind")[]} */ (
+    Object.keys(ATTRIBUTE_SKILLS)
+);
 
-export function defaultSkillTotals() {
-  const o = {};
-  for (const k of [...BODY_SKILLS, ...ADROIT_SKILLS, ...MIND_SKILLS]) o[k] = 0;
-  return o;
-}
-
-export function extendedSkillRollKey(skillIdOrKey) {
-  const s = String(skillIdOrKey);
-  if (ALL_SKILL_KEYS.has(s)) return s;
-  return customRollKey(skillIdOrKey);
-}
+/**
+ * Item types that may appear in the Inventory tab's "Add" buttons.
+ * Order controls button order.
+ */
+export const INVENTORY_ITEM_TYPES = ["weapon", "consumable", "equipment", "ability"];

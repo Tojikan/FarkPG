@@ -1,0 +1,26 @@
+<section class="tab farkpg-tab farkpg-tab-config {{tab.cssClass}}"
+         data-group="primary"
+         data-tab="config">
+
+    <header class="farkpg-panel-header">
+        <h2>{{localize 'FARKPG.Config.title'}}</h2>
+    </header>
+
+    <div class="farkpg-config-grid">
+        <label class="farkpg-config-field">
+            <span>{{localize 'FARKPG.Config.equipmentSlots'}}</span>
+            <input type="number"
+                   name="system.config.equipmentSlots"
+                   value="{{system.config.equipmentSlots}}"
+                   min="0" step="1" />
+        </label>
+
+        <label class="farkpg-config-field">
+            <span>{{localize 'FARKPG.Config.inventorySlots'}}</span>
+            <input type="number"
+                   name="system.config.inventorySlots"
+                   value="{{system.config.inventorySlots}}"
+                   min="0" step="1" />
+        </label>
+    </div>
+</section>

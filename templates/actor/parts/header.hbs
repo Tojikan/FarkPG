@@ -1,0 +1,64 @@
+<header class="farkpg-header">
+    <div class="farkpg-portrait">
+        <img src="{{actor.img}}" data-edit="img" alt="{{actor.name}}" />
+    </div>
+
+    <div class="farkpg-header-body">
+        <div class="farkpg-header-row farkpg-header-name">
+            <input type="text"
+                   name="name"
+                   value="{{actor.name}}"
+                   placeholder="{{localize 'FARKPG.Header.name'}}" />
+        </div>
+
+        <div class="farkpg-header-row farkpg-resources">
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.hp'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.health.value"
+                           value="{{system.resources.health.value}}" />
+                    <span class="farkpg-sep">/</span>
+                    <input type="number"
+                           name="system.resources.health.max"
+                           value="{{system.resources.health.max}}" />
+                </span>
+            </label>
+
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.ap'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.actionPoints.value"
+                           value="{{system.resources.actionPoints.value}}" />
+                    <span class="farkpg-sep">/</span>
+                    <input type="number"
+                           name="system.resources.actionPoints.max"
+                           value="{{system.resources.actionPoints.max}}" />
+                </span>
+            </label>
+
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.exp'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.exp.value"
+                           value="{{system.resources.exp.value}}" />
+                    <span class="farkpg-sep">/</span>
+                    <input type="number"
+                           name="system.resources.exp.max"
+                           value="{{system.resources.exp.max}}" />
+                </span>
+            </label>
+
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.move'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.movement"
+                           value="{{system.resources.movement}}" />
+                </span>
+            </label>
+        </div>
+    </div>
+</header>

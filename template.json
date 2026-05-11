@@ -2,75 +2,72 @@
   "Actor": {
     "types": ["character"],
     "character": {
-      "system": {
-        "biography": "",
-        "attributes": { "body": 3, "adroit": 3, "mind": 3 },
-        "skills": {
-          "meleeWeapons": 0,
-          "block": 0,
-          "unarmed": 0,
-          "endurance": 0,
-          "athletics": 0,
-          "rangedWeapons": 0,
-          "dodge": 0,
-          "perception": 0,
-          "throwing": 0,
-          "coordination": 0,
-          "stealth": 0,
-          "charisma": 0,
-          "intelligence": 0,
-          "sanity": 0,
-          "instinct": 0,
-          "luck": 0
-        },
-        "resources": {
-          "health": { "value": 10000, "max": 10000 },
-          "actionPoints": { "value": 4, "max": 4 },
-          "exp": { "value": 0, "max": 100 },
-          "movement": 30
-        },
-        "inventory": { "maxSlots": 4, "layout": "grid" },
-        "equipment": { "slotCount": 2 },
-        "customSkills": []
+      "biography": "",
+      "attributes": {
+        "body": 3,
+        "adroit": 3,
+        "mind": 3
+      },
+      "skills": {
+        "meleeWeapons": 0,
+        "block": 0,
+        "unarmed": 0,
+        "endurance": 0,
+        "athletics": 0,
+        "rangedWeapons": 0,
+        "dodge": 0,
+        "throwing": 0,
+        "coordination": 0,
+        "thievery": 0,
+        "stealth": 0,
+        "charisma": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "sanity": 0,
+        "instinct": 0,
+        "luck": 0
+      },
+      "customSkills": {},
+      "resources": {
+        "health": { "value": 10000, "max": 10000 },
+        "actionPoints": { "value": 4, "max": 4 },
+        "exp": { "value": 0, "max": 100 },
+        "movement": 30
+      },
+      "config": {
+        "equipmentSlots": 2,
+        "inventorySlots": 4
       }
     }
   },
   "Item": {
     "types": ["weapon", "consumable", "equipment", "ability"],
     "weapon": {
-      "system": {
-        "description": "",
-        "durability": { "value": 10, "max": 10 },
-        "rollable": { "multiplier": 0, "max": 0 },
-        "weaponStyle": "melee",
-        "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "" },
-        "isEquipped": false
-      }
+      "description": "",
+      "durability": { "value": 10, "max": 10 },
+      "rollable": { "multiplier": 0, "max": 0 },
+      "weaponStyle": "melee",
+      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "" },
+      "isEquipped": false
     },
     "consumable": {
-      "system": {
-        "description": "",
-        "durability": { "value": 0, "max": 0 },
-        "rollable": { "multiplier": 0, "max": 0 },
-        "quantity": { "value": 1, "max": 99 },
-        "isEquipped": false
-      }
+      "description": "",
+      "durability": { "value": 0, "max": 0 },
+      "rollable": { "multiplier": 0, "max": 0 },
+      "quantity": { "value": 1, "max": 99 },
+      "isEquipped": false
     },
     "equipment": {
-      "system": {
-        "description": "",
-        "durability": { "value": 10, "max": 10 },
-        "rollable": { "multiplier": 0, "max": 0 },
-        "isEquipped": false
-      }
+      "description": "",
+      "durability": { "value": 10, "max": 10 },
+      "rollable": { "multiplier": 0, "max": 0 },
+      "isEquipped": false
     },
     "ability": {
-      "system": {
-        "description": "",
-        "cost": 0,
-        "rank": 1,
-        "maxRank": 1
-      }
+      "description": "",
+      "cost": 0,
+      "rank": 1,
+      "maxRank": 1
     }
   }
 }

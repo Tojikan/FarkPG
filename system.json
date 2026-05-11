@@ -1,7 +1,7 @@
 {
   "id": "farkpg-znz",
-  "title": "FarkPG",
-  "description": "FarkPG: attributes, skills, inventory items, and abilities with D20 + attribute + skill resolution.",
+  "title": "FarkPG-ZnZ",
+  "description": "FarkPG system for the ZnZ game.",
   "version": "0.1.0",
   "authors": [{ "name": "FarkPG" }],
   "compatibility": {
@@ -10,28 +10,22 @@
   },
   "esmodules": ["scripts/farkpg.mjs"],
   "styles": ["styles/farkpg.css"],
-  "languages": [{ "lang": "en", "name": "English", "path": "lang/en.json" }],
+  "languages": [
+    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  ],
   "grid": { "distance": 5, "units": "ft" },
   "primaryTokenAttribute": "resources.health",
   "documentTypes": {
     "Actor": {
       "character": {
-        "htmlFields": ["system.biography"]
+        "htmlFields": ["biography"]
       }
     },
     "Item": {
-      "weapon": {
-        "htmlFields": ["system.description"]
-      },
-      "consumable": {
-        "htmlFields": ["system.description"]
-      },
-      "equipment": {
-        "htmlFields": ["system.description"]
-      },
-      "ability": {
-        "htmlFields": ["system.description"]
-      }
+      "weapon":     { "htmlFields": ["description"] },
+      "consumable": { "htmlFields": ["description"] },
+      "equipment":  { "htmlFields": ["description"] },
+      "ability":    { "htmlFields": ["description"] }
     }
   },
   "flags": {

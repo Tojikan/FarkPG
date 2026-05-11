@@ -1,0 +1,139 @@
+<section class="farkpg-item-sheet">
+
+    <header class="farkpg-item-header">
+        <img class="farkpg-item-icon" src="{{item.img}}" data-edit="img" alt="{{item.name}}" />
+        <div class="farkpg-item-header-fields">
+            <input type="text"
+                   class="farkpg-item-name"
+                   name="name"
+                   value="{{item.name}}"
+                   placeholder="{{localize 'DOCUMENT.Item'}}" />
+            <span class="farkpg-item-type-badge">{{item.type}}</span>
+        </div>
+    </header>
+
+    <div class="farkpg-item-body">
+
+        {{#if isWeapon}}
+            <fieldset class="farkpg-fieldset">
+                <legend>Weapon</legend>
+                <label>
+                    <span>Style</span>
+                    <select name="system.weaponStyle">
+                        <option value="melee" {{#if (eq system.weaponStyle 'melee')}}selected{{/if}}>Melee</option>
+                        <option value="ranged" {{#if (eq system.weaponStyle 'ranged')}}selected{{/if}}>Ranged</option>
+                        <option value="thrown" {{#if (eq system.weaponStyle 'thrown')}}selected{{/if}}>Thrown</option>
+                        <option value="unarmed" {{#if (eq system.weaponStyle 'unarmed')}}selected{{/if}}>Unarmed</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Durability</span>
+                    <span class="farkpg-pair">
+                        <input type="number" name="system.durability.value" value="{{system.durability.value}}" />
+                        <span class="farkpg-sep">/</span>
+                        <input type="number" name="system.durability.max" value="{{system.durability.max}}" />
+                    </span>
+                </label>
+                <label>
+                    <span>Rollable Multiplier</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                </label>
+                <label>
+                    <span>Rollable Max</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                </label>
+                <label>
+                    <span>Ammo Enabled</span>
+                    <input type="checkbox" name="system.ammo.enabled" {{#if system.ammo.enabled}}checked{{/if}} />
+                </label>
+                <label>
+                    <span>Ammo Per Use</span>
+                    <input type="number" name="system.ammo.perUse" value="{{system.ammo.perUse}}" />
+                </label>
+            </fieldset>
+        {{/if}}
+
+        {{#if isConsumable}}
+            <fieldset class="farkpg-fieldset">
+                <legend>Consumable</legend>
+                <label>
+                    <span>Quantity</span>
+                    <span class="farkpg-pair">
+                        <input type="number" name="system.quantity.value" value="{{system.quantity.value}}" />
+                        <span class="farkpg-sep">/</span>
+                        <input type="number" name="system.quantity.max" value="{{system.quantity.max}}" />
+                    </span>
+                </label>
+                <label>
+                    <span>Rollable Multiplier</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                </label>
+                <label>
+                    <span>Rollable Max</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                </label>
+            </fieldset>
+        {{/if}}
+
+        {{#if isEquipment}}
+            <fieldset class="farkpg-fieldset">
+                <legend>Equipment</legend>
+                <label>
+                    <span>Durability</span>
+                    <span class="farkpg-pair">
+                        <input type="number" name="system.durability.value" value="{{system.durability.value}}" />
+                        <span class="farkpg-sep">/</span>
+                        <input type="number" name="system.durability.max" value="{{system.durability.max}}" />
+                    </span>
+                </label>
+                <label>
+                    <span>Rollable Multiplier</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                </label>
+                <label>
+                    <span>Rollable Max</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                </label>
+            </fieldset>
+        {{/if}}
+
+        {{#if isAbility}}
+            <fieldset class="farkpg-fieldset">
+                <legend>Ability</legend>
+                <label>
+                    <span>Cost</span>
+                    <input type="number" name="system.cost" value="{{system.cost}}" />
+                </label>
+                <label>
+                    <span>Rank</span>
+                    <span class="farkpg-pair">
+                        <input type="number" name="system.rank" value="{{system.rank}}" />
+                        <span class="farkpg-sep">/</span>
+                        <input type="number" name="system.maxRank" value="{{system.maxRank}}" />
+                    </span>
+                </label>
+            </fieldset>
+        {{/if}}
+
+        {{#if canEquip}}
+            <label class="farkpg-equipped-check">
+                <input type="checkbox" name="system.isEquipped" {{#if system.isEquipped}}checked{{/if}} />
+                <span>Equipped</span>
+            </label>
+        {{/if}}
+
+        <fieldset class="farkpg-fieldset farkpg-description">
+            <legend>Description</legend>
+            <div class="editor">
+                {{#if editable}}
+                    <prose-mirror name="system.description"
+                                  value="{{system.description}}"
+                                  document-uuid="{{item.uuid}}"></prose-mirror>
+                {{else}}
+                    <div class="editor-content">{{{descriptionHTML}}}</div>
+                {{/if}}
+            </div>
+        </fieldset>
+
+    </div>
+</section>

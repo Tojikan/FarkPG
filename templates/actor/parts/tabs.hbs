@@ -1,0 +1,13 @@
+<nav class="farkpg-tabnav tabs" data-group="primary" aria-role="navigation">
+    {{#each tabs as |tab|}}
+        <a class="item {{tab.cssClass}}"
+           data-action="tab"
+           data-group="{{tab.group}}"
+           data-tab="{{tab.id}}"
+           data-tooltip="{{tab.tooltip}}"
+           aria-label="{{localize tab.label}}">
+            {{#if tab.icon}}<i class="{{tab.icon}}"></i>{{/if}}
+            {{#if tab.label}}<span>{{localize tab.label}}</span>{{/if}}
+        </a>
+    {{/each}}
+</nav>

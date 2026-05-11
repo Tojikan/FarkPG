@@ -1,0 +1,199 @@
+<section class="tab farkpg-tab farkpg-tab-character {{tab.cssClass}}"
+         data-group="primary"
+         data-tab="character">
+
+    <aside class="farkpg-attributes-sidebar">
+        <h2 class="farkpg-sidebar-title">{{localize 'FARKPG.Attributes.label'}}</h2>
+
+        {{#each attributeBlocks as |attr|}}
+            <div class="farkpg-attribute-block" data-attribute="{{attr.key}}">
+                <div class="farkpg-attribute-row">
+                    <label class="farkpg-attribute-name">{{attr.label}}</label>
+                    <button type="button"
+                            class="farkpg-roll-btn"
+                            data-action="rollSkill"
+                            data-attribute="{{attr.key}}"
+                            data-tooltip="{{localize 'FARKPG.Skills.roll'}}"
+                            aria-label="{{localize 'FARKPG.Skills.roll'}}">
+                        <i class="fa-solid fa-dice-d20"></i>
+                    </button>
+                    <button type="button"
+                            class="farkpg-dicetable-btn"
+                            data-action="openDiceTable"
+                            data-tooltip="{{localize 'FARKPG.Skills.diceTable'}}"
+                            aria-label="{{localize 'FARKPG.Skills.diceTable'}}">
+                        <i class="fa-solid fa-dice"></i>
+                    </button>
+                    <input type="number"
+                           class="farkpg-attribute-value"
+                           name="{{attr.inputName}}"
+                           value="{{attr.value}}"
+                           min="0" max="6" step="1" />
+                </div>
+
+                <ul class="farkpg-skill-list">
+                    {{#each attr.skills as |skill|}}
+                        <li class="farkpg-skill-row farkpg-skill-{{skill.kind}}" data-skill-id="{{skill.id}}">
+                            {{#if (eq skill.kind "custom")}}
+                                <input type="text"
+                                       class="farkpg-skill-name farkpg-custom-skill-name"
+                                       data-custom-id="{{skill.id}}"
+                                       value="{{skill.label}}" />
+                            {{else}}
+                                <label class="farkpg-skill-name">{{skill.label}}</label>
+                            {{/if}}
+                            <button type="button"
+                                    class="farkpg-roll-btn"
+                                    data-action="rollSkill"
+                                    data-attribute="{{../attr.key}}"
+                                    {{#if (eq skill.kind "custom")}}data-custom-id="{{skill.id}}"{{else}}data-skill="{{skill.key}}"{{/if}}
+                                    data-tooltip="{{localize 'FARKPG.Skills.roll'}}"
+                                    aria-label="{{localize 'FARKPG.Skills.roll'}}">
+                                <i class="fa-solid fa-dice-d20"></i>
+                            </button>
+                            <button type="button"
+                                    class="farkpg-dicetable-btn"
+                                    data-action="openDiceTable"
+                                    data-tooltip="{{localize 'FARKPG.Skills.diceTable'}}"
+                                    aria-label="{{localize 'FARKPG.Skills.diceTable'}}">
+                                <i class="fa-solid fa-dice"></i>
+                            </button>
+                            <input type="number"
+                                   class="farkpg-skill-value"
+                                   name="{{skill.inputName}}"
+                                   value="{{skill.value}}"
+                                   min="0" max="4" step="1" />
+                            {{#if (eq skill.kind "custom")}}
+                                <button type="button"
+                                        class="farkpg-icon-btn farkpg-skill-remove"
+                                        data-action="removeCustomSkill"
+                                        data-custom-id="{{skill.id}}"
+                                        data-tooltip="{{localize 'FARKPG.Skills.remove'}}"
+                                        aria-label="{{localize 'FARKPG.Skills.remove'}}">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            {{/if}}
+                        </li>
+                    {{/each}}
+                </ul>
+
+                <button type="button"
+                        class="farkpg-add-skill-btn"
+                        data-action="addCustomSkill"
+                        data-attribute="{{attr.key}}">
+                    <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Skills.addCustom'}}
+                </button>
+            </div>
+        {{/each}}
+    </aside>
+
+    <div class="farkpg-character-main">
+
+        <section class="farkpg-panel farkpg-equipment">
+            <header class="farkpg-panel-header">
+                <h2>{{localize 'FARKPG.Equipment.title'}}</h2>
+                <div class="farkpg-slot-counter" aria-live="polite">
+                    <span>{{localize 'FARKPG.Equipment.slots'}}:</span>
+                    <input type="text" value="{{slots.equipment.count}} / {{slots.equipment.max}}" readonly tabindex="-1" />
+                </div>
+            </header>
+            <ul class="farkpg-item-list">
+                {{#each equippedItems as |item|}}
+                    <li class="farkpg-item" data-item-id="{{item.id}}">
+                        <img class="farkpg-item-icon" src="{{item.img}}" alt="" />
+                        <span class="farkpg-item-name">{{item.name}}</span>
+                        <span class="farkpg-item-type">{{item.type}}</span>
+                        <span class="farkpg-item-controls">
+                            <button type="button"
+                                    class="farkpg-icon-btn"
+                                    data-action="toggleEquip"
+                                    data-tooltip="{{localize 'FARKPG.Items.unequip'}}"
+                                    aria-label="{{localize 'FARKPG.Items.unequip'}}">
+                                <i class="fa-solid fa-circle-minus"></i>
+                            </button>
+                            <button type="button"
+                                    class="farkpg-icon-btn"
+                                    data-action="editItem"
+                                    data-tooltip="{{localize 'FARKPG.Items.edit'}}"
+                                    aria-label="{{localize 'FARKPG.Items.edit'}}">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button type="button"
+                                    class="farkpg-icon-btn"
+                                    data-action="deleteItem"
+                                    data-tooltip="{{localize 'FARKPG.Items.delete'}}"
+                                    aria-label="{{localize 'FARKPG.Items.delete'}}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </span>
+                    </li>
+                {{else}}
+                    <li class="farkpg-empty">{{localize 'FARKPG.Equipment.empty'}}</li>
+                {{/each}}
+            </ul>
+        </section>
+
+        <section class="farkpg-panel farkpg-abilities">
+            <header class="farkpg-panel-header">
+                <h2>{{localize 'FARKPG.Abilities.title'}}</h2>
+                <button type="button"
+                        class="farkpg-add-btn"
+                        data-action="createItem"
+                        data-item-type="ability">
+                    <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Inventory.addAbility'}}
+                </button>
+            </header>
+            <ul class="farkpg-item-list">
+                {{#each abilities as |item|}}
+                    <li class="farkpg-item" data-item-id="{{item.id}}">
+                        <img class="farkpg-item-icon" src="{{item.img}}" alt="" />
+                        <span class="farkpg-item-name">{{item.name}}</span>
+                        <span class="farkpg-ability-stats">
+                            <span class="farkpg-stat">
+                                <em>{{localize 'FARKPG.Abilities.rank'}}:</em> {{item.system.rank}}/{{item.system.maxRank}}
+                            </span>
+                            <span class="farkpg-stat">
+                                <em>{{localize 'FARKPG.Abilities.cost'}}:</em> {{item.system.cost}}
+                            </span>
+                        </span>
+                        <span class="farkpg-item-controls">
+                            <button type="button"
+                                    class="farkpg-icon-btn"
+                                    data-action="editItem"
+                                    data-tooltip="{{localize 'FARKPG.Items.edit'}}"
+                                    aria-label="{{localize 'FARKPG.Items.edit'}}">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button type="button"
+                                    class="farkpg-icon-btn"
+                                    data-action="deleteItem"
+                                    data-tooltip="{{localize 'FARKPG.Items.delete'}}"
+                                    aria-label="{{localize 'FARKPG.Items.delete'}}">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </span>
+                    </li>
+                {{else}}
+                    <li class="farkpg-empty">{{localize 'FARKPG.Abilities.empty'}}</li>
+                {{/each}}
+            </ul>
+        </section>
+
+        <section class="farkpg-panel farkpg-biography">
+            <header class="farkpg-panel-header">
+                <h2>{{localize 'FARKPG.Biography.title'}}</h2>
+            </header>
+            <div class="farkpg-biography-body editor">
+                {{#if editable}}
+                    <prose-mirror name="system.biography"
+                                  value="{{system.biography}}"
+                                  document-uuid="{{actor.uuid}}"></prose-mirror>
+                {{else}}
+                    <div class="editor-content">{{{biographyHTML}}}</div>
+                {{/if}}
+            </div>
+        </section>
+
+    </div>
+
+</section>
