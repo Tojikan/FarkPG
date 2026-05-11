@@ -44,3 +44,8 @@ Instructions for AI and developers working in this folder.
 
 - **Edit mode**: The builder needs a mode that allows **editing** the character (adjusting attributes, skills, abilities, etc.), distinct from a read-only view.
 - **Save on device**: Character data should **save to the user’s device** and be **retrievable** (e.g. `localStorage` or similar). The currently edited character should **autosave** so it can be restored when the user returns.
+
+### ZnZ → Foundry import
+
+- The ZnZ builder’s **Export to clipboard** JSON (`formatId: farkpg-znz-character-export`) is the handoff format.
+- The **Foundry** system `farkpg-znz` exposes **Import** on the character sheet header (next to the name): paste that JSON, confirm, and the sheet applies sanitized values (attributes, core skills, custom/add-on skills as custom skills, biography, resources, XP, replaces embedded **ability** items with the chosen starting ability). Inventory weapons/items are not created from passive ability text; GMs can add gear manually.

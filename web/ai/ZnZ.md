@@ -139,6 +139,7 @@ The Foundry system is the **runtime sheet** for play: health, AP, movement, inve
 
 Relevant facts for alignment (details will change as the system grows):
 
+- **Sheet import**: The Foundry character sheet provides **Import** (header, next to the actor name). Paste JSON from the web builder’s **Export to clipboard**; the system validates `formatId` / `formatVersion`, sanitizes input, updates attributes, core skills, biography, resources, XP, replaces embedded **ability** items with the chosen starting ability, and maps add-on + custom skills into `customSkills`. Passive abilities that mention gear in prose do not automatically create inventory items.
 - **Actor template** includes `attributes.body|adroit|mind`, a flat map of **core** skills by camelCase keys, `customSkills`, resources (`health`, `actionPoints`, `movement`, etc.), and config slots.
 - **System config** (`ATTRIBUTE_SKILLS`) is the single list of which camelCase keys belong to which attribute for UI and logic.
 
