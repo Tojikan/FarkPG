@@ -1,0 +1,413 @@
+<div class="{{cssClass}} flexcol">
+
+  <header class="farkpg-topbar flexrow">
+
+    <img class="profile" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" width="40" height="40" />
+
+    <input class="farkpg-name-input" name="name" type="text" value="{{actor.name}}" placeholder="Name" />
+
+    <div class="farkpg-stat-cluster flexrow">
+
+      <label class="farkpg-stat farkpg-stat-hp" title="Health">
+
+        <span class="farkpg-stat-abbr">HP</span>
+
+        <input type="number" name="system.resources.health.value" value="{{system.resources.health.value}}" min="0" />
+
+        <span class="sep">/</span>
+
+        <input class="farkpg-stat-max" type="number" name="system.resources.health.max" value="{{system.resources.health.max}}" min="0" />
+
+      </label>
+
+      <label class="farkpg-stat" title="Action Points">
+
+        <span class="farkpg-stat-abbr">AP</span>
+
+        <input type="number" name="system.resources.actionPoints.value" value="{{system.resources.actionPoints.value}}" min="0" />
+
+        <span class="sep">/</span>
+
+        <input class="farkpg-stat-max" type="number" name="system.resources.actionPoints.max" value="{{system.resources.actionPoints.max}}" min="0" />
+
+      </label>
+
+      <label class="farkpg-stat" title="Experience">
+
+        <span class="farkpg-stat-abbr">EXP</span>
+
+        <input type="number" name="system.resources.exp.value" value="{{system.resources.exp.value}}" min="0" />
+
+        <span class="sep">/</span>
+
+        <input class="farkpg-stat-max" type="number" name="system.resources.exp.max" value="{{system.resources.exp.max}}" min="0" />
+
+      </label>
+
+      <label class="farkpg-stat farkpg-stat-move" title="Movement">
+
+        <span class="farkpg-stat-abbr">Move</span>
+
+        <input type="number" name="system.resources.movement" value="{{system.resources.movement}}" min="0" />
+
+      </label>
+
+    </div>
+
+  </header>
+
+
+
+  <nav class="farkpg-tabs tabs sheet-tabs flexrow farkpg-tab-nav-divider" data-group="primary" role="tablist">
+
+    <a class="item active" role="tab" data-tab="character" tabindex="0">{{localize "FARKPG.TabCharacter"}}</a>
+
+    <span class="farkpg-tab-split" aria-hidden="true"></span>
+
+    <a class="item" role="tab" data-tab="inventory" tabindex="0">{{localize "FARKPG.TabInventory"}}</a>
+
+    <span class="farkpg-tab-split" aria-hidden="true"></span>
+
+    <a class="item" role="tab" data-tab="config" tabindex="0">{{localize "FARKPG.TabConfig"}}</a>
+
+  </nav>
+
+
+
+  <div class="farkpg-tab-shell flexcol">
+
+  <section class="farkpg-tab-panel active" data-tab-panel="character">
+
+    <section class="farkpg-body flexrow">
+
+      <aside class="farkpg-sidebar">
+
+        <ul class="farkpg-attrs-list">
+
+          {{#each skillGroups as |grp|}}
+
+          <li class="farkpg-attr-group">
+
+            <div class="farkpg-attr-line flexrow">
+
+              <strong class="rollable attr-roll" data-attr="{{grp.attrKey}}" data-skill=""
+
+                      title="{{grp.hint}} {{localize "FARKPG.RollHint"}}">{{grp.label}}</strong>
+
+              <input class="farkpg-tiny-num farkpg-attr-value" type="number" name="system.attributes.{{grp.key}}" value="{{grp.attrValue}}" min="0" max="6" />
+
+            </div>
+
+            <ul class="farkpg-skills-nested">
+
+              {{#each grp.skills as |sk|}}
+
+              <li class="farkpg-skill-line">
+
+                <button type="button" class="rollable skill-roll" data-attr="{{sk.attrKey}}" data-skill="{{sk.key}}"
+
+                        title="{{sk.hint}} {{localize "FARKPG.RollHint"}}">{{sk.label}}</button>
+
+                <input class="farkpg-tiny-num" type="number" name="system.skills.{{sk.key}}" value="{{sk.value}}" min="0" max="4" />
+
+              </li>
+
+              {{/each}}
+
+              {{#each grp.customSkills as |cs|}}
+
+              <li class="farkpg-skill-line farkpg-custom-skill-row">
+
+                <button type="button" class="rollable skill-roll farkpg-custom-roll" data-attr="{{cs.attrKey}}" data-skill="{{cs.id}}"
+
+                        title="{{localize "FARKPG.RollHint"}}"><i class="fas fa-dice-d20"></i></button>
+
+                <input type="hidden" name="system.customSkills.{{cs._index}}.id" value="{{cs.id}}" />
+
+                <input type="hidden" name="system.customSkills.{{cs._index}}.attrKey" value="{{cs.attrKey}}" />
+
+                <input class="farkpg-custom-name" type="text" name="system.customSkills.{{cs._index}}.label" value="{{cs.label}}" autocomplete="off" />
+
+                <input class="farkpg-tiny-num" type="number" name="system.customSkills.{{cs._index}}.value" value="{{cs.value}}" min="0" max="4" />
+
+                <button type="button" class="remove-custom-skill minimal-plus" title="{{localize "FARKPG.RemoveCustomSkill"}}" data-index="{{cs._index}}">×</button>
+
+              </li>
+
+              {{/each}}
+
+              <li class="farkpg-add-skill-slot">
+
+                <button type="button" class="add-custom-skill" title="{{localize "FARKPG.AddCustomSkillHint"}}" data-attr-key="{{grp.attrKey}}">+</button>
+
+              </li>
+
+            </ul>
+
+          </li>
+
+          {{/each}}
+
+        </ul>
+
+      </aside>
+
+
+
+      <div class="farkpg-main flexcol">
+
+        <div class="farkpg-main-scroll flexcol">
+
+          <div class="farkpg-equipped panel">
+
+            <div class="farkpg-equipped-head flexrow farkpg-lined-head">
+
+              <h2>{{localize "FARKPG.Equipped"}}</h2>
+
+              <span class="farkpg-slot-chip farkpg-equip-slot-chip muted" title="{{localize 'FARKPG.BaseSlotsConfiguredOnConfig'}}">
+
+                {{equipmentEquippedUsed}} / {{system.equipment.slotCount}}
+
+              </span>
+
+            </div>
+
+            {{#if equippedPanelItems.length}}
+
+            <ul class="farkpg-equipped-list">
+
+              {{#each equippedPanelItems as |eq|}}
+
+              <li class="farkpg-equipped-row flexrow" data-item-id="{{eq.id}}">
+
+                <img class="eq-img" src="{{eq.img}}" alt="" />
+
+                <span class="eq-name">{{eq.name}}</span>
+
+                <span class="eq-type">{{localize eq.typeLoc}}</span>
+
+                <div class="eq-actions flexrow">
+
+                  <button type="button" class="item-edit" data-action="edit" title="{{localize 'CONTROLS.CommonEdit'}}"><i class="fas fa-edit"></i></button>
+
+                  <button type="button" class="farkpg-unequip" title="{{localize "FARKPG.Unequip"}}">{{localize "FARKPG.Unequip"}}</button>
+
+                  <button type="button" class="item-delete" data-action="delete"><i class="fas fa-trash"></i></button>
+
+                </div>
+
+              </li>
+
+              {{/each}}
+
+            </ul>
+
+            {{else}}
+
+            <p class="farkpg-empty muted">{{localize "FARKPG.NoEquipped"}}</p>
+
+            {{/if}}
+
+          </div>
+
+
+
+          <div class="farkpg-section-head flexrow farkpg-lined-head">
+
+            <h2>{{localize "FARKPG.Abilities"}}</h2>
+
+            <button type="button" class="create-item create-ability-mini" data-type="ability"
+                    title="{{localize 'FARKPG.CreateAbilityButton'}}">{{localize "FARKPG.CreateAbilityMini"}}</button>
+
+          </div>
+
+          <ul class="farkpg-abilities">
+
+            {{#each abilityItems as |ab|}}
+
+            <li class="farkpg-ability-row flexrow" data-item-id="{{ab.id}}">
+
+              <img class="ab-icon" src="{{ab.img}}" alt="" />
+
+              <span class="ab-name">{{ab.name}}</span>
+
+              <span class="ab-meta">{{localize "FARKPG.Rank"}} {{ab.system.rank}}{{#if ab.system.maxRank}} / {{ab.system.maxRank}}{{/if}}</span>
+
+              <button type="button" class="item-edit" data-action="edit"><i class="fas fa-edit"></i></button>
+
+              <button type="button" class="item-delete" data-action="delete"><i class="fas fa-trash"></i></button>
+
+            </li>
+
+            {{else}}
+
+            <li class="farkpg-empty">{{localize "FARKPG.NoAbilities"}}</li>
+
+            {{/each}}
+
+          </ul>
+
+
+
+          <div class="farkpg-bio">
+
+            <h3>{{localize "FARKPG.BiographyHeading"}}</h3>
+
+            {{editor enrichedBiography target="system.biography" button=true editable=editable class="farkpg-bio-editor"}}
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </section>
+
+
+
+  <section class="farkpg-tab-panel hidden" data-tab-panel="inventory">
+
+    <div class="farkpg-inventory-tab flexcol">
+
+      <header class="farkpg-inv-header flexrow farkpg-lined-head">
+
+        <h2>{{localize "FARKPG.TabInventory"}}</h2>
+
+        <span class="farkpg-slot-chip muted" title="{{localize 'FARKPG.BaseSlotsConfiguredOnConfig'}}">
+
+          {{inventoryCount}} / {{system.inventory.maxSlots}}
+
+        </span>
+
+      </header>
+
+      <div class="farkpg-inv-toolbar flexrow">
+
+        <button type="button" class="create-item" data-type="weapon">{{localize "FARKPG.CreateWeapon"}}</button>
+
+        <button type="button" class="create-item" data-type="consumable">{{localize "FARKPG.CreateConsumable"}}</button>
+
+        <button type="button" class="create-item" data-type="equipment">{{localize "FARKPG.CreateEquipment"}}</button>
+
+      </div>
+
+      <div class="farkpg-inventory-table-wrap scrollable">
+
+        <table class="farkpg-item-table standard-table">
+
+          <thead>
+
+            <tr>
+
+              <th class="col-thumb-name">{{localize "FARKPG.ColItem"}}</th>
+
+              <th>{{localize "FARKPG.ColType"}}</th>
+
+              <th>{{localize "FARKPG.ColDetail"}}</th>
+
+              <th class="col-actions">{{localize "FARKPG.ColActions"}}</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {{#each inventoryRows as |row|}}
+
+            <tr class="inventory-stash-row" data-item-id="{{row.id}}">
+
+              <td class="col-thumb-name-cell">
+
+                <div class="farkpg-item-namecell flexrow">
+
+                  <span class="farkpg-item-thumb-wrap"><img class="farkpg-item-thumb" src="{{row.img}}" alt="" /></span>
+
+                  <span class="name">{{row.name}}</span>
+
+                </div>
+
+              </td>
+
+              <td>{{localize row.typeLoc}}</td>
+
+              <td class="item-detail muted">{{row.detail}}</td>
+
+              <td class="col-actions-cell">
+
+                <div class="farkpg-inv-row-actions item-controls" role="group" aria-label="{{localize 'FARKPG.ColActions'}}">
+
+                  <button type="button" class="farkpg-equip-from-stash"
+
+                          title="{{localize 'FARKPG.Equip'}}" aria-label="{{localize 'FARKPG.Equip'}}"><i class="fas fa-angle-double-right"></i></button>
+
+                  <button type="button" class="edit-item-sheet icon-only-inv" title="{{localize 'CONTROLS.CommonEdit'}}" aria-label="{{localize 'CONTROLS.CommonEdit'}}"><i class="fas fa-edit"></i></button>
+
+                  <button type="button" class="delete-item-sheet icon-only-inv" title="{{localize 'CONTROLS.CommonDelete'}}" aria-label="{{localize 'CONTROLS.CommonDelete'}}"><i class="fas fa-trash"></i></button>
+
+                </div>
+
+              </td>
+
+            </tr>
+
+            {{else}}
+
+            <tr class="nofound"><td colspan="4">{{localize "FARKPG.InventoryEmptyUnequipped"}}</td></tr>
+
+            {{/each}}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+
+  <section class="farkpg-tab-panel hidden" data-tab-panel="config">
+
+    <div class="farkpg-config-tab-body scrollable">
+
+      <h3 class="farkpg-config-title">{{localize "FARKPG.ConfigTitle"}}</h3>
+
+      <p class="farkpg-config-hint muted">{{localize "FARKPG.ConfigHint"}}</p>
+
+      <fieldset class="farkpg-config-fields">
+
+        <legend>{{localize "FARKPG.BaseSlotsLegend"}}</legend>
+
+        <label class="farkpg-config-field">
+
+          <span>{{localize "FARKPG.BaseEquipmentSlots"}}</span>
+
+          <input type="number" name="system.equipment.slotCount" value="{{system.equipment.slotCount}}" min="1" step="1" />
+
+        </label>
+
+        <label class="farkpg-config-field">
+
+          <span>{{localize "FARKPG.BaseInventorySlots"}}</span>
+
+          <input type="number" name="system.inventory.maxSlots" value="{{system.inventory.maxSlots}}" min="1" step="1" />
+
+        </label>
+
+      </fieldset>
+
+    </div>
+
+  </section>
+
+</div>
+
+</div>
+
+
+

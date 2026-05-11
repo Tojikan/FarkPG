@@ -1,0 +1,40 @@
+{
+  "id": "farkpg-znz",
+  "title": "FarkPG",
+  "description": "FarkPG: attributes, skills, inventory items, and abilities with D20 + attribute + skill resolution.",
+  "version": "0.1.0",
+  "authors": [{ "name": "FarkPG" }],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "esmodules": ["scripts/farkpg.mjs"],
+  "styles": ["styles/farkpg.css"],
+  "languages": [{ "lang": "en", "name": "English", "path": "lang/en.json" }],
+  "grid": { "distance": 5, "units": "ft" },
+  "primaryTokenAttribute": "resources.health",
+  "documentTypes": {
+    "Actor": {
+      "character": {
+        "htmlFields": ["system.biography"]
+      }
+    },
+    "Item": {
+      "weapon": {
+        "htmlFields": ["system.description"]
+      },
+      "consumable": {
+        "htmlFields": ["system.description"]
+      },
+      "equipment": {
+        "htmlFields": ["system.description"]
+      },
+      "ability": {
+        "htmlFields": ["system.description"]
+      }
+    }
+  },
+  "flags": {
+    "hotReload": true
+  }
+}
