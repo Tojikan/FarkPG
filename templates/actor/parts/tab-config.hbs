@@ -8,6 +8,22 @@
 
     <div class="farkpg-config-grid">
         <label class="farkpg-config-field">
+            <span>{{localize 'FARKPG.Config.maxHealth'}}</span>
+            <input type="number"
+                   name="system.resources.health.max"
+                   value="{{system.resources.health.max}}"
+                   min="0" step="1" />
+        </label>
+
+        <label class="farkpg-config-field">
+            <span>{{localize 'FARKPG.Config.maxActionPoints'}}</span>
+            <input type="number"
+                   name="system.resources.actionPoints.max"
+                   value="{{system.resources.actionPoints.max}}"
+                   min="0" step="1" />
+        </label>
+
+        <label class="farkpg-config-field">
             <span>{{localize 'FARKPG.Config.equipmentSlots'}}</span>
             <input type="number"
                    name="system.config.equipmentSlots"

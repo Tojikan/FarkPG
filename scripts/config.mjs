@@ -12,8 +12,8 @@ export const SYSTEM_ID = "farkpg-znz";
  */
 export const ATTRIBUTE_SKILLS = {
     body: ["meleeWeapons", "block", "unarmed", "endurance", "athletics"],
-    adroit: ["rangedWeapons", "dodge", "throwing", "coordination", "thievery", "stealth"],
-    mind: ["charisma", "intelligence", "perception", "sanity", "instinct", "luck"],
+    adroit: ["rangedWeapons", "dodge", "throwing", "coordination", "stealth"],
+    mind: ["charisma", "intelligence", "perception", "sanity", "instinct"],
 };
 
 export const ATTRIBUTE_KEYS = /** @type {("body"|"adroit"|"mind")[]} */ (

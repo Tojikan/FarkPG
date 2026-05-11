@@ -18,21 +18,19 @@
         "dodge": 0,
         "throwing": 0,
         "coordination": 0,
-        "thievery": 0,
         "stealth": 0,
         "charisma": 0,
         "intelligence": 0,
         "perception": 0,
         "sanity": 0,
-        "instinct": 0,
-        "luck": 0
+        "instinct": 0
       },
       "customSkills": {},
       "resources": {
         "health": { "value": 10000, "max": 10000 },
-        "actionPoints": { "value": 4, "max": 4 },
+        "actionPoints": { "value": 18, "max": 18 },
         "exp": { "value": 0, "max": 100 },
-        "movement": 30
+        "movement": 20
       },
       "config": {
         "equipmentSlots": 2,

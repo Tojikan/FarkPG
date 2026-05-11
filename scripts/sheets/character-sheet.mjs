@@ -24,8 +24,12 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             editItem: FarkPGCharacterSheet.#onEditItem,
             deleteItem: FarkPGCharacterSheet.#onDeleteItem,
             toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
+            toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
         },
     };
+
+    /** @type {boolean} */
+    _biographyEditing = false;
 
     /** @inheritDoc */
     static PARTS = {
@@ -74,6 +78,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         context.system = system;
         context.actor = this.actor;
         context.editable = this.isEditable;
+        context.biographyEditing = this._biographyEditing;
         context.tabs = this._prepareTabs("primary");
 
         const items = this.actor.items.contents;
@@ -259,19 +264,42 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Open the Virtual Dice Table module window.
+     * Open the Virtual Dice Table module window and auto-roll the dice pool for the
+     * row that was clicked: `count = max(1, attribute + skill)` d6s.
      * @this {FarkPGCharacterSheet}
      */
-    static async #onOpenDiceTable(event) {
+    static async #onOpenDiceTable(event, target) {
         event?.preventDefault();
+
+        const system = this.actor.system ?? {};
+        const attr = String(target?.dataset?.attribute ?? "");
+        const skillKey = String(target?.dataset?.skill ?? "");
+        const customId = String(target?.dataset?.customId ?? "");
+
+        const atr = attr ? Number(system.attributes?.[attr] ?? 0) : 0;
+        let skl = 0;
+        if (customId) skl = Number(system.customSkills?.[customId]?.value ?? 0);
+        else if (skillKey) skl = Number(system.skills?.[skillKey] ?? 0);
+
+        const count = Math.max(1, atr + skl);
+        const faces = 6;
+
+        const api = game.modules.get("virtual-dice-table")?.api;
+        if (api?.openStartRollAndRoll) {
+            try {
+                await api.openStartRollAndRoll({ count, faces });
+                return;
+            } catch (err) {
+                console.error("FarkPG | openStartRollAndRoll failed", err);
+            }
+        }
+        if (api?.openVirtualTable) {
+            api.openVirtualTable();
+            return;
+        }
         const direct = globalThis.virtualDiceTable;
         if (direct?.open) {
             direct.open();
-            return;
-        }
-        const api = game.modules.get("virtual-dice-table")?.api;
-        if (api?.openVirtualTable) {
-            api.openVirtualTable();
             return;
         }
         ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
@@ -351,5 +379,14 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const item = this.actor.items.get(id);
         if (!item || item.type === "ability") return;
         await item.update({ "system.isEquipped": !item.system?.isEquipped });
+    }
+
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static #onToggleBiographyEditor(event) {
+        event.preventDefault();
+        this._biographyEditing = !this._biographyEditing;
+        this.render(true);
     }
 }

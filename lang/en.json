@@ -39,14 +39,12 @@
       "dodge": "Dodge",
       "throwing": "Throwing",
       "coordination": "Coordination",
-      "thievery": "Thievery",
       "stealth": "Stealth",
       "charisma": "Charisma",
       "intelligence": "Intelligence",
       "perception": "Perception",
       "sanity": "Sanity",
-      "instinct": "Instinct",
-      "luck": "Luck"
+      "instinct": "Instinct"
     },
 
     "Equipment": {
@@ -84,11 +82,15 @@
     },
 
     "Biography": {
-      "title": "Biography"
+      "title": "Biography",
+      "edit": "Edit",
+      "view": "View"
     },
 
     "Config": {
       "title": "Configuration",
+      "maxHealth": "Max HP",
+      "maxActionPoints": "Max AP",
       "equipmentSlots": "Base Equipment Slot",
       "inventorySlots": "Base Inventory Slot"
     },

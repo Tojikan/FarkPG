@@ -38,17 +38,17 @@
 
 .farkpg-header {
     display: grid;
-    grid-template-columns: 96px 1fr;
-    gap: var(--farkpg-gap);
-    padding: 0.75rem;
+    grid-template-columns: 72px 1fr;
+    gap: 0.4rem;
+    padding: 0.4rem 0.55rem;
     border-bottom: 1px solid var(--farkpg-border);
     background: #efe6d2;
     flex: 0 0 auto;
 }
 
 .farkpg-portrait img {
-    width: 96px;
-    height: 96px;
+    width: 72px;
+    height: 72px;
     object-fit: cover;
     border: 1px solid var(--farkpg-border);
     border-radius: var(--farkpg-radius);
@@ -58,15 +58,15 @@
 .farkpg-header-body {
     display: flex;
     flex-direction: column;
-    gap: var(--farkpg-gap);
+    gap: 0.3rem;
     min-width: 0;
 }
 
 .farkpg-header-name input {
     width: 100%;
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     background: var(--farkpg-input-bg);
     border: 1px solid var(--farkpg-border);
     border-radius: var(--farkpg-radius);
@@ -75,38 +75,54 @@
 .farkpg-resources {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--farkpg-gap);
+    gap: 0.3rem;
 }
 
 .farkpg-resource {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
 }
 
 .farkpg-resource-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     color: var(--farkpg-muted);
+    line-height: 1;
 }
 
 .farkpg-resource-fields {
     display: flex;
     align-items: center;
     gap: 2px;
+    font-size: 0.8rem;
+    line-height: 1;
 }
 
 .farkpg-resource-fields input {
     flex: 1 1 0;
     min-width: 0;
     text-align: center;
+    font-size: 0.8rem;
+    line-height: 1;
     background: var(--farkpg-input-bg);
     border: 1px solid var(--farkpg-border);
     border-radius: var(--farkpg-radius);
-    padding: 2px 4px;
+    padding: 1px 3px;
+    height: 1.45rem;
+}
+
+.farkpg-resource-max {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--farkpg-muted);
+    padding: 1px 3px;
+    cursor: help;
 }
 
 .farkpg-sep {
@@ -179,10 +195,11 @@
 }
 
 .farkpg-attributes-sidebar {
-    flex: 0 0 188px;
+    flex: 0 0 30%;
+    min-width: 220px;
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.15rem;
     overflow-y: auto;
     padding-right: 0.4rem;
     border-right: 1px solid var(--farkpg-border);
@@ -437,10 +454,16 @@
 /* ------------------------- Attributes & skills ------------------------- */
 
 .farkpg-attribute-block {
-    border: 1px solid var(--farkpg-border);
-    border-radius: var(--farkpg-radius);
-    padding: 0.2rem 0.25rem 0.25rem;
-    background: var(--farkpg-panel-bg);
+    border: none;
+    border-radius: 0;
+    padding: 0.15rem 0;
+    background: transparent;
+}
+
+.farkpg-attribute-block + .farkpg-attribute-block {
+    border-top: 1px solid var(--farkpg-border);
+    margin-top: 0.15rem;
+    padding-top: 0.25rem;
 }
 
 .farkpg-attribute-row {
@@ -471,13 +494,12 @@
 
 .farkpg-skill-list {
     list-style: none;
-    margin: 0.25rem 0 0;
+    margin: 0.15rem 0 0 0.35rem;
     padding: 0 0 0 1.1rem;
     display: flex;
     flex-direction: column;
     gap: 1px;
-    border-left: 2px solid var(--farkpg-border);
-    margin-left: 0.35rem;
+    border-left: none;
 }
 
 .farkpg-skill-row {
@@ -534,12 +556,73 @@ input.farkpg-skill-name:focus {
 /* ------------------------- Biography ------------------------- */
 
 .farkpg-biography-body {
-    min-height: 120px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
 }
 
+/* prose-mirror is a custom element. Make it a flex column so its internal
+   menubar sits above an editor surface that fills the remaining height. */
 .farkpg-biography prose-mirror {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 220px;
+    background: var(--farkpg-input-bg);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    overflow: hidden;
+}
+
+/* The internal editor container/surface needs explicit height to be visible. */
+.farkpg-biography prose-mirror .editor-container,
+.farkpg-biography prose-mirror .editor-content {
+    flex: 1;
+    min-height: 180px;
+    padding: 0.4rem 0.55rem;
+    background: var(--farkpg-input-bg);
+    color: var(--farkpg-text);
+    overflow-y: auto;
+}
+
+.farkpg-biography prose-mirror .ProseMirror {
+    min-height: 180px;
+    outline: none;
+    color: var(--farkpg-text);
+}
+
+/* Foundry's menubar uses dark icons on a dark strip by default; brighten them
+   so the formatting controls are readable on our light background. */
+.farkpg-biography prose-mirror menu.editor-menu,
+.farkpg-biography prose-mirror .editor-menu {
+    background: var(--farkpg-panel-bg);
+    color: var(--farkpg-text);
+    border-bottom: 1px solid var(--farkpg-border);
+}
+
+.farkpg-biography prose-mirror menu.editor-menu button,
+.farkpg-biography prose-mirror .editor-menu button,
+.farkpg-biography prose-mirror menu.editor-menu i,
+.farkpg-biography prose-mirror .editor-menu i {
+    color: var(--farkpg-text);
+}
+
+.farkpg-biography > .farkpg-biography-body > .editor-content {
     min-height: 120px;
-    display: block;
+    padding: 0.35rem 0;
+    background: transparent;
+    border: none;
+}
+
+/* When editing, the prose-mirror replaces the static editor-content; make
+   sure we don't apply both the wrapper background and the inner one. */
+.farkpg-biography-body:has(prose-mirror) > .editor-content {
+    display: none;
+}
+
+.farkpg-biography-edit {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
 }
 
 /* ------------------------- Config ------------------------- */

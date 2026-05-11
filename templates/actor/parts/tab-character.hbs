@@ -20,6 +20,7 @@
                     <button type="button"
                             class="farkpg-dicetable-btn"
                             data-action="openDiceTable"
+                            data-attribute="{{attr.key}}"
                             data-tooltip="{{localize 'FARKPG.Skills.diceTable'}}"
                             aria-label="{{localize 'FARKPG.Skills.diceTable'}}">
                         <i class="fa-solid fa-dice"></i>
@@ -45,7 +46,7 @@
                             <button type="button"
                                     class="farkpg-roll-btn"
                                     data-action="rollSkill"
-                                    data-attribute="{{../attr.key}}"
+                                    data-attribute="{{attr.key}}"
                                     {{#if (eq skill.kind "custom")}}data-custom-id="{{skill.id}}"{{else}}data-skill="{{skill.key}}"{{/if}}
                                     data-tooltip="{{localize 'FARKPG.Skills.roll'}}"
                                     aria-label="{{localize 'FARKPG.Skills.roll'}}">
@@ -54,6 +55,8 @@
                             <button type="button"
                                     class="farkpg-dicetable-btn"
                                     data-action="openDiceTable"
+                                    data-attribute="{{attr.key}}"
+                                    {{#if (eq skill.kind "custom")}}data-custom-id="{{skill.id}}"{{else}}data-skill="{{skill.key}}"{{/if}}
                                     data-tooltip="{{localize 'FARKPG.Skills.diceTable'}}"
                                     aria-label="{{localize 'FARKPG.Skills.diceTable'}}">
                                 <i class="fa-solid fa-dice"></i>
@@ -182,9 +185,17 @@
         <section class="farkpg-panel farkpg-biography">
             <header class="farkpg-panel-header">
                 <h2>{{localize 'FARKPG.Biography.title'}}</h2>
+                {{#if editable}}
+                    <button type="button"
+                            class="farkpg-add-btn farkpg-biography-edit"
+                            data-action="toggleBiographyEditor">
+                        <i class="fa-solid {{#if biographyEditing}}fa-eye{{else}}fa-pen-to-square{{/if}}"></i>
+                        {{#if biographyEditing}}{{localize 'FARKPG.Biography.view'}}{{else}}{{localize 'FARKPG.Biography.edit'}}{{/if}}
+                    </button>
+                {{/if}}
             </header>
             <div class="farkpg-biography-body editor">
-                {{#if editable}}
+                {{#if biographyEditing}}
                     <prose-mirror name="system.biography"
                                   value="{{system.biography}}"
                                   document-uuid="{{actor.uuid}}"></prose-mirror>
