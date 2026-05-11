@@ -60,6 +60,8 @@
       "description": "",
       "durability": { "value": 10, "max": 10 },
       "rollable": { "multiplier": 0, "max": 0 },
+      "equipmentSlots": 0,
+      "inventorySlots": 0,
       "isEquipped": false
     },
     "ability": {

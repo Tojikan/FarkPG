@@ -123,6 +123,14 @@
                     <span>{{localize 'FARKPG.Items.rollMax'}}</span>
                     <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                 </label>
+                <label data-tooltip="{{localize 'FARKPG.Items.equipmentSlotsBonusHint'}}">
+                    <span>{{localize 'FARKPG.Items.equipmentSlotsBonus'}}</span>
+                    <input type="number" name="system.equipmentSlots" value="{{system.equipmentSlots}}" min="0" step="1" />
+                </label>
+                <label data-tooltip="{{localize 'FARKPG.Items.inventorySlotsBonusHint'}}">
+                    <span>{{localize 'FARKPG.Items.inventorySlotsBonus'}}</span>
+                    <input type="number" name="system.inventorySlots" value="{{system.inventorySlots}}" min="0" step="1" />
+                </label>
             </fieldset>
         {{/if}}
 

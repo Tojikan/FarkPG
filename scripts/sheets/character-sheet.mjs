@@ -151,14 +151,19 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             }))
             .sort((a, b) => a.name.localeCompare(b.name));
 
+        const slotMaxes = this.#computeSlotMaxes();
         context.slots = {
             equipment: {
                 count: context.equippedItems.length,
-                max: Number(system.config?.equipmentSlots ?? 0),
+                max: slotMaxes.equipment,
+                base: Number(system.config?.equipmentSlots ?? 0),
+                bonus: slotMaxes.equipment - Number(system.config?.equipmentSlots ?? 0),
             },
             inventory: {
                 count: context.inventoryItems.length,
-                max: Number(system.config?.inventorySlots ?? 0),
+                max: slotMaxes.inventory,
+                base: Number(system.config?.inventorySlots ?? 0),
+                bonus: slotMaxes.inventory - Number(system.config?.inventorySlots ?? 0),
             },
         };
 
@@ -379,25 +384,42 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
+     * Sum bonus slot values contributed by equipped equipment items, on top of
+     * the actor's base config values. Bonuses on non-equipment item types or on
+     * unequipped equipment are ignored.
+     * @returns {{ equipment: number, inventory: number }}
+     */
+    #computeSlotMaxes() {
+        const config = this.actor.system?.config ?? {};
+        let equipmentMax = Number(config.equipmentSlots ?? 0);
+        let inventoryMax = Number(config.inventorySlots ?? 0);
+        for (const item of this.actor.items) {
+            if (item.type !== "equipment") continue;
+            if (item.system?.isEquipped !== true) continue;
+            equipmentMax += Number(item.system?.equipmentSlots ?? 0);
+            inventoryMax += Number(item.system?.inventorySlots ?? 0);
+        }
+        return { equipment: equipmentMax, inventory: inventoryMax };
+    }
+
+    /**
      * @returns {boolean}
      */
     #isInventoryFull() {
         const inventoryCount = this.actor.items.filter((i) => {
             return i.type !== "ability" && i.system?.isEquipped !== true;
         }).length;
-        const inventoryMax = Number(this.actor.system?.config?.inventorySlots ?? 0);
-        return inventoryCount >= inventoryMax;
+        return inventoryCount >= this.#computeSlotMaxes().inventory;
     }
 
     #warnInventoryFull() {
         const inventoryCount = this.actor.items.filter((i) => {
             return i.type !== "ability" && i.system?.isEquipped !== true;
         }).length;
-        const inventoryMax = Number(this.actor.system?.config?.inventorySlots ?? 0);
         ui.notifications?.warn(
             game.i18n.format("FARKPG.Notify.inventoryFull", {
                 count: inventoryCount,
-                max: inventoryMax,
+                max: this.#computeSlotMaxes().inventory,
             }),
         );
     }
