@@ -27,6 +27,25 @@ function openOrFocusVirtualTable() {
     globalVirtualTable.render(true);
 }
 
+/**
+ * Open the table (if needed), start a roll on the caller's own board, then
+ * immediately roll `count` dice of `faces` sides. Awaitable.
+ *
+ * Example:
+ *   await game.modules.get("virtual-dice-table").api.openStartRollAndRoll({ count: 5, faces: 8 });
+ *
+ * @param {{ count?: number; faces?: number }} [payload]
+ * @returns {Promise<void>}
+ */
+async function openStartRollAndRoll(payload = {}) {
+    if (!globalThis.game?.ready) {
+        await new Promise((resolve) => Hooks.once("ready", () => resolve()));
+    }
+    globalVirtualTable ??= new VirtualTableApp();
+    await globalVirtualTable.render(true);
+    await globalVirtualTable.apiStartRollAndRoll(payload);
+}
+
 Hooks.once("init", async () => {
     game.settings.register(MODULE_ID, "maxDice", {
         name: "Maximum dice per roll",
@@ -105,6 +124,11 @@ Hooks.once("ready", () => {
             openVirtualTable: openOrFocusVirtualTable,
             /** Short alias for macros / systems */
             open: openOrFocusVirtualTable,
+            /**
+             * Open + start a roll + roll N dice of X sides in one call.
+             * Awaitable; suitable for macros with Asynchronous = ON.
+             */
+            openStartRollAndRoll,
         };
         mod.api = api;
         /** Same API for systems that avoid `game.modules` (e.g. bundled scripts). */

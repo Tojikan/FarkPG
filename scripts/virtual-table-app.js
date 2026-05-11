@@ -655,9 +655,24 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const root = this.element;
         const count = Number(root.querySelector('[name="vdt-count"]')?.value ?? 1);
         const facesRaw = Number(root.querySelector('[name="vdt-faces"]')?.value ?? 6);
+        await this._rollNewOnBoard(boardId, count, facesRaw);
+    }
+
+    /**
+     * Shared roll-and-commit path used by both the toolbar button and the public
+     * `openStartRollAndRoll` API. Clamps `count` to the world maxDice setting and
+     * filters `faces` to the legal die set (defaults to `DEFAULT_FACES`).
+     * @param {string} boardId
+     * @param {number} count
+     * @param {number} facesRaw
+     */
+    async _rollNewOnBoard(boardId, count, facesRaw) {
         const maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
         const n = Math.max(0, Math.min(Number(count) || 0, maxDice));
-        const f = [4, 6, 8, 10, 12, 20].includes(facesRaw) ? facesRaw : DEFAULT_FACES;
+        const f = [4, 6, 8, 10, 12, 20].includes(Number(facesRaw))
+            ? Number(facesRaw)
+            : DEFAULT_FACES;
+        if (n === 0) return;
         try {
             const values = await evaluateNdX(n, f);
             if (values.length !== n) {
@@ -684,6 +699,36 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             console.error("Virtual Dice Table | Roll failed", err);
             ui.notifications.error(game.i18n.localize(`${MODULE_ID}.rollFailed`));
         }
+    }
+
+    /**
+     * Programmatic entry: ensure a roll is in progress on the caller's own
+     * board (GM private for GMs), then immediately roll `count` dice of
+     * `faces` sides. Invoked from `api.openStartRollAndRoll(...)`.
+     * @param {{ count?: number; faces?: number }} payload
+     */
+    async apiStartRollAndRoll({ count = 1, faces = DEFAULT_FACES } = {}) {
+        const isGm = !!game.user.isGM;
+        const targetId = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
+        if (!canMutateBoard(game.user.id, targetId, isGm)) return;
+
+        if (this.viewBoardId !== targetId) {
+            this.viewBoardId = targetId;
+            this.selectedDieIds.clear();
+            await this.render(true);
+        }
+
+        const board = readBoard(getSharedState(), targetId);
+        if (!board.rollInProgress) {
+            commitMutation({
+                type: "startRoll",
+                actorUserId: game.user.id,
+                targetBoardId: targetId,
+                payload: {},
+            });
+        }
+
+        await this._rollNewOnBoard(targetId, count, faces);
     }
 
     /**

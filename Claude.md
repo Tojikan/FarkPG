@@ -17,6 +17,7 @@ After **`ready`**, or any time (open is deferred until `ready` if needed):
 
 - `game.modules.get("virtual-dice-table")?.api?.openVirtualTable()` — or `.open()` (alias).
 - `globalThis.virtualDiceTable?.openVirtualTable()` / `.open()` — same functions, no `game.modules` lookup.
+- `await game.modules.get("virtual-dice-table")?.api?.openStartRollAndRoll({ count, faces })` — open, start a roll on the caller's own board (GM private for GMs), and roll `count` dice of `faces` sides in one step. Awaitable; use in macros with **Asynchronous = ON**. `count` is clamped to the `maxDice` setting and `faces` is filtered to `{4, 6, 8, 10, 12, 20}` (defaults to `DEFAULT_FACES`).
 
 On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", api)`** so a system can `Hooks.on("virtualDiceTableReady", (api) => { ... })` and store `api` for a toolbar button.
 
