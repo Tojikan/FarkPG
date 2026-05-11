@@ -5,6 +5,14 @@ const { ItemSheetV2 } = foundry.applications.sheets;
 const { TextEditor } = foundry.applications.ux;
 
 /**
+ * Foundry 13+ FilePicker constructor (avoid deprecated global `FilePicker`).
+ * @returns {any|null}
+ */
+function getFilePickerImplementation() {
+    return foundry.applications.apps?.FilePicker?.implementation ?? null;
+}
+
+/**
  * Generic item sheet — one template covers all four item types. Only the body of
  * the form changes based on `item.type`, the rest is shared.
  */
@@ -15,6 +23,9 @@ export class FarkPGItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         position: { width: 480, height: 480 },
         window: { resizable: true, icon: "fa-solid fa-box" },
         form: { submitOnChange: true, closeOnSubmit: false },
+        actions: {
+            editImage: FarkPGItemSheet.#onEditImage,
+        },
     };
 
     /** @inheritDoc */
@@ -86,5 +97,32 @@ export class FarkPGItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
             },
         );
         return context;
+    }
+
+    /**
+     * Open the image file picker and assign the chosen path to `item.img`.
+     * @this {FarkPGItemSheet}
+     */
+    static #onEditImage(event) {
+        event.preventDefault();
+        if (!this.isEditable || !this.item.canUserModify?.(game.user, "update")) return;
+
+        const current = this.item.img ?? "";
+        const Picker = getFilePickerImplementation();
+        if (!Picker) {
+            ui.notifications?.error("FilePicker is not available in this Foundry build.");
+            return;
+        }
+
+        const fp = new Picker({
+            type: "image",
+            current,
+            callback: async (path) => {
+                if (path && path !== current) await this.item.update({ img: path });
+            },
+        });
+        void Promise.resolve(fp.render(true)).then(() => {
+            fp.bringToTop?.();
+        });
     }
 }

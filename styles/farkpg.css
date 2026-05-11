@@ -1483,9 +1483,40 @@ input.farkpg-skill-name:focus {
     align-items: center;
 }
 
+.farkpg-item-image-btn {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: var(--farkpg-radius);
+    cursor: pointer;
+    overflow: hidden;
+}
+
 .farkpg-item-header .farkpg-item-icon {
     width: 64px;
     height: 64px;
+}
+
+.farkpg-item-image-edit {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    background: rgb(0 0 0 / 68%);
+    color: #fff;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.farkpg-item-image-btn:hover .farkpg-item-image-edit,
+.farkpg-item-image-btn:focus-visible .farkpg-item-image-edit {
+    opacity: 1;
 }
 
 .farkpg-item-header-fields {

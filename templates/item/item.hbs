@@ -1,7 +1,16 @@
 <section class="farkpg-item-sheet">
 
     <header class="farkpg-item-header">
-        <img class="farkpg-item-icon" src="{{item.img}}" data-edit="img" alt="{{item.name}}" />
+        <button type="button"
+                class="farkpg-item-image-btn"
+                data-action="editImage"
+                data-tooltip="{{localize 'FARKPG.Items.imageEdit'}}"
+                aria-label="{{localize 'FARKPG.Items.imageEdit'}}">
+            <img class="farkpg-item-icon" src="{{item.img}}" alt="{{item.name}}" />
+            <span class="farkpg-item-image-edit">
+                <i class="fa-solid fa-camera"></i>
+            </span>
+        </button>
         <div class="farkpg-item-header-fields">
             <input type="text"
                    class="farkpg-item-name"
