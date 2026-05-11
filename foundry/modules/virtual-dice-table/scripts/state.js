@@ -1,9 +1,15 @@
 import { DEFAULT_FACES, GM_PRIVATE_BOARD_ID, MODULE_ID, SHARED_BOARD_ID } from "./constants.js";
 import { canMutateBoard } from "./permissions.js";
 
-/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[]; rollInProgress: boolean }} */
+/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[]; rollInProgress: boolean; freeRolls: number }} */
 export function emptyBoard() {
-    return { faces: DEFAULT_FACES, tableDice: [], zoneRows: [], rollInProgress: false };
+    return {
+        faces: DEFAULT_FACES,
+        tableDice: [],
+        zoneRows: [],
+        rollInProgress: false,
+        freeRolls: 0,
+    };
 }
 
 /** @returns {object} */
@@ -28,6 +34,11 @@ export function migrateBoard(board) {
     }
     delete board.zoneDice;
     if (typeof board.rollInProgress !== "boolean") board.rollInProgress = false;
+    if (typeof board.freeRolls !== "number" || !Number.isFinite(board.freeRolls)) {
+        board.freeRolls = 0;
+    } else if (board.freeRolls < 0) {
+        board.freeRolls = 0;
+    }
 }
 
 /**
@@ -156,6 +167,22 @@ export function applySocketMessage(state, msg) {
             const board = ensureBoard(next, msg.targetBoardId);
             if (board.rollInProgress) return null;
             board.rollInProgress = true;
+            // Ensure the die face selector updates immediately on `startRoll`,
+            // so a system opening the roll programmatically doesn't briefly
+            // show the default d6.
+            const payload = msg.payload ?? {};
+            const requestedFaces = Number(payload.faces);
+            const legalFaces = [4, 6, 8, 10, 12, 20];
+            if (legalFaces.includes(requestedFaces)) board.faces = requestedFaces;
+            // Optionally seed the free-rolls pool when a system kicks off the
+            // roll programmatically (e.g. FarkPG sending an attr+skill total
+            // larger than the 6-dice cap).
+            if (payload.freeRolls !== undefined) {
+                const fr = Number(payload.freeRolls);
+                board.freeRolls = Number.isFinite(fr) && fr > 0 ? Math.floor(fr) : 0;
+            } else {
+                board.freeRolls = 0;
+            }
             return next;
         }
         case "endRoll": {
@@ -165,6 +192,15 @@ export function applySocketMessage(state, msg) {
             board.tableDice = [];
             board.zoneRows = [];
             board.faces = DEFAULT_FACES;
+            board.freeRolls = 0;
+            return next;
+        }
+        case "setFreeRolls": {
+            const board = ensureBoard(next, msg.targetBoardId);
+            const raw = Number(msg.payload?.value);
+            const value = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+            if (board.freeRolls === value) return null;
+            board.freeRolls = value;
             return next;
         }
         case "rollNew": {
@@ -214,6 +250,11 @@ export function applySocketMessage(state, msg) {
             const board = ensureBoard(next, msg.targetBoardId);
             if (!board.rollInProgress) return null;
             const updates = msg.payload?.updates;
+            // Note: `freeRolls` is intentionally NOT decremented here. The
+            // free-rolls pool is only consumed by the double-click re-roll
+            // gesture, which commits a separate `setFreeRolls` mutation. Bulk
+            // operations like "Reroll Board" / "Reroll selected" go through
+            // this reducer too and must leave the pool alone.
             if (Array.isArray(updates)) {
                 const map = new Map(updates.map((u) => [String(u.id), Number(u.value)]));
                 for (const d of board.tableDice) {

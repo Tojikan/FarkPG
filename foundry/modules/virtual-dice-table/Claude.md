@@ -11,6 +11,17 @@ Simple Foundry **v13** module: a window where each player has **their own dice b
 - **Sync**: changes go out on a **module socket**. The sender **also applies the change locally first** (Foundry does not echo your own emit).
 - **Open**: scene controls button opens the app (`ApplicationV2` + Handlebars).
 
+## Programmatic open (macros, systems, other modules)
+
+After **`ready`**, or any time (open is deferred until `ready` if needed):
+
+- `await game.modules.get("virtual-dice-table")?.api?.openVirtualTable()` — or `.open()` (alias). Optional tab: `openVirtualTable({ boardId })` where `boardId` is a **user id**, **`__vdt_shared__`**, **`__vdt_overview__`**, or **`__gm_private__`**. Requesting **`__gm_private__`** opens **Overview** (not the hidden GM tab).
+- `globalThis.virtualDiceTable` exposes the same API.
+- `await api.postOpenBoardChatButton({ boardId })` — posts a **chat button**; clicking it runs `openVirtualTable` for that tab (GM private → Overview). Optional `label` overrides the button text.
+- `await game.modules.get("virtual-dice-table")?.api?.openStartRollAndRoll({ count, faces, freeRolls })` — open, start a roll on the caller's own board (GM private for GMs), and roll `count` dice of `faces` sides in one step. Awaitable; use in macros with **Asynchronous = ON**. `count` is clamped to the `maxDice` setting and `faces` is filtered to `{4, 6, 8, 10, 12, 20}` (defaults to `DEFAULT_FACES`). Optional `freeRolls` seeds the board's **Free Rolls** input -- each double-click reroll decrements it by 1 (floor 0).
+
+On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", api)`** so a system can `Hooks.on("virtualDiceTableReady", (api) => { ... })` and store `api` for a toolbar button.
+
 ## Main files
 
 - `scripts/virtual-table-app.js` — UI, drag/drop, selection, marquee.

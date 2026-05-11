@@ -6,6 +6,8 @@
     "virtual-dice-table.boardPickerAria": "Board picker",
     "virtual-dice-table.spectatorHint": "You are viewing another player's board; switch to your own tab to roll or change dice.",
     "virtual-dice-table.count": "Count",
+    "virtual-dice-table.freeRolls": "Free Rolls",
+    "virtual-dice-table.freeRollsHint": "Free re-rolls available. Each double-click re-roll consumes one (down to 0).",
     "virtual-dice-table.dieType": "Die",
     "virtual-dice-table.rollNew": "Roll",
     "virtual-dice-table.rerollAllRolling": "Reroll Board",
@@ -22,5 +24,10 @@
     "virtual-dice-table.overviewEmpty": "No rolls in progress.",
     "virtual-dice-table.startRoll": "Start roll",
     "virtual-dice-table.endRoll": "End roll",
-    "virtual-dice-table.rollNotStarted": "Roll not started yet."
+    "virtual-dice-table.rollNotStarted": "Roll not started yet.",
+    "virtual-dice-table.apiInvalidBoard": "That board does not exist or you cannot open it.",
+    "virtual-dice-table.chatOpenGmPrivateAsOverview": "Open dice table (overview)",
+    "virtual-dice-table.chatOpenSharedBoard": "Open shared dice table",
+    "virtual-dice-table.chatOpenMyBoard": "Open my dice table",
+    "virtual-dice-table.chatOpenUserBoard": "Open {name}'s dice table"
 }
