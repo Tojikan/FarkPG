@@ -83,6 +83,16 @@
 		chosenAbilityId ? ZNZ_STARTING_ABILITIES.find((ab) => ab.id === chosenAbilityId) ?? null : null
 	);
 
+	const availableExtraAbilities = $derived(
+		character
+			? ZNZ_STARTING_ABILITIES.filter(
+					(ab) =>
+						ab.id !== character.startingAbilityId &&
+						!(character.additionalAbilityIds ?? []).includes(ab.id)
+				)
+			: []
+	);
+
 	function persist() {
 		const state: ZnzPersistedV1 = {
 			version: 1,
@@ -418,6 +428,23 @@
 	function patchCharacter(fn: (c: ZnzCharacter) => ZnzCharacter) {
 		if (!character) return;
 		character = fn(character);
+	}
+
+	function addAdditionalAbility(id: string) {
+		if (!id || !character) return;
+		patchCharacter((c) => {
+			if (id === c.startingAbilityId) return c;
+			const cur = c.additionalAbilityIds ?? [];
+			if (cur.includes(id) || !ZNZ_STARTING_ABILITIES.some((a) => a.id === id)) return c;
+			return { ...c, additionalAbilityIds: [...cur, id] };
+		});
+	}
+
+	function removeAdditionalAbility(id: string) {
+		patchCharacter((c) => ({
+			...c,
+			additionalAbilityIds: (c.additionalAbilityIds ?? []).filter((x) => x !== id)
+		}));
 	}
 </script>
 
@@ -1059,15 +1086,24 @@
 			</section>
 
 			<section class="znz-abilities-sheet">
-				<h2 class="znz-subtitle">Ability</h2>
-				<p class="znz-hint">Starting ability (editable). Export includes this id for Foundry.</p>
+				<h2 class="znz-subtitle">Abilities</h2>
+
+				<h3 class="znz-ability-section-title">Starting ability</h3>
+				<p class="znz-hint">
+					Chosen during creation; you can change it here. Export includes this id for Foundry (additional
+					abilities are listed separately in JSON for reference).
+				</p>
 				<div class="znz-ability-select-row">
 					<select
 						class="znz-select znz-select-wide"
 						value={character.startingAbilityId ?? ''}
 						onchange={(e) => {
-							const v = (e.target as HTMLSelectElement).value;
-							patchCharacter((c) => ({ ...c, startingAbilityId: v || null }));
+							const v = (e.target as HTMLSelectElement).value || null;
+							patchCharacter((c) => ({
+								...c,
+								startingAbilityId: v,
+								additionalAbilityIds: (c.additionalAbilityIds ?? []).filter((x) => x !== v)
+							}));
 						}}
 					>
 						<option value="">— None —</option>
@@ -1083,7 +1119,56 @@
 						<p class="znz-ability-desc">{chosenAbility.description}</p>
 					</div>
 				{:else}
-					<p class="znz-hint">No ability selected.</p>
+					<p class="znz-hint">No starting ability selected.</p>
+				{/if}
+
+				<h3 class="znz-ability-section-title">Additional abilities</h3>
+				<p class="znz-hint">
+					Optional extras (e.g. progression or homebrew). Pick from the same list; duplicates and the
+					starting ability are excluded automatically.
+				</p>
+				{#if (character.additionalAbilityIds ?? []).length > 0}
+					<ul class="znz-additional-ability-list">
+						{#each character.additionalAbilityIds as aid (aid)}
+							{@const ab = ZNZ_STARTING_ABILITIES.find((x) => x.id === aid)}
+							{#if ab}
+								<li class="znz-additional-ability-item">
+									<div class="znz-selected-ability znz-selected-ability--compact">
+										<span class="znz-ability-name">{ab.label}</span>
+										<span class="znz-ability-cost">{ab.costText}</span>
+										<p class="znz-ability-desc">{ab.description}</p>
+									</div>
+									<button
+										type="button"
+										class="znz-btn znz-btn-ghost znz-btn-small"
+										onclick={() => removeAdditionalAbility(aid)}>Remove</button>
+								</li>
+							{/if}
+						{/each}
+					</ul>
+				{/if}
+				{#if availableExtraAbilities.length > 0}
+					<div class="znz-add-ability-row">
+						<label class="znz-field-label znz-sr-only" for="znz-add-ability">Add ability</label>
+						<select
+							id="znz-add-ability"
+							class="znz-select znz-select-wide"
+							value=""
+							onchange={(e) => {
+								const el = e.target as HTMLSelectElement;
+								const v = el.value;
+								if (v) addAdditionalAbility(v);
+								el.value = '';
+							}}
+						>
+							<option value="">+ Add ability…</option>
+							{#each availableExtraAbilities as ab}
+								<option value={ab.id}>{ab.label}</option>
+							{/each}
+						</select>
+					</div>
+				{:else if (character.additionalAbilityIds ?? []).length > 0}
+					<p class="znz-hint small">All other abilities from this list are already on the character.</p>
 				{/if}
 			</section>
 
@@ -1775,6 +1860,55 @@
 		border-radius: 8px;
 		border: 1px solid #4a8f57;
 		background: #0f1411;
+	}
+	.znz-ability-section-title {
+		margin: 1.15rem 0 0.35rem;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: #cfe8d3;
+	}
+	.znz-abilities-sheet > h3.znz-ability-section-title:first-of-type {
+		margin-top: 0;
+	}
+	.znz-additional-ability-list {
+		list-style: none;
+		margin: 0 0 0.65rem;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	.znz-additional-ability-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.znz-additional-ability-item .znz-selected-ability--compact {
+		flex: 1;
+		min-width: 12rem;
+	}
+	.znz-selected-ability--compact {
+		padding: 0.4rem 0.55rem;
+		border-color: #3d6b46;
+	}
+	.znz-selected-ability--compact .znz-ability-desc {
+		margin-bottom: 0;
+		font-size: 0.82rem;
+	}
+	.znz-add-ability-row {
+		margin-top: 0.25rem;
+	}
+	.znz-sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 	.znz-ability-ref-list li {
 		padding: 0.5rem 0.65rem;

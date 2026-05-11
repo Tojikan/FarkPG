@@ -133,12 +133,32 @@
         <section class="farkpg-panel farkpg-abilities">
             <header class="farkpg-panel-header">
                 <h2>{{localize 'FARKPG.Abilities.title'}}</h2>
-                <button type="button"
-                        class="farkpg-add-btn"
-                        data-action="createItem"
-                        data-item-type="ability">
-                    <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Inventory.addAbility'}}
-                </button>
+                <div class="farkpg-ability-header-actions">
+                    {{#if editable}}
+                        <div class="farkpg-ability-preset-row">
+                            <select class="farkpg-ability-preset-select"
+                                    aria-label="{{localize 'FARKPG.Abilities.addPresetAria'}}">
+                                <option value="">{{localize 'FARKPG.Abilities.addPresetPlaceholder'}}</option>
+                                {{#each abilityPresetOptions as |opt|}}
+                                    <option value="{{opt.id}}">{{opt.label}}</option>
+                                {{/each}}
+                            </select>
+                            <button type="button"
+                                    class="farkpg-add-btn"
+                                    data-action="addPresetAbility"
+                                    data-tooltip="{{localize 'FARKPG.Abilities.addPresetTooltip'}}">
+                                <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Abilities.addPreset'}}
+                            </button>
+                        </div>
+                    {{/if}}
+                    <button type="button"
+                            class="farkpg-add-btn"
+                            data-action="createItem"
+                            data-item-type="ability"
+                            {{#if editable}}data-tooltip="{{localize 'FARKPG.Abilities.addBlankTooltip'}}"{{/if}}>
+                        <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Abilities.addBlank'}}
+                    </button>
+                </div>
             </header>
             <ul class="farkpg-ability-list">
                 {{#each abilities as |item|}}

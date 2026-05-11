@@ -3,6 +3,7 @@ import {
 	ZNZ_CORE_SKILLS,
 	ZNZ_CORE_SKILL_IDS,
 	ZNZ_ADDON_PRESETS,
+	ZNZ_STARTING_ABILITIES,
 	znzSkillPoolSize,
 	znzKnowledgeLabel
 } from './definitions.js';
@@ -49,6 +50,8 @@ export interface ZnzCharacter {
 	addonRanks: Record<string, number>;
 	customSkills: ZnzCustomSkillLine[];
 	startingAbilityId: string | null;
+	/** Extra abilities beyond the starting pick (sheet); ids from the ZnZ starting-ability catalog only. */
+	additionalAbilityIds: string[];
 	resources: {
 		health: { value: number; max: number };
 		actionPoints: { value: number; max: number };
@@ -77,6 +80,24 @@ export interface ZnzPersistedV1 {
 }
 
 /** Derived from attributes; used in wizard and to initialize resources. */
+const VALID_ABILITY_IDS = new Set(ZNZ_STARTING_ABILITIES.map((a) => a.id));
+
+/**
+ * Ordered list of extra ability ids: known ids only, no duplicates, never includes `startingId`.
+ */
+function znzSanitizeAdditionalAbilityIds(raw: unknown, startingId: string | null): string[] {
+	const out: string[] = [];
+	const seen = new Set<string>();
+	if (startingId && VALID_ABILITY_IDS.has(startingId)) seen.add(startingId);
+	if (!Array.isArray(raw)) return out;
+	for (const x of raw) {
+		if (typeof x !== 'string' || !VALID_ABILITY_IDS.has(x) || seen.has(x)) continue;
+		seen.add(x);
+		out.push(x);
+	}
+	return out;
+}
+
 export function znzDerivedCaps(attributes: Record<ZnzAttrKey, number>): {
 	maxHealth: number;
 	maxAp: number;
@@ -110,6 +131,7 @@ export function createEmptyZnzCharacter(): ZnzCharacter {
 		addonRanks: {},
 		customSkills: [],
 		startingAbilityId: null,
+		additionalAbilityIds: [],
 		resources: {
 			health: { value: caps.maxHealth, max: caps.maxHealth },
 			actionPoints: { value: caps.maxAp, max: caps.maxAp },
@@ -145,6 +167,7 @@ export function draftToCharacter(d: ZnzWizardDraft): ZnzCharacter {
 		addonRanks: { ...d.addonRanks },
 		customSkills: d.customSkills.map((c) => ({ ...c })),
 		startingAbilityId: d.startingAbilityId,
+		additionalAbilityIds: [],
 		resources: {
 			health: { value: caps.maxHealth, max: caps.maxHealth },
 			actionPoints: { value: caps.maxAp, max: caps.maxAp },
@@ -247,6 +270,7 @@ export function znzBuildExportJson(char: ZnzCharacter): string {
 		addonSkills,
 		customSkills,
 		startingAbilityId: char.startingAbilityId,
+		additionalAbilityIds: [...(char.additionalAbilityIds ?? [])],
 		resources: {
 			health: { ...char.resources.health },
 			actionPoints: { ...char.resources.actionPoints },
@@ -265,6 +289,9 @@ export function znzNormalizeCharacter(raw: Partial<ZnzCharacter> | null): ZnzCha
 	const skills = { ...empty.skills, ...raw.skills };
 	const caps = znzDerivedCaps(attrs);
 	const res = raw.resources ?? empty.resources;
+	const startRaw = raw.startingAbilityId;
+	const startingAbilityId =
+		typeof startRaw === 'string' && VALID_ABILITY_IDS.has(startRaw) ? startRaw : null;
 	return {
 		name: typeof raw.name === 'string' ? raw.name : '',
 		biography: typeof raw.biography === 'string' ? raw.biography : '',
@@ -273,7 +300,8 @@ export function znzNormalizeCharacter(raw: Partial<ZnzCharacter> | null): ZnzCha
 		knowledgeLines: Array.isArray(raw.knowledgeLines) ? raw.knowledgeLines : [],
 		addonRanks: raw.addonRanks && typeof raw.addonRanks === 'object' ? { ...raw.addonRanks } : {},
 		customSkills: Array.isArray(raw.customSkills) ? raw.customSkills : [],
-		startingAbilityId: raw.startingAbilityId ?? null,
+		startingAbilityId,
+		additionalAbilityIds: znzSanitizeAdditionalAbilityIds(raw.additionalAbilityIds, startingAbilityId),
 		resources: {
 			health: {
 				value: res.health?.value ?? caps.maxHealth,

@@ -115,7 +115,7 @@ export interface ZnzAbilityDef {
 }
 
 export const ZNZ_STARTING_ABILITIES: ZnzAbilityDef[] = [
-	{ id: 'snipe', label: 'Snipe', costText: 'Cost 2 actions', description: 'Your next ranged attack deals 2× damage.' },
+	{ id: 'snipe', label: 'Snipe', costText: 'Cost 4 AP', description: 'Your next ranged attack deals 2× damage.' },
 	{
 		id: 'shieldBash',
 		label: 'Shield Bash',
@@ -149,7 +149,8 @@ export const ZNZ_STARTING_ABILITIES: ZnzAbilityDef[] = [
 		costText: 'Passive',
 		description: 'Your unarmed attacks deal 1× damage instead of 0.5×.'
 	},
-	{ id: 'stocked', label: 'Stocked', costText: 'Passive', description: 'Start with additional food and water.' }
+	{ id: 'stocked', label: 'Stocked', costText: 'Passive', description: 'Start with additional food and water.' },
+	{ id: 'activeReload', label: 'Hot Hands', costText: 'Passive', description: 'Reloading a weapon no longer takes an action.' }
 ];
 
 /** Skill points per attribute during creation: 2 × number of core skills in that attribute. */
