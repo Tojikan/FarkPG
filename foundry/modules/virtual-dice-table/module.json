@@ -1,0 +1,18 @@
+{
+    "id": "virtual-dice-table",
+    "title": "Virtual Dice Table",
+    "description": "A shared visual dice table per player with GM private board, selection, zones, and synchronized viewing across clients.",
+    "version": "1.5.4",
+    "authors": [{ "name": "Virtual Dice Table" }],
+    "socket": true,
+    "esmodules": ["scripts/constants.js", "scripts/permissions.js", "scripts/state.js", "scripts/foundry-rolls.js", "scripts/shared-store.js", "scripts/virtual-table-app.js", "scripts/main.js"],
+    "styles": ["styles/virtual-table.css"],
+    "languages": [{ "lang": "en", "name": "English", "path": "lang/en.json" }],
+    "url": "",
+    "manifest": "",
+    "download": "",
+    "compatibility": {
+        "minimum": "13",
+        "verified": "13"
+    }
+}

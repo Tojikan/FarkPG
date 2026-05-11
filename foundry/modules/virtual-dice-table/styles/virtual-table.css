@@ -1,0 +1,633 @@
+.virtual-dice-table application-shell .window-content {
+    overflow: auto;
+}
+
+.virtual-dice-table .vdt-root {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    min-height: 320px;
+}
+
+.virtual-dice-table .vdt-board-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    border-bottom: 1px solid var(--color-border-light-primary, #444);
+    padding-bottom: 0.35rem;
+}
+
+.virtual-dice-table .vdt-board-tab {
+    border: 1px solid var(--color-border-light-primary, #444);
+    background: var(--color-bg-option-unselected, #222);
+    color: var(--color-text-primary, #eee);
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: var(--font-size-12, 12px);
+}
+
+.virtual-dice-table .vdt-board-tab:hover {
+    filter: brightness(1.1);
+}
+
+.virtual-dice-table .vdt-board-tab.active {
+    border-color: var(--color-primary, #782e22);
+    box-shadow: 0 0 0 1px var(--color-primary, #782e22);
+}
+
+.virtual-dice-table .vdt-board-tab.gm-private {
+    font-style: italic;
+}
+
+.virtual-dice-table .vdt-hint {
+    margin: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: var(--font-size-13, 13px);
+    background: var(--color-bg-option-active, #333);
+    border-radius: 4px;
+    border-left: 3px solid var(--color-warm-2, #e79c17);
+}
+
+.virtual-dice-table .vdt-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.virtual-dice-table .vdt-toolbar-end {
+    display: flex;
+    align-items: flex-end;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.virtual-dice-table .vdt-toolbar-end .vdt-btn-end-roll-toolbar {
+    min-width: auto;
+    max-width: none;
+    min-height: 2.15rem;
+    padding: 0.42rem 0.85rem;
+    font-size: var(--font-size-12, 12px);
+}
+
+.virtual-dice-table .vdt-score-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 0.45rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.virtual-dice-table .vdt-btn-reset-score-footer {
+    white-space: nowrap;
+}
+
+.virtual-dice-table .vdt-toolbar-start {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.virtual-dice-table .vdt-board-tab-overview {
+    font-weight: 600;
+}
+
+.virtual-dice-table .vdt-board-tab-shared {
+    border-style: solid;
+    border-color: rgba(100, 160, 200, 0.45);
+}
+
+.virtual-dice-table .vdt-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: var(--font-size-12, 12px);
+}
+
+.virtual-dice-table .vdt-field input,
+.virtual-dice-table .vdt-field select {
+    min-width: 4rem;
+}
+
+.virtual-dice-table .vdt-btn {
+    border: 1px solid var(--color-border-light-primary, #444);
+    background: var(--color-bg-option-unselected, #222);
+    color: var(--color-text-primary, #eee);
+    border-radius: 4px;
+    padding: 0.42rem 0.75rem;
+    min-height: 2.15rem;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-size: var(--font-size-12, 12px);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.virtual-dice-table .vdt-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+.virtual-dice-table .vdt-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.virtual-dice-table .vdt-btn.danger:hover:not(:disabled) {
+    border-color: var(--color-warm-1, #c94d4d);
+}
+
+.virtual-dice-table .vdt-btn-roll {
+    background: linear-gradient(180deg, #3d8c55, #27663d);
+    border-color: #1a4a2a;
+    color: #f4fff6;
+    font-weight: 600;
+}
+
+.virtual-dice-table .vdt-btn-roll:hover:not(:disabled) {
+    border-color: #245c36;
+    filter: brightness(1.08);
+}
+
+.virtual-dice-table .vdt-btn-reroll-all {
+    background: linear-gradient(180deg, #d4a82a, #a67f18);
+    border-color: #6b5210;
+    color: #1c1404;
+    font-weight: 600;
+}
+
+.virtual-dice-table .vdt-btn-reroll-all:hover:not(:disabled) {
+    border-color: #5c450e;
+    filter: brightness(1.08);
+}
+
+/* Main rolling canvas + score sidebar (rows) */
+.virtual-dice-table .vdt-regions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 13.5rem;
+    gap: 0.65rem;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 520px) {
+    .virtual-dice-table .vdt-regions {
+        grid-template-columns: 1fr;
+    }
+}
+
+.virtual-dice-table .vdt-region {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border-light-primary, #444);
+    border-radius: 6px;
+    padding: 0.5rem;
+    min-height: 0;
+    background: var(--color-bg-dialog-header, rgba(0, 0, 0, 0.15));
+}
+
+.virtual-dice-table .vdt-region-roll {
+    flex: 1;
+    min-height: 260px;
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.virtual-dice-table .vdt-roll-footer {
+    flex-shrink: 0;
+    padding: 0.5rem 0.35rem 0.15rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 0.25rem;
+}
+
+.virtual-dice-table .vdt-roll-footer .vdt-btn {
+    width: 100%;
+}
+
+.virtual-dice-table .vdt-region-score {
+    background: rgba(0, 0, 0, 0.28);
+    border-left: 2px solid rgba(255, 255, 255, 0.06);
+}
+
+.virtual-dice-table .vdt-region header {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    font-size: var(--font-size-14, 14px);
+}
+
+.virtual-dice-table .vdt-region-score header {
+    font-size: var(--font-size-12, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+}
+
+.virtual-dice-table .vdt-help {
+    font-weight: normal;
+    opacity: 0.75;
+    font-size: var(--font-size-11, 11px);
+}
+
+.virtual-dice-table .vdt-table-surface {
+    position: relative;
+    flex: 1;
+    min-height: 220px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(3.35rem, 1fr));
+    gap: 0.85rem 1rem;
+    padding: 0.85rem 1rem 1rem;
+    align-content: start;
+    justify-items: center;
+}
+
+.virtual-dice-table .vdt-zone-rows-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-height: 140px;
+    overflow-y: auto;
+}
+
+.virtual-dice-table .vdt-zone-row {
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    padding: 0.35rem 0.4rem;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.virtual-dice-table .vdt-zone-row.vdt-drop-target.vdt-drag-active {
+    border-style: solid;
+}
+
+.virtual-dice-table .vdt-zone-row-dice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.virtual-dice-table .vdt-zone-hint {
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.25rem;
+    font-size: var(--font-size-11, 11px);
+    opacity: 0.65;
+    text-align: center;
+    line-height: 1.3;
+    flex-shrink: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+.virtual-dice-table .vdt-region.vdt-drop-target.vdt-drag-active {
+    box-shadow: inset 0 0 0 2px var(--color-primary, #782e22);
+    background: rgba(120, 46, 34, 0.06);
+}
+
+.virtual-dice-table .vdt-marquee-band {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    border: 1px dashed var(--color-primary, #782e22);
+    background: rgba(120, 46, 34, 0.15);
+}
+
+/* d6 pips: inline SVG via Handlebars helper — scales cleanly on HiDPI */
+.virtual-dice-table .vdt-d6-face {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84%;
+    height: 84%;
+    color: rgba(244, 247, 252, 0.96);
+    pointer-events: none;
+}
+
+.virtual-dice-table .vdt-d6-face svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    shape-rendering: geometricPrecision;
+}
+
+.virtual-dice-table .vdt-die-num {
+    font-weight: 700;
+    font-size: 1.05em;
+    line-height: 1;
+}
+
+/* Rolling area dice */
+.virtual-dice-table .vdt-region-roll .vdt-die {
+    position: relative;
+    z-index: 3;
+    -webkit-user-drag: element;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 2px solid var(--color-border-light-primary, #555);
+    background: linear-gradient(145deg, #3d3d3d, #1c1c1c);
+    cursor: grab;
+    user-select: none;
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Score sidebar dice — compact */
+.virtual-dice-table .vdt-region-score .vdt-die {
+    position: relative;
+    z-index: 3;
+    -webkit-user-drag: element;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    border: 1px solid #4a6670;
+    background: linear-gradient(145deg, #283339, #171f24);
+    cursor: grab;
+    user-select: none;
+    box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.virtual-dice-table .vdt-region-score .vdt-die-num {
+    font-size: 0.72rem;
+}
+
+.virtual-dice-table .vdt-die.selected {
+    outline: 3px solid var(--color-warm-2, #e79c17);
+    border-color: var(--color-warm-2, #e79c17);
+}
+
+.virtual-dice-table .vdt-region-score .vdt-die.selected {
+    outline-width: 2px;
+}
+
+.virtual-dice-table .vdt-die:active {
+    cursor: grabbing;
+}
+
+@keyframes vdt-die-roll-shake {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    18% {
+        transform: rotate(-16deg) scale(1.07);
+    }
+    36% {
+        transform: rotate(14deg) scale(1.09);
+    }
+    54% {
+        transform: rotate(-11deg) scale(1.06);
+    }
+    72% {
+        transform: rotate(7deg) scale(1.03);
+    }
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+}
+
+@keyframes vdt-die-roll-pulse {
+    0%,
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+    50% {
+        opacity: 0.82;
+        filter: brightness(1.4);
+    }
+}
+
+.virtual-dice-table .vdt-die.vdt-die-rolling {
+    animation: vdt-die-roll-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    z-index: 8;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .virtual-dice-table .vdt-die.vdt-die-rolling {
+        animation: vdt-die-roll-pulse 0.32s ease-out both;
+        pointer-events: none;
+    }
+}
+
+.virtual-dice-table .vdt-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    opacity: 0.65;
+    font-size: var(--font-size-12, 12px);
+    justify-self: center;
+    text-align: center;
+    padding: 1rem 0.5rem;
+}
+
+.virtual-dice-table .vdt-roll-idle {
+    flex: 1;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.virtual-dice-table .vdt-btn-start-roll {
+    font-size: var(--font-size-16, 16px);
+    padding: 0.65rem 1.5rem;
+    min-height: 2.75rem;
+}
+
+.virtual-dice-table .vdt-roll-idle-msg {
+    margin: 0;
+    opacity: 0.75;
+    font-size: var(--font-size-14, 14px);
+    text-align: center;
+}
+
+.virtual-dice-table .vdt-overview {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.75rem;
+    align-content: start;
+    min-height: 200px;
+    overflow-y: auto;
+    margin-top: 0.65rem;
+}
+
+@media (min-width: 560px) {
+    .virtual-dice-table .vdt-overview {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.virtual-dice-table .vdt-overview-empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 1.5rem;
+    text-align: center;
+    opacity: 0.7;
+    font-size: var(--font-size-13, 13px);
+}
+
+.virtual-dice-table .vdt-overview-card {
+    border: 1px solid var(--color-border-light-primary, #444);
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.virtual-dice-table .vdt-overview-card-head {
+    font-weight: 600;
+    font-size: var(--font-size-13, 13px);
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.virtual-dice-table .vdt-overview-card-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(5.75rem, 50%);
+    gap: 0.5rem 0.65rem;
+    align-items: start;
+    min-height: 0;
+}
+
+.virtual-dice-table .vdt-overview-board {
+    min-width: 0;
+}
+
+.virtual-dice-table .vdt-overview-sidebar {
+    min-width: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    padding-left: 0.55rem;
+    margin-left: 0.1rem;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 4px;
+    padding-top: 0.15rem;
+    padding-bottom: 0.35rem;
+    padding-right: 0.35rem;
+}
+
+.virtual-dice-table .vdt-overview-label {
+    font-size: var(--font-size-10, 10px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.65;
+    margin-bottom: 0.25rem;
+}
+
+.virtual-dice-table .vdt-overview-dice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.virtual-dice-table .vdt-overview-score {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: min(11rem, 40vh);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0.2rem 0.35rem 0.2rem 0;
+    scrollbar-gutter: stable;
+}
+
+.virtual-dice-table .vdt-overview-score .vdt-overview-zone-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    justify-content: flex-start;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    min-height: 2.1rem;
+    padding: 0.38rem 0.45rem;
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.virtual-dice-table .vdt-overview-score .vdt-overview-zone-row .vdt-die {
+    flex-shrink: 0;
+}
+
+.virtual-dice-table .vdt-overview-none {
+    opacity: 0.45;
+    font-size: var(--font-size-12, 12px);
+}
+
+.virtual-dice-table .vdt-die-mini {
+    width: 1.6rem;
+    height: 1.6rem;
+    min-width: 1.6rem;
+    border-radius: 4px;
+    border: 1px solid #4a6670;
+    background: linear-gradient(145deg, #2f3539, #1a1f22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+}
+
+.virtual-dice-table .vdt-die-readonly {
+    cursor: default;
+    user-select: none;
+}
+
+.virtual-dice-table .vdt-die-mini .vdt-d6-face {
+    width: 78%;
+    height: 78%;
+}
+
+.virtual-dice-table .vdt-end-roll-wrap {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+    padding: 1rem 0 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.virtual-dice-table .vdt-btn-end-roll-big {
+    width: auto;
+    min-width: 11rem;
+    max-width: 90%;
+    justify-content: center;
+    font-size: var(--font-size-15, 15px);
+    font-weight: 700;
+    min-height: 2.85rem;
+    padding: 0.65rem 1.75rem;
+    background: linear-gradient(180deg, #b83232, #8a2222);
+    border-color: #5c1818;
+    color: #fff;
+}
+
+.virtual-dice-table .vdt-btn-end-roll-big:hover:not(:disabled) {
+    filter: brightness(1.12);
+    border-color: #7a2828;
+}
