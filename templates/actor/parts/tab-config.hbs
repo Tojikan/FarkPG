@@ -16,6 +16,14 @@
         </label>
 
         <label class="farkpg-config-field">
+            <span>{{localize 'FARKPG.Config.currentActionPoints'}}</span>
+            <input type="number"
+                   name="system.resources.actionPoints.value"
+                   value="{{system.resources.actionPoints.value}}"
+                   min="0" step="1" />
+        </label>
+
+        <label class="farkpg-config-field">
             <span>{{localize 'FARKPG.Config.maxActionPoints'}}</span>
             <input type="number"
                    name="system.resources.actionPoints.max"
@@ -39,4 +47,60 @@
                    min="0" step="1" />
         </label>
     </div>
+
+    <section class="farkpg-config-custom-ap">
+        <header class="farkpg-config-custom-ap-header">
+            <h3>{{localize 'FARKPG.Config.customApTitle'}}</h3>
+            {{#if editable}}
+                <button type="button"
+                        class="farkpg-icon-btn"
+                        data-action="addCustomApType"
+                        data-tooltip="{{localize 'FARKPG.Config.addCustomAp'}}"
+                        aria-label="{{localize 'FARKPG.Config.addCustomAp'}}">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                </button>
+            {{/if}}
+        </header>
+        <p class="farkpg-config-hint">{{localize 'FARKPG.Config.customApHint'}}</p>
+
+        <ul class="farkpg-custom-ap-list">
+            {{#each customApEntries as |ap|}}
+                <li class="farkpg-custom-ap-row" data-custom-ap-id="{{ap.id}}">
+                    <label class="farkpg-custom-ap-field">
+                        <span>{{localize 'FARKPG.Config.customApName'}}</span>
+                        <input type="text"
+                               name="{{ap.nameInputName}}"
+                               value="{{ap.name}}" />
+                    </label>
+                    <label class="farkpg-custom-ap-field farkpg-custom-ap-narrow">
+                        <span>{{localize 'FARKPG.Config.customApValue'}}</span>
+                        <input type="number"
+                               name="{{ap.valueInputName}}"
+                               value="{{ap.value}}"
+                               min="0" step="1" />
+                    </label>
+                    <label class="farkpg-custom-ap-field farkpg-custom-ap-img">
+                        <span>{{localize 'FARKPG.Config.customApImg'}}</span>
+                        <span class="farkpg-custom-ap-img-row">
+                            <img src="{{ap.imgResolved}}" alt="" />
+                            <input type="text"
+                                   name="{{ap.imgInputName}}"
+                                   value="{{ap.img}}"
+                                   placeholder="{{localize 'FARKPG.Config.customApImgPlaceholder'}}" />
+                        </span>
+                    </label>
+                    <button type="button"
+                            class="farkpg-icon-btn farkpg-custom-ap-remove"
+                            data-action="removeCustomApType"
+                            data-custom-ap-id="{{ap.id}}"
+                            data-tooltip="{{localize 'FARKPG.Config.removeCustomAp'}}"
+                            aria-label="{{localize 'FARKPG.Config.removeCustomAp'}}">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </li>
+            {{else}}
+                <li class="farkpg-custom-ap-empty">{{localize 'FARKPG.Config.customApEmpty'}}</li>
+            {{/each}}
+        </ul>
+    </section>
 </section>

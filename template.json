@@ -29,6 +29,7 @@
       "resources": {
         "health": { "value": 10000, "max": 10000 },
         "actionPoints": { "value": 18, "max": 18 },
+        "customActionPoints": {},
         "exp": { "value": 0, "max": 100 },
         "movement": 20
       },

@@ -1,4 +1,5 @@
 import { SYSTEM_ID } from "./config.mjs";
+import { FarkPGApDrawer } from "./ap-drawer.mjs";
 import { FarkPGCharacterSheet } from "./sheets/character-sheet.mjs";
 import { FarkPGItemSheet } from "./sheets/item-sheet.mjs";
 
@@ -10,6 +11,13 @@ Hooks.once("init", async () => {
     }
     if (!Handlebars.helpers.gt) {
         Handlebars.registerHelper("gt", (a, b) => Number(a) > Number(b));
+    }
+    if (!Handlebars.helpers.and) {
+        Handlebars.registerHelper("and", (...args) => {
+            // Trailing argument is the Handlebars options object.
+            const values = args.slice(0, -1);
+            return values.every((v) => !!v);
+        });
     }
 
     const { DocumentSheetConfig } = foundry.applications.apps;
@@ -33,7 +41,13 @@ Hooks.once("init", async () => {
         "farkpg.tab-inventory": `systems/${SYSTEM_ID}/templates/actor/parts/tab-inventory.hbs`,
         "farkpg.tab-config": `systems/${SYSTEM_ID}/templates/actor/parts/tab-config.hbs`,
         "farkpg.item-card": `systems/${SYSTEM_ID}/templates/actor/parts/item-card.hbs`,
+        "farkpg.ap-drawer": `systems/${SYSTEM_ID}/templates/ap-drawer.hbs`,
     });
+});
+
+Hooks.on("updateActor", (actor) => {
+    if (actor.type !== "character") return;
+    FarkPGApDrawer.refreshIfOpen(actor.id);
 });
 
 /**
@@ -59,6 +73,7 @@ const DEFAULT_ATTACHED_SKILL = {
  * payload AND no value already stored on the item, so subsequent toggles and
  * manual selections are preserved.
  */
+
 /**
  * Delegate clicks on the "Open Virtual Dice Table" button rendered inside our
  * Fark-roll chat messages. Using a single document-level listener avoids

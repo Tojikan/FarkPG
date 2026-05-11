@@ -1,0 +1,42 @@
+<div class="farkpg-ap-drawer-window">
+    <div class="farkpg-ap-drawer-row">
+        {{#each apTypes as |row|}}
+            <div class="farkpg-ap-drawer-cell" data-ap-kind="{{row.kind}}" data-ap-id="{{row.id}}">
+                <div class="farkpg-ap-drawer-label">{{row.label}}</div>
+                <div class="farkpg-ap-drawer-mid">
+                    {{#if @root.editable}}
+                        <button type="button"
+                                class="farkpg-ap-drawer-icon-btn"
+                                data-action="decrementApFromDrawer"
+                                data-ap-kind="{{row.kind}}"
+                                {{#if (eq row.kind "custom")}}data-ap-id="{{row.id}}"{{/if}}
+                                data-tooltip="{{localize 'FARKPG.ApDrawer.decrementTooltip'}}"
+                                aria-label="{{localize 'FARKPG.ApDrawer.decrementAria'}}">
+                            <img src="{{row.img}}" alt="" />
+                        </button>
+                    {{else}}
+                        <span class="farkpg-ap-drawer-icon-readonly">
+                            <img src="{{row.img}}" alt="" />
+                        </span>
+                    {{/if}}
+                </div>
+                <div class="farkpg-ap-drawer-frac">
+                    {{#if @root.editable}}
+                        <input type="number"
+                               class="farkpg-ap-drawer-inp farkpg-ap-drawer-inp-val"
+                               data-ap-path="{{row.valuePath}}"
+                               value="{{row.value}}"
+                               min="0"
+                               step="1" />
+                    {{else}}
+                        <span class="farkpg-ap-drawer-read-val">{{row.valueDisplay}}</span>
+                    {{/if}}
+                    {{#if row.hasMax}}
+                        <span class="farkpg-ap-drawer-slash">/</span>
+                        <span class="farkpg-ap-drawer-read-max">{{row.maxDisplay}}</span>
+                    {{/if}}
+                </div>
+            </div>
+        {{/each}}
+    </div>
+</div>

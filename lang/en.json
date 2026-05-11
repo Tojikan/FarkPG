@@ -13,7 +13,32 @@
       "hp": "HP",
       "ap": "AP",
       "exp": "EXP",
-      "move": "Move"
+      "move": "Move",
+      "portraitEditHint": "Click the portrait or the image button to choose a new picture.",
+      "portraitEditBtn": "Change portrait",
+      "removeCustomAp": "Remove this custom AP pool",
+      "removeCustomApConfirmTitle": "Remove custom AP pool?",
+      "removeCustomApConfirmBody": "Remove the pool \"{name}\"? This cannot be undone.",
+      "removeCustomApConfirmDelete": "Remove"
+    },
+
+    "ApDrawer": {
+      "title": "Action Points",
+      "headerStripTitle": "AP",
+      "openTooltip": "Open the compact AP window (same pools; quick spend with minus).",
+      "openAria": "Open action points window",
+      "decrementTooltip": "Click the icon to spend 1 from this pool",
+      "decrementAria": "Spend one from this pool (click icon)",
+      "customApDefaultName": "Custom AP",
+      "addPoolTooltip": "Add a custom AP pool",
+      "addPoolAria": "Add custom action points pool",
+      "addPoolDialogTitle": "Add custom AP pool",
+      "addPoolName": "Label",
+      "addPoolImg": "Icon image path",
+      "addPoolImgBrowse": "Browse for image",
+      "addPoolAmount": "Starting amount",
+      "addPoolConfirm": "Add",
+      "addPoolNameRequired": "Enter a label for the new pool."
     },
 
     "Attributes": {
@@ -30,6 +55,8 @@
       "addCustom": "Add Custom Skill",
       "customDefault": "New Skill",
       "remove": "Remove Skill",
+      "edit": "Edit custom skills",
+      "editDone": "Done editing custom skills",
       "roll": "Roll d20 + Attribute + Skill",
       "diceTable": "Open Virtual Dice Table",
 
@@ -154,6 +181,7 @@
       "badgeQuantityTooltip": "Spends 1 quantity on use.",
       "ability": "Ability",
       "cost": "Cost",
+      "costPlaceholder": "e.g. 2 AP, reaction, 1/day",
       "rank": "Rank",
       "equipped": "Equipped",
       "description": "Description"
@@ -168,9 +196,19 @@
     "Config": {
       "title": "Configuration",
       "maxHealth": "Max HP",
+      "currentActionPoints": "Current AP",
       "maxActionPoints": "Max AP",
       "equipmentSlots": "Base Equipment Slot",
-      "inventorySlots": "Base Inventory Slot"
+      "inventorySlots": "Base Inventory Slot",
+      "customApTitle": "Custom action points",
+      "customApHint": "Extra AP pools (no cap). Set current amounts here, or spend from the AP pop-out on the character header.",
+      "addCustomAp": "Add custom AP type",
+      "customApName": "Name",
+      "customApValue": "Current",
+      "customApImg": "Icon path",
+      "customApImgPlaceholder": "icons/svg/aura.svg",
+      "removeCustomAp": "Remove pool",
+      "customApEmpty": "No custom AP types yet."
     },
 
     "Rolls": {
@@ -198,7 +236,8 @@
       "consumableEmpty": "{name} has no uses remaining.",
       "inventoryFull": "Inventory slots are full ({count}/{max}).",
       "equipmentFull": "Equipment slots are full ({count}/{max}).",
-      "noAmmoCandidates": "No consumable matches the required ammo for {name} ({required})."
+      "noAmmoCandidates": "No consumable matches the required ammo for {name} ({required}).",
+      "noActorUpdatePermission": "You do not have permission to update this actor."
     }
   },
 

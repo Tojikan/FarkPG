@@ -15,9 +15,10 @@
                 <i class="fa-solid fa-plus"></i> {{localize 'FARKPG.Inventory.addEquipment'}}
             </button>
         </div>
-        <div class="farkpg-slot-counter" aria-live="polite">
+        <div class="farkpg-slot-counter {{#if (gt slots.inventory.count slots.inventory.max)}}farkpg-slot-counter-over{{/if}}"
+             aria-live="polite">
             <span class="farkpg-slot-counter-label">{{localize 'FARKPG.Inventory.slots'}}:</span>
-            <span class="farkpg-slot-counter-value {{#if (gt slots.inventory.count slots.inventory.max)}}farkpg-slot-over{{/if}}">
+            <span class="farkpg-slot-counter-value">
                 {{slots.inventory.count}} / {{slots.inventory.max}}
             </span>
         </div>

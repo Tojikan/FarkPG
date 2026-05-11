@@ -1,8 +1,94 @@
+import { FarkPGApDrawer, buildApTypeRowsForActor } from "../ap-drawer.mjs";
 import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
+
+/** Preview image when a custom AP type has no `img` path set. */
+const CUSTOM_AP_IMG_FALLBACK = "icons/svg/aura.svg";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
 const { TextEditor } = foundry.applications.ux;
+
+/**
+ * Foundry 13+ FilePicker constructor (avoid deprecated global `FilePicker`).
+ * @returns {any|null}
+ */
+function getFilePickerImplementation() {
+    return foundry.applications.apps?.FilePicker?.implementation ?? null;
+}
+
+/**
+ * Delete one keyed entry under `system` (e.g. `system.customSkills[id]` or
+ * `system.resources.customActionPoints[id]`).
+ *
+ * Prefers `ForcedDeletion.create()` on the **leaf** path — passing the
+ * `ForcedDeletion` class itself (instead of an operator instance) is ignored /
+ * invalid and looks like “delete does nothing”.
+ *
+ * Falls back to `parent.-=id` with `performDeletions: true` when operators
+ * are unavailable.
+ *
+ * Do not replace whole parent maps with `{ recursive: false }` on multi-segment
+ * paths; that can wipe sibling `system` branches.
+ *
+ * @param {ClientDocument} doc
+ * @param {string} parentPath Dot-path to the parent object (no trailing key).
+ * @param {string} entryId
+ * @returns {Promise<void>}
+ */
+async function deleteSystemKeyedEntry(doc, parentPath, entryId) {
+    const FD = foundry.data?.operators?.ForcedDeletion;
+    if (FD && typeof FD.create === "function") {
+        await doc.update({ [`${parentPath}.${entryId}`]: FD.create() });
+        return;
+    }
+    await doc.update({ [`${parentPath}.-=${entryId}`]: null }, { performDeletions: true });
+}
+
+/**
+ * Open the image file picker and assign the chosen path to `actor.img`.
+ * @param {Actor} actor
+ * @param {boolean} editable
+ */
+function openActorPortraitPicker(actor, editable) {
+    if (!editable || !actor?.canUserModify?.(game.user, "update")) return;
+    const current = actor.img ?? "";
+    const Picker = getFilePickerImplementation();
+    if (!Picker) {
+        ui.notifications?.error("FilePicker is not available in this Foundry build.");
+        return;
+    }
+    const fp = new Picker({
+        type: "image",
+        current,
+        callback: async (path) => {
+            if (path && path !== current) await actor.update({ img: path });
+        },
+    });
+    fp.render(true);
+}
+
+/**
+ * Open Foundry's image file picker and pass the chosen path to `onPick`.
+ * @param {string} current
+ * @param {(path: string) => void} onPick
+ */
+function openImagePathPicker(current, onPick) {
+    const Picker = getFilePickerImplementation();
+    if (!Picker) {
+        ui.notifications?.error("FilePicker is not available in this Foundry build.");
+        return;
+    }
+    const fp = new Picker({
+        type: "image",
+        current: current ?? "",
+        callback: (path) => {
+            if (path) onPick(path);
+        },
+    });
+    void Promise.resolve(fp.render(true)).then(() => {
+        fp.bringToTop?.();
+    });
+}
 
 /**
  * Character sheet. Uses the v13 native tab system: each tab is its own PART, and the
@@ -18,8 +104,12 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         actions: {
             rollSkill: FarkPGCharacterSheet.#onRollSkill,
             openDiceTable: FarkPGCharacterSheet.#onOpenDiceTable,
+            openApDrawer: FarkPGCharacterSheet.#onOpenApDrawer,
             addCustomSkill: FarkPGCharacterSheet.#onAddCustomSkill,
             removeCustomSkill: FarkPGCharacterSheet.#onRemoveCustomSkill,
+            addCustomApType: FarkPGCharacterSheet.#onAddCustomApType,
+            promptAddCustomAp: FarkPGCharacterSheet.#onPromptAddCustomAp,
+            removeCustomApType: FarkPGCharacterSheet.#onRemoveCustomApType,
             createItem: FarkPGCharacterSheet.#onCreateItem,
             editItem: FarkPGCharacterSheet.#onEditItem,
             deleteItem: FarkPGCharacterSheet.#onDeleteItem,
@@ -27,11 +117,21 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             useItem: FarkPGCharacterSheet.#onUseItem,
             selectAmmo: FarkPGCharacterSheet.#onSelectAmmo,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
+            toggleSkillsEdit: FarkPGCharacterSheet.#onToggleSkillsEdit,
+            editPortrait: FarkPGCharacterSheet.#onEditPortrait,
         },
     };
 
     /** @type {boolean} */
     _biographyEditing = false;
+
+    /**
+     * Whether the Attributes & Skills sidebar is in edit mode. When false,
+     * custom skills render exactly like base skills (no rename input, no
+     * remove button) and the "Add custom skill" button is hidden.
+     * @type {boolean}
+     */
+    _skillsEditing = false;
 
     /** @type {AbortController|null} */
     _renderListeners = null;
@@ -83,7 +183,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         context.system = system;
         context.actor = this.actor;
         context.editable = this.isEditable;
+        context.canModifyActor = this.actor.canUserModify(game.user, "update");
         context.biographyEditing = this._biographyEditing;
+        context.skillsEditing = this._skillsEditing;
         context.tabs = this._prepareTabs("primary");
 
         const items = this.actor.items.contents;
@@ -254,7 +356,22 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
         context.equippedItems = equippedRaw.map(decorate);
         context.inventoryItems = inventoryRaw.map(decorate);
-        context.abilities = items.filter(isAbility).sort((a, b) => a.sort - b.sort);
+        context.abilities = items
+            .filter(isAbility)
+            .sort((a, b) => a.sort - b.sort)
+            .map((item) => {
+                const sys = item.system ?? {};
+                const descPlain = this.#htmlToPlainDescription(sys.description ?? "");
+                return {
+                    id: item.id,
+                    uuid: item.uuid,
+                    name: item.name,
+                    img: item.img,
+                    system: sys,
+                    descPlain,
+                    hasDesc: descPlain.length > 0,
+                };
+            });
 
         const linkedAmmoIds = new Set(
             context.equippedItems
@@ -292,6 +409,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
         context.attributeBlocks = ATTRIBUTE_KEYS.map((key) => this.#buildAttributeBlock(key, system));
         context.inventoryItemTypes = INVENTORY_ITEM_TYPES;
+        context.apTypes = buildApTypeRowsForActor(this.actor);
 
         return context;
     }
@@ -312,6 +430,25 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 },
             );
         }
+        if (partId === "config") {
+            const map = this.actor.system?.resources?.customActionPoints ?? {};
+            context.customApEntries = Object.entries(map)
+                .map(([id, entry]) => {
+                    const e = entry && typeof entry === "object" ? entry : {};
+                    const img = String(e.img ?? "").trim();
+                    return {
+                        id,
+                        name: String(e.name ?? ""),
+                        value: Number(e.value ?? 0),
+                        img,
+                        imgResolved: img || CUSTOM_AP_IMG_FALLBACK,
+                        nameInputName: `system.resources.customActionPoints.${id}.name`,
+                        valueInputName: `system.resources.customActionPoints.${id}.value`,
+                        imgInputName: `system.resources.customActionPoints.${id}.img`,
+                    };
+                })
+                .sort((a, b) => a.name.localeCompare(b.name));
+        }
         return context;
     }
 
@@ -325,6 +462,23 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     #localizeOptional(key) {
         const value = game.i18n.localize(key);
         return value === key ? "" : value;
+    }
+
+    /**
+     * Strip tags from an item description for a one-line summary on the actor sheet.
+     * @param {string} html
+     * @returns {string}
+     */
+    #htmlToPlainDescription(html) {
+        const raw = String(html ?? "");
+        const text = raw
+            .replace(/<style[\s\S]*?<\/style>/gi, "")
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        return text;
     }
 
     /**
@@ -400,6 +554,25 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 }
             }
         }
+        const apBlock = foundry.utils.getProperty(data, "system.resources.actionPoints");
+        if (apBlock && typeof apBlock === "object") {
+            const maxFromData = apBlock.max;
+            const maxFromActor = Number(this.actor.system?.resources?.actionPoints?.max ?? 0);
+            const max = maxFromData !== undefined ? Number(maxFromData) : maxFromActor;
+            const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
+            if ("value" in apBlock) {
+                apBlock.value = clamp(apBlock.value, 0, finiteMax);
+            }
+        }
+        const customAp = foundry.utils.getProperty(data, "system.resources.customActionPoints");
+        if (customAp && typeof customAp === "object") {
+            for (const entry of Object.values(customAp)) {
+                if (entry && typeof entry === "object" && "value" in entry) {
+                    const v = Number(entry.value);
+                    entry.value = Number.isFinite(v) ? Math.max(0, Math.min(99999, v)) : 0;
+                }
+            }
+        }
         return data;
     }
 
@@ -416,6 +589,39 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const { signal } = this._renderListeners;
 
         this.element.addEventListener("dragstart", this.#onDragStart.bind(this), { signal });
+
+        // Header AP remove lives outside the tab body; ensure clicks still run the
+        // same handler as `data-action` (and run before other listeners).
+        this.element.addEventListener(
+            "click",
+            async (event) => {
+                const btn = event.target.closest?.("button[data-action='removeCustomApType'][data-custom-ap-id]");
+                if (!btn) return;
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                try {
+                    await FarkPGCharacterSheet.#onRemoveCustomApType.call(this, event, btn);
+                } catch (err) {
+                    console.error(err);
+                    ui.notifications?.error(err?.message ?? String(err));
+                }
+            },
+            { capture: true, signal },
+        );
+
+        const portraitImg = this.element.querySelector(".farkpg-portrait-img[data-farkpg-portrait-picker]");
+        if (portraitImg && this.isEditable) {
+            portraitImg.addEventListener(
+                "click",
+                (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openActorPortraitPicker(this.actor, this.isEditable);
+                },
+                { signal },
+            );
+        }
 
         // Double-clicking the attached-ammo icon on a weapon card opens the
         // ammo item's sheet for editing. Delegated once at the root so it
@@ -784,13 +990,25 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      * Try the Virtual Dice Table module APIs in priority order:
      * `openStartRollAndRoll` first (auto-fills count/faces), then plain
      * `openVirtualTable`, then the legacy `globalThis.virtualDiceTable.open()`.
+     *
+     * A FarkPG roll can never put more than 6 dice on the table at once. Any
+     * dice beyond that show up in the table's "Free Rolls" pool instead, which
+     * the player can spend by double-clicking a die to re-roll it.
+     *
      * @param {{ count: number; faces: number }} payload
      */
     async #dispatchDiceTable({ count, faces }) {
+        const requested = Math.max(0, Number(count) || 0);
+        const cappedCount = Math.min(6, requested);
+        const freeRolls = Math.max(0, requested - 6);
         const api = game.modules.get("virtual-dice-table")?.api;
         if (api?.openStartRollAndRoll) {
             try {
-                await api.openStartRollAndRoll({ count, faces });
+                await api.openStartRollAndRoll({
+                    count: cappedCount,
+                    faces,
+                    freeRolls,
+                });
                 return;
             } catch (err) {
                 console.error("FarkPG | openStartRollAndRoll failed", err);
@@ -823,9 +1041,204 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Append a new custom skill scoped to the given attribute.
+     * Open the compact AP drawer for this actor.
      * @this {FarkPGCharacterSheet}
      */
+    static async #onOpenApDrawer(event) {
+        event.preventDefault();
+        await FarkPGApDrawer.open(this.actor);
+    }
+
+    /**
+     * Image button or equivalent: open file picker for actor portrait.
+     * @this {FarkPGCharacterSheet}
+     */
+    static #onEditPortrait(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openActorPortraitPicker(this.actor, this.isEditable);
+    }
+
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onAddCustomApType(event, target) {
+        event.preventDefault();
+        const id = foundry.utils.randomID();
+        await this.actor.update({
+            [`system.resources.customActionPoints.${id}`]: {
+                id,
+                name: game.i18n.localize("FARKPG.ApDrawer.customApDefaultName"),
+                value: 0,
+                img: "",
+            },
+        });
+    }
+
+    /**
+     * Prompt for label, icon path, and starting amount, then add a custom AP pool.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onPromptAddCustomAp(event) {
+        event.preventDefault();
+        if (!this.actor.canUserModify(game.user, "update")) return;
+
+        const DialogV2 = foundry.applications.api.DialogV2;
+        const esc = foundry.utils.escapeHTML ?? ((s) => String(s));
+        const title = game.i18n.localize("FARKPG.ApDrawer.addPoolDialogTitle");
+        const lblName = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolName"));
+        const lblImg = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolImg"));
+        const lblAmt = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolAmount"));
+        const phImg = esc(game.i18n.localize("FARKPG.Config.customApImgPlaceholder"));
+        const lblBrowse = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolImgBrowse"));
+
+        const content = `
+            <div class="farkpg-ap-add-dialog">
+                <div class="form-group">
+                    <label for="farkpg-ap-add-name">${lblName}</label>
+                    <input type="text" id="farkpg-ap-add-name" name="poolName" required />
+                </div>
+                <div class="form-group">
+                    <label for="farkpg-ap-add-img">${lblImg}</label>
+                    <div class="farkpg-ap-add-img-row">
+                        <input type="text" id="farkpg-ap-add-img" name="poolImg" placeholder="${phImg}" />
+                        <button type="button" class="farkpg-ap-add-img-pick" id="farkpg-ap-add-img-pick"
+                                data-tooltip="${lblBrowse}" aria-label="${lblBrowse}">
+                            <i class="fa-solid fa-image" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="farkpg-ap-add-amt">${lblAmt}</label>
+                    <input type="number" id="farkpg-ap-add-amt" name="poolAmount" value="0" min="0" step="1" />
+                </div>
+            </div>
+        `;
+
+        // `modal: true` leaves a full-screen overlay above other apps; the image
+        // FilePicker then renders underneath it and cannot receive clicks. Keep
+        // this dialog non-modal so the picker stays usable while it is open.
+        const result = await DialogV2.wait({
+            window: { title },
+            content,
+            modal: false,
+            rejectClose: false,
+            render: (_event, dialog) => {
+                const root = dialog.element;
+                if (!root) return;
+                const pick = root.querySelector("#farkpg-ap-add-img-pick");
+                const inp = root.querySelector("#farkpg-ap-add-img");
+                if (!pick || !inp) return;
+                pick.addEventListener("click", (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    openImagePathPicker(String(inp.value ?? "").trim(), (path) => {
+                        inp.value = path;
+                    });
+                });
+            },
+            buttons: [
+                {
+                    action: "cancel",
+                    type: "button",
+                    label: game.i18n.localize("Cancel"),
+                },
+                {
+                    action: "confirm",
+                    type: "submit",
+                    default: true,
+                    label: game.i18n.localize("FARKPG.ApDrawer.addPoolConfirm"),
+                    callback: (_event, _button, dialog) => {
+                        const root = dialog.element;
+                        const name = String(root.querySelector("#farkpg-ap-add-name")?.value ?? "").trim();
+                        const img = String(root.querySelector("#farkpg-ap-add-img")?.value ?? "").trim();
+                        const amount = Math.max(
+                            0,
+                            Math.floor(Number(root.querySelector("#farkpg-ap-add-amt")?.value ?? 0)),
+                        );
+                        return { name, img, amount };
+                    },
+                },
+            ],
+        });
+
+        if (result === false || result == null) return;
+        if (typeof result !== "object" || !("name" in result)) return;
+
+        if (!String(result.name ?? "").trim()) {
+            ui.notifications?.warn(game.i18n.localize("FARKPG.ApDrawer.addPoolNameRequired"));
+            return;
+        }
+
+        const id = foundry.utils.randomID();
+        const name = String(result.name ?? "").trim();
+        const img = String(result.img ?? "").trim();
+        await this.actor.update({
+            [`system.resources.customActionPoints.${id}`]: {
+                id,
+                name,
+                value: Number.isFinite(result.amount) ? result.amount : 0,
+                img,
+            },
+        });
+    }
+
+    /**
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onRemoveCustomApType(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.actor.canUserModify(game.user, "update")) {
+            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.noActorUpdatePermission"));
+            return;
+        }
+        const btn = target?.closest?.("[data-custom-ap-id]");
+        const id = String(btn?.dataset?.customApId ?? target?.dataset?.customApId ?? "");
+        if (!id) return;
+
+        const pools = this.actor.system?.resources?.customActionPoints;
+        const pool = pools && typeof pools === "object" ? pools[id] : null;
+        const poolLabel =
+            (pool && typeof pool === "object" && String(pool.name ?? "").trim()) ||
+            game.i18n.localize("FARKPG.ApDrawer.customApDefaultName");
+        const esc = foundry.utils.escapeHTML ?? ((s) => String(s));
+        const DialogV2 = foundry.applications.api.DialogV2;
+        const title = game.i18n.localize("FARKPG.Header.removeCustomApConfirmTitle");
+        const body = game.i18n.format("FARKPG.Header.removeCustomApConfirmBody", {
+            name: esc(poolLabel),
+        });
+
+        const agreed = await DialogV2.wait({
+            window: { title },
+            content: `<p class="farkpg-dialog-confirm">${body}</p>`,
+            modal: true,
+            rejectClose: false,
+            buttons: [
+                {
+                    action: "cancel",
+                    type: "button",
+                    default: true,
+                    label: game.i18n.localize("Cancel"),
+                },
+                {
+                    action: "confirm",
+                    type: "submit",
+                    label: game.i18n.localize("FARKPG.Header.removeCustomApConfirmDelete"),
+                    callback: () => true,
+                },
+            ],
+        });
+
+        const confirmed =
+            agreed === true ||
+            agreed === "confirm" ||
+            (agreed && typeof agreed === "object" && agreed.action === "confirm");
+        if (!confirmed) return;
+
+        await deleteSystemKeyedEntry(this.actor, "system.resources.customActionPoints", id);
+    }
+
     static async #onAddCustomSkill(event, target) {
         event.preventDefault();
         const attribute = String(target.dataset.attribute ?? "");
@@ -842,14 +1255,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Remove a custom skill by ID using the deletion path syntax.
+     * Remove a custom skill by ID.
      * @this {FarkPGCharacterSheet}
      */
     static async #onRemoveCustomSkill(event, target) {
         event.preventDefault();
-        const id = String(target.dataset.customId ?? "");
+        event.stopPropagation();
+        if (!this.actor.canUserModify(game.user, "update")) return;
+        const btn = target?.closest?.("[data-custom-id]") ?? target;
+        const id = String(btn?.dataset?.customId ?? "");
         if (!id) return;
-        await this.actor.update({ [`system.customSkills.-=${id}`]: null });
+        await deleteSystemKeyedEntry(this.actor, "system.customSkills", id);
     }
 
     /**
@@ -1152,6 +1568,16 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     static #onToggleBiographyEditor(event) {
         event.preventDefault();
         this._biographyEditing = !this._biographyEditing;
+        this.render(true);
+    }
+
+    /**
+     * Flip the Attributes & Skills sidebar between view and edit modes.
+     * @this {FarkPGCharacterSheet}
+     */
+    static #onToggleSkillsEdit(event) {
+        event.preventDefault();
+        this._skillsEditing = !this._skillsEditing;
         this.render(true);
     }
 }
