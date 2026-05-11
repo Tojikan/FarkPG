@@ -1,68 +1,153 @@
+
 <script lang="ts">
 	import { base } from '$app/paths';
 </script>
 
 <svelte:head>
 	<title>Rules – FarkPG</title>
-	<meta name="description" content="FarkPG game rules: Farkle resolution, dice, combat, resources, attributes, skills, and abilities." />
+	<meta
+		name="description"
+		content="FarkPG rules covering Farkrolls, Fast Rolls, combat, resources, attributes, skills, and character creation."
+	/>
 </svelte:head>
 
 <div class="rules-page">
-	<h1 class="rules-title">Game rules</h1>
-	<p class="rules-intro">How FarkPG works at the table. The system is rules lite and flexible—themes and settings can adjust details.</p>
+	<h1 class="rules-title">Game Rules</h1>
+
+	<p class="rules-intro">
+		FarkPG is a fast, flexible tabletop RPG built around risk, momentum, and resource management.
+	</p>
 
 	<section class="rules-section">
-		<h2>Core resolution: Farkle</h2>
+		<h2>Farkrolls</h2>
+
 		<p>
-			<strong>Farkle</strong> is the core resolution mechanic. When your character attempts an action, you roll dice using standard Farkle rules. The number of dice you roll is determined by your <strong>attributes + skills</strong> for that action (as defined by the theme and your character).
+			A <strong>Farkroll</strong> is the main resolution mechanic. Roll dice using standard
+			Farkle rules whenever your character attempts something important.
 		</p>
+
 		<ul>
-			<li><strong>Max dice rolled is always 6.</strong> If your attribute + skill total would give more than 6 dice, you still only roll 6.</li>
-			<li>Each point over 6 gives you <strong>1 free re-roll</strong> during that Farkle roll. When you can use these re-rolls depends on context (e.g. in combat they last the whole turn—see Combat).</li>
+			<li>
+				<strong>Dice Rolled:</strong> Attribute + Skill = number of dice rolled.
+			</li>
+			<li>
+				<strong>Maximum Dice:</strong> You can never roll more than 6 dice.
+			</li>
+			<li>
+				<strong>Free Re-rolls:</strong> Each dice rolled over 6 grants 1 free re-roll applied anytime during the roll. It's a single free re-roll of one dice.
+			</li>
+			<li>
+				<strong>Busting:</strong> If a roll scores nothing on first roll, the Farkroll fails no matter what.
+			</li>
 		</ul>
 	</section>
 
 	<section class="rules-section">
-		<h2>Resource currency</h2>
+		<h2>Fast Rolls</h2>
+
 		<p>
-			The game uses a <strong>resource currency</strong> so players can attempt Farkle without losing progress when a roll fails. Before a Farkle roll, a player may declare they are spending the resource. For that roll, they spend <strong>1 currency per roll</strong> to <strong>retain rolled values</strong>—if they bust, they don’t lose the points they’d already banked. The decision to use the resource must be declared at the <strong>start of that Farkle roll</strong>; each roll that uses this protection consumes 1 resource.
+			For quick or less important actions, use a <strong>Fast Roll</strong> instead of a
+			Farkroll.
 		</p>
+
+		<ul>
+			<li>
+				Roll <strong>1d20 + Attribute + Skill</strong>.
+			</li>
+			<li>
+				The GM sets the difficulty or compares results directly.
+			</li>
+			<li>
+				Fast Rolls are quicker, but less dramatic than Farkrolls.
+			</li>
+		</ul>
+	</section>
+
+	<section class="rules-section">
+		<h2>Resource Currency</h2>
+
+		<p>
+			Resource currency lets players push through bad luck during a Farkroll.
+		</p>
+
+		<ul>
+			<li>
+				Declare that you are using currency prior to starting a Farkroll
+			</li>
+			<li>
+				Spend <strong>1 currency</strong> before each time you roll dice. 
+			</li>
+			<li>
+				If you bust, you keep any points already banked during that Farkroll.
+			</li>
+			<li>
+				The currency must be declared before rolling.
+			</li>
+			<li>
+				Some themes or currencies may grant additional effects beyond protection from busting.
+			</li>
+		</ul>
 	</section>
 
 	<section class="rules-section">
 		<h2>Combat</h2>
+
 		<ul>
-			<li><strong>Initiative:</strong> Combat uses a simple initiative system (e.g. roll or stat-based order).</li>
-			<li><strong>Actions:</strong> Each player has <strong>2 actions</strong> per turn. Actions are flexible and can be repeated.</li>
-			<li><strong>Free re-rolls:</strong> Free re-rolls from attributes + skills (values over 6) last through the <strong>whole turn</strong>, not per action.</li>
+			<li>
+				Each character gets <strong>2 actions</strong> per turn.
+			</li>
+			<li>
+				Actions are flexible and may be repeated.
+			</li>
+			<li>
+				Free re-rolls only apply for the entire turn, not per action. Repeated actions thus only get free re-rolls once.
+			</li>
+			<li>
+				Initiative may be stat-based or rolled depending on the theme.
+			</li>
 		</ul>
 	</section>
 
 	<section class="rules-section">
-		<h2>Attributes and skills</h2>
+		<h2>Attributes & Skills</h2>
+
 		<p>
-			<strong>Attributes</strong> are core stats (e.g. Strength, Agility, Endurance, Intelligence, Willpower, Charisma). They have numeric values and usually min/max/default bounds. <strong>Skills</strong> are grouped by category (e.g. Combat, Social, Knowledge). Each skill can be tied to an attribute and has a numeric value. Your attribute + the relevant skill (or the method defined by the theme) determines how many dice you roll for that action.
+			Attributes are core stats like Strength, Agility, Intelligence, or Willpower.
+			Skills represent trained abilities such as Combat, Stealth, Medicine, or Persuasion.
+		</p>
+
+		<p>
+			Most rolls use an Attribute + Skill combination chosen by the GM or theme.
 		</p>
 	</section>
 
 	<section class="rules-section">
 		<h2>Abilities</h2>
+
 		<p>
-			<strong>Abilities</strong> are special traits you buy during character creation. They can be one-off (bought once) or levelable (multiple ranks). Each ability has a cost in character-building points. Use the <a href="{base}/builders">character builders</a> to assign points and choose abilities.
+			Abilities are special traits, perks, or powers purchased during character creation.
+			Some are one-time purchases, while others can be upgraded in ranks.
 		</p>
 	</section>
 
 	<section class="rules-section">
 		<h2>Experience (XP)</h2>
+
 		<p>
-			Characters have an <strong>XP</strong> (experience) value. It’s used for advancement, unlocks, or other rewards as defined by the theme or campaign.
+			XP is used for character growth, rewards, and progression as defined by the campaign or theme.
 		</p>
 	</section>
 
 	<section class="rules-section">
-		<h2>Character building</h2>
+		<h2>Character Creation</h2>
+
 		<p>
-			Character building is a <strong>point buy system</strong>. You spend points from defined pools to set attribute values, skill values, and abilities. Each theme defines the pools and limits (e.g. total attribute points, points per skill category, ability points). Some themes allow <strong>custom skills</strong> (your own skill name and value in a category) and <strong>custom abilities</strong>. Use a <a href="{base}/builders">character builder</a> to create and save characters.
+			FarkPG uses a point-buy system. Players spend points on attributes, skills, and abilities.
+		</p>
+
+		<p>
+			Some themes may include custom skills, custom abilities, or additional character options.
+			Use the <a href="{base}/builders">character builders</a> to create and save characters.
 		</p>
 	</section>
 </div>
@@ -117,3 +202,4 @@
 		text-decoration: underline;
 	}
 </style>
+```

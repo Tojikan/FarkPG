@@ -23,6 +23,12 @@
 				<span class="builder-desc">Same core stats with Luck instead of Fate. Combat, Technology, Street, and Social skills. Abilities and enhancements share one point pool.</span>
 			</a>
 		</li>
+		<li>
+			<a href="{base}/builders/znz" class="builder-card">
+				<span class="builder-name">ZnZ (zombie survival)</span>
+				<span class="builder-desc">Body, Adroit, and Mind. Escalating skill costs per attribute pool, add-on and custom skills, one starting ability, and JSON export for Foundry farkpg-znz.</span>
+			</a>
+		</li>
 	</ul>
 </div>
 
