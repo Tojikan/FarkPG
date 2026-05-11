@@ -36,6 +36,42 @@
 	const ATTR_KEYS: ZnzAttrKey[] = ['body', 'adroit', 'mind'];
 	const SKILL_CAP = 8;
 
+	/** Coerce any stored / input value to a legal integer attribute rating. */
+	function znzAttrCoerce(v: unknown): number {
+		const n = Number(v);
+		if (!Number.isFinite(n)) return ATTR_MIN;
+		return Math.max(ATTR_MIN, Math.min(ATTR_MAX, Math.round(n)));
+	}
+
+	function znzAttrSum(attrs: Record<ZnzAttrKey, number>): number {
+		return ATTR_KEYS.reduce((acc, k) => acc + znzAttrCoerce(attrs[k]), 0);
+	}
+
+	/**
+	 * For `<input type="number" max=…>`: native spinners honor `max` before JS runs.
+	 * Never use ATTR_MAX alone when the pool is tighter — otherwise the UI can show
+	 * "Remaining: 0" while the stepper still raises a stat toward 6.
+	 */
+	function znzAttrHtmlMax(attrs: Record<ZnzAttrKey, number>, key: ZnzAttrKey): number {
+		const cur = znzAttrCoerce(attrs[key]);
+		const otherSum = ATTR_KEYS.filter((k) => k !== key).reduce((acc, k) => acc + znzAttrCoerce(attrs[k]), 0);
+		const byPool = ATTR_POOL - otherSum;
+		return Math.max(cur, Math.min(ATTR_MAX, byPool));
+	}
+
+	/** Wheel on focused number inputs changes values without always firing `input` consistently. */
+	function znzSuppressWheelWhenFocused(node: HTMLInputElement) {
+		const fn = (e: WheelEvent) => {
+			if (document.activeElement === node) e.preventDefault();
+		};
+		node.addEventListener('wheel', fn, { passive: false });
+		return {
+			destroy() {
+				node.removeEventListener('wheel', fn);
+			}
+		};
+	}
+
 	let mode = $state<'empty' | 'wizard' | 'sheet'>('empty');
 	let character = $state<ZnzCharacter | null>(null);
 	let wizard = $state<ZnzWizardDraft | null>(null);
@@ -255,7 +291,7 @@
 			return;
 		}
 		if (wizard.step === 2) {
-			const sum = ATTR_KEYS.reduce((acc, k) => acc + (wizard.attributes[k] ?? 0), 0);
+			const sum = znzAttrSum(wizard.attributes);
 			if (sum > ATTR_POOL) {
 				alert(`Attribute points exceed the pool (${sum} / ${ATTR_POOL}).`);
 				return;
@@ -333,7 +369,7 @@
 	function normalizeZnzAttributesFromSaved(attrs: Record<ZnzAttrKey, number>): Record<ZnzAttrKey, number> {
 		const next: Record<ZnzAttrKey, number> = { ...attrs };
 		for (const k of ATTR_KEYS) {
-			next[k] = Math.max(ATTR_MIN, Math.min(ATTR_MAX, Math.round(next[k] ?? ATTR_MIN)));
+			next[k] = znzAttrCoerce(next[k]);
 		}
 		let sum = ATTR_KEYS.reduce((acc, k) => acc + next[k], 0);
 		while (sum > ATTR_POOL) {
@@ -355,17 +391,28 @@
 	/**
 	 * Only changes `editedKey`. Does not lower other attributes: the new value is capped so
 	 * body+adroit+mind <= ATTR_POOL given the others unchanged.
+	 *
+	 * Important: when the other two stats already use the full pool, `ATTR_POOL - otherSum` is 0.
+	 * Do not clamp that "room" up to ATTR_MIN — that would incorrectly allow a third 1 and total 11.
 	 */
 	function applyZnzAttributeChange(
 		editedKey: ZnzAttrKey,
 		rawValue: number,
 		attrs: Record<ZnzAttrKey, number>
 	): Record<ZnzAttrKey, number> {
-		const otherSum = ATTR_KEYS.filter((k) => k !== editedKey).reduce((acc, k) => acc + (attrs[k] ?? 0), 0);
-		const maxForKey = Math.min(ATTR_MAX, ATTR_POOL - otherSum);
-		const desired = Math.max(ATTR_MIN, Math.min(ATTR_MAX, Math.round(rawValue)));
-		const capped = Math.min(desired, Math.max(ATTR_MIN, maxForKey));
-		return { ...attrs, [editedKey]: capped };
+		const prev = znzAttrCoerce(attrs[editedKey]);
+		const rd = Number(rawValue);
+		const want = Number.isFinite(rd) ? znzAttrCoerce(rd) : prev;
+
+		const otherSum = ATTR_KEYS.filter((k) => k !== editedKey).reduce((acc, k) => acc + znzAttrCoerce(attrs[k]), 0);
+		const maxVal = Math.min(ATTR_MAX, ATTR_POOL - otherSum);
+
+		if (maxVal < ATTR_MIN) {
+			return { ...attrs, [editedKey]: prev };
+		}
+
+		const capped = Math.min(want, maxVal);
+		return { ...attrs, [editedKey]: Math.max(ATTR_MIN, capped) };
 	}
 
 	function patchCharacter(fn: (c: ZnzCharacter) => ZnzCharacter) {
@@ -462,12 +509,11 @@
 						<br />
 						10-point buy: total of all attributes must be &lt;= {ATTR_POOL}. Remaining:
 						<strong>
-							{Math.max(0, ATTR_POOL - ATTR_KEYS.reduce((acc, k) => acc + (wizard.attributes[k] ?? 0), 0))}
+							{Math.max(0, ATTR_POOL - znzAttrSum(wizard.attributes))}
 						</strong>.
 					</p>
 					<div class="znz-attr-grid">
-						{#each ['body', 'adroit', 'mind'] as key}
-							{@const k = key as ZnzAttrKey}
+						{#each ATTR_KEYS as k (k)}
 							<div class="znz-attr-box">
 								<div class="znz-attr-title">{ZNZ_ATTR_LABELS[k]}</div>
 								<p class="znz-attr-blurb">{ZNZ_ATTR_BLURBS[k]}</p>
@@ -475,9 +521,12 @@
 									class="znz-input znz-input-number"
 									type="number"
 									min={ATTR_MIN}
-									max={ATTR_MAX}
-									value={wizard.attributes[k]}
-									oninput={(e) => setAttrWizard(k, Number((e.target as HTMLInputElement).value))}
+									max={znzAttrHtmlMax(wizard.attributes, k)}
+									step="1"
+									value={znzAttrCoerce(wizard.attributes[k])}
+									use:znzSuppressWheelWhenFocused
+									oninput={(e) =>
+										setAttrWizard(k, Number((e.target as HTMLInputElement).value))}
 								/>
 							</div>
 						{/each}
@@ -779,8 +828,7 @@
 			<section class="znz-skills-block">
 				<h2 class="znz-subtitle">Attributes and skills</h2>
 				<p class="znz-hint">Each attribute includes all skills in one indented list.</p>
-				{#each ['body', 'adroit', 'mind'] as key}
-					{@const k = key as ZnzAttrKey}
+				{#each ATTR_KEYS as k (k)}
 					<div class="znz-attr-group">
 						<div class="znz-attr-group-head">
 							<h3 class="znz-col-title">{ZNZ_ATTR_LABELS[k]}</h3>
@@ -788,10 +836,12 @@
 								class="znz-input znz-input-number"
 								type="number"
 								min={ATTR_MIN}
-								max={ATTR_MAX}
-								value={character.attributes[k]}
+								max={znzAttrHtmlMax(character.attributes, k)}
+								step="1"
+								value={znzAttrCoerce(character.attributes[k])}
+								use:znzSuppressWheelWhenFocused
 								oninput={(e) => {
-									const raw = Number((e.target as HTMLInputElement).value) || ATTR_MIN;
+									const raw = Number((e.target as HTMLInputElement).value);
 									patchCharacter((c) => ({
 										...c,
 										attributes: applyZnzAttributeChange(k, raw, c.attributes)
