@@ -43,9 +43,10 @@
     "weapon": {
       "description": "",
       "durability": { "value": 10, "max": 10 },
+      "durabilityPerUse": 0,
       "rollable": { "multiplier": 0, "max": 0 },
       "weaponStyle": "melee",
-      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "" },
+      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "", "requiredNames": "" },
       "isEquipped": false
     },
     "consumable": {

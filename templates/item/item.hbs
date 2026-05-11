@@ -16,100 +16,129 @@
 
         {{#if isWeapon}}
             <fieldset class="farkpg-fieldset">
-                <legend>Weapon</legend>
+                <legend>{{localize 'FARKPG.Items.weapon'}}</legend>
                 <label>
-                    <span>Style</span>
+                    <span>{{localize 'FARKPG.Items.style'}}</span>
                     <select name="system.weaponStyle">
-                        <option value="melee" {{#if (eq system.weaponStyle 'melee')}}selected{{/if}}>Melee</option>
-                        <option value="ranged" {{#if (eq system.weaponStyle 'ranged')}}selected{{/if}}>Ranged</option>
-                        <option value="thrown" {{#if (eq system.weaponStyle 'thrown')}}selected{{/if}}>Thrown</option>
-                        <option value="unarmed" {{#if (eq system.weaponStyle 'unarmed')}}selected{{/if}}>Unarmed</option>
+                        <option value="melee" {{#if (eq system.weaponStyle 'melee')}}selected{{/if}}>{{localize 'FARKPG.Items.styleMelee'}}</option>
+                        <option value="ranged" {{#if (eq system.weaponStyle 'ranged')}}selected{{/if}}>{{localize 'FARKPG.Items.styleRanged'}}</option>
+                        <option value="thrown" {{#if (eq system.weaponStyle 'thrown')}}selected{{/if}}>{{localize 'FARKPG.Items.styleThrown'}}</option>
+                        <option value="unarmed" {{#if (eq system.weaponStyle 'unarmed')}}selected{{/if}}>{{localize 'FARKPG.Items.styleUnarmed'}}</option>
                     </select>
                 </label>
                 <label>
-                    <span>Durability</span>
+                    <span>{{localize 'FARKPG.Items.durability'}}</span>
                     <span class="farkpg-pair">
                         <input type="number" name="system.durability.value" value="{{system.durability.value}}" />
                         <span class="farkpg-sep">/</span>
                         <input type="number" name="system.durability.max" value="{{system.durability.max}}" />
                     </span>
                 </label>
+                {{#if isMeleeWeapon}}
+                    <label>
+                        <span>{{localize 'FARKPG.Items.durabilityPerUse'}}</span>
+                        <input type="number" name="system.durabilityPerUse" value="{{system.durabilityPerUse}}" min="0" step="1" />
+                    </label>
+                {{/if}}
                 <label>
-                    <span>Rollable Multiplier</span>
-                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                    <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
                 </label>
                 <label>
-                    <span>Rollable Max</span>
-                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                    <span>{{localize 'FARKPG.Items.rollMax'}}</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                 </label>
                 <label>
-                    <span>Ammo Enabled</span>
+                    <span>{{localize 'FARKPG.Items.ammoEnabled'}}</span>
                     <input type="checkbox" name="system.ammo.enabled" {{#if system.ammo.enabled}}checked{{/if}} />
                 </label>
-                <label>
-                    <span>Ammo Per Use</span>
-                    <input type="number" name="system.ammo.perUse" value="{{system.ammo.perUse}}" />
-                </label>
+                {{#if system.ammo.enabled}}
+                    <label>
+                        <span>{{localize 'FARKPG.Items.ammoPerUse'}}</span>
+                        <input type="number" name="system.ammo.perUse" value="{{system.ammo.perUse}}" min="1" step="1" />
+                    </label>
+                    <label>
+                        <span>{{localize 'FARKPG.Items.ammoItem'}}</span>
+                        {{#if hasActor}}
+                            <select name="system.ammo.linkedConsumableId">
+                                <option value="">{{localize 'FARKPG.Items.ammoItemNone'}}</option>
+                                {{#each actorConsumables as |c|}}
+                                    <option value="{{c.id}}" {{#if (eq c.id ../system.ammo.linkedConsumableId)}}selected{{/if}}>{{c.name}}</option>
+                                {{/each}}
+                            </select>
+                        {{else}}
+                            <input type="text" value="{{localize 'FARKPG.Items.ammoNoConsumables'}}" disabled />
+                        {{/if}}
+                    </label>
+                    <label>
+                        <span>{{localize 'FARKPG.Items.ammoRequiredNames'}}</span>
+                        <input type="text"
+                               name="system.ammo.requiredNames"
+                               value="{{system.ammo.requiredNames}}"
+                               placeholder="9mm, .45 ACP, ..."
+                               data-tooltip="{{localize 'FARKPG.Items.ammoRequiredNamesHint'}}" />
+                    </label>
+                {{/if}}
             </fieldset>
         {{/if}}
 
         {{#if isConsumable}}
             <fieldset class="farkpg-fieldset">
-                <legend>Consumable</legend>
+                <legend>{{localize 'FARKPG.Items.consumable'}}</legend>
                 <label>
-                    <span>Quantity</span>
+                    <span>{{localize 'FARKPG.Items.quantity'}}</span>
                     <span class="farkpg-pair">
-                        <input type="number" name="system.quantity.value" value="{{system.quantity.value}}" />
+                        <input type="number" name="system.quantity.value" value="{{system.quantity.value}}" min="0" step="1" />
                         <span class="farkpg-sep">/</span>
-                        <input type="number" name="system.quantity.max" value="{{system.quantity.max}}" />
+                        <input type="number" name="system.quantity.max" value="{{system.quantity.max}}" min="0" step="1" />
                     </span>
                 </label>
                 <label>
-                    <span>Rollable Multiplier</span>
-                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                    <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
                 </label>
                 <label>
-                    <span>Rollable Max</span>
-                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                    <span>{{localize 'FARKPG.Items.rollMax'}}</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                 </label>
             </fieldset>
         {{/if}}
 
         {{#if isEquipment}}
             <fieldset class="farkpg-fieldset">
-                <legend>Equipment</legend>
+                <legend>{{localize 'FARKPG.Items.equipment'}}</legend>
                 <label>
-                    <span>Durability</span>
+                    <span>{{localize 'FARKPG.Items.durability'}}</span>
                     <span class="farkpg-pair">
-                        <input type="number" name="system.durability.value" value="{{system.durability.value}}" />
+                        <input type="number" name="system.durability.value" value="{{system.durability.value}}" min="0" step="1" />
                         <span class="farkpg-sep">/</span>
-                        <input type="number" name="system.durability.max" value="{{system.durability.max}}" />
+                        <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0" step="1" />
                     </span>
                 </label>
                 <label>
-                    <span>Rollable Multiplier</span>
-                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" />
+                    <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
+                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
                 </label>
                 <label>
-                    <span>Rollable Max</span>
-                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" />
+                    <span>{{localize 'FARKPG.Items.rollMax'}}</span>
+                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                 </label>
             </fieldset>
         {{/if}}
 
         {{#if isAbility}}
             <fieldset class="farkpg-fieldset">
-                <legend>Ability</legend>
+                <legend>{{localize 'FARKPG.Items.ability'}}</legend>
                 <label>
-                    <span>Cost</span>
-                    <input type="number" name="system.cost" value="{{system.cost}}" />
+                    <span>{{localize 'FARKPG.Items.cost'}}</span>
+                    <input type="number" name="system.cost" value="{{system.cost}}" min="0" step="1" />
                 </label>
                 <label>
-                    <span>Rank</span>
+                    <span>{{localize 'FARKPG.Items.rank'}}</span>
                     <span class="farkpg-pair">
-                        <input type="number" name="system.rank" value="{{system.rank}}" />
+                        <input type="number" name="system.rank" value="{{system.rank}}" min="0" step="1" />
                         <span class="farkpg-sep">/</span>
-                        <input type="number" name="system.maxRank" value="{{system.maxRank}}" />
+                        <input type="number" name="system.maxRank" value="{{system.maxRank}}" min="0" step="1" />
                     </span>
                 </label>
             </fieldset>
@@ -118,12 +147,12 @@
         {{#if canEquip}}
             <label class="farkpg-equipped-check">
                 <input type="checkbox" name="system.isEquipped" {{#if system.isEquipped}}checked{{/if}} />
-                <span>Equipped</span>
+                <span>{{localize 'FARKPG.Items.equipped'}}</span>
             </label>
         {{/if}}
 
         <fieldset class="farkpg-fieldset farkpg-description">
-            <legend>Description</legend>
+            <legend>{{localize 'FARKPG.Items.description'}}</legend>
             <div class="editor">
                 {{#if editable}}
                     <prose-mirror name="system.description"

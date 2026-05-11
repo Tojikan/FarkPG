@@ -298,14 +298,121 @@
 
 .farkpg-item > .farkpg-item-type,
 .farkpg-item > .farkpg-item-qty,
+.farkpg-item > .farkpg-item-roll,
+.farkpg-item > .farkpg-item-ammo,
 .farkpg-item > .farkpg-ability-stats,
 .farkpg-item > .farkpg-item-controls {
+    flex: 0 0 auto;
+}
+
+.farkpg-item-roll {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--farkpg-text);
+    background: var(--farkpg-input-bg);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+.farkpg-item-roll i {
+    margin-right: 3px;
+    opacity: 0.65;
+}
+
+.farkpg-item-ammo {
+    font-size: 0.75rem;
+    color: var(--farkpg-muted);
+    white-space: nowrap;
+}
+
+.farkpg-item-ammo i {
+    margin-right: 3px;
+    opacity: 0.65;
+}
+
+.farkpg-use-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--farkpg-accent, #6b3f17);
+    color: #f7efe0;
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    cursor: pointer;
+}
+
+.farkpg-use-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* ------------------------- Inventory ammo section ------------------------- */
+
+.farkpg-ammo-section {
+    margin: 0.25rem 0 0.5rem;
+    padding: 0.35rem 0.5rem;
+    background: var(--farkpg-panel-bg);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+}
+
+.farkpg-panel-subheader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.farkpg-panel-subheader h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--farkpg-muted);
+}
+
+.farkpg-ammo-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.farkpg-ammo-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2px 4px;
+    font-size: 0.85rem;
+}
+
+.farkpg-ammo-row .farkpg-item-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.farkpg-ammo-row .farkpg-item-qty {
     flex: 0 0 auto;
 }
 
 .farkpg-item:hover {
     background: var(--farkpg-panel-bg);
     border-color: var(--farkpg-border);
+}
+
+.farkpg-item[draggable="true"],
+.farkpg-ammo-row[draggable="true"] {
+    cursor: grab;
+}
+
+.farkpg-item[draggable="true"]:active,
+.farkpg-ammo-row[draggable="true"]:active {
+    cursor: grabbing;
 }
 
 .farkpg-item-icon {
@@ -518,6 +625,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+label.farkpg-skill-name[data-tooltip],
+label.farkpg-attribute-name[data-tooltip] {
+    cursor: help;
 }
 
 input.farkpg-skill-name {

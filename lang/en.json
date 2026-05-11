@@ -19,8 +19,11 @@
     "Attributes": {
       "label": "Attributes & Skills",
       "body": "Body",
+      "bodyHint": "Physical capabilities. Determines Max Health; ",
       "adroit": "Adroit",
-      "mind": "Mind"
+      "adroitHint": "Expertise and dexterity. Determines Movement Speed; ",
+      "mind": "Mind",
+      "mindHint": "Mental and social skills. Determines Max AP; "
     },
 
     "Skills": {
@@ -31,20 +34,34 @@
       "diceTable": "Open Virtual Dice Table",
 
       "meleeWeapons": "Melee Weapons",
+      "meleeWeaponsHint": "Skill with melee weaponry.",
       "block": "Block",
+      "blockHint": "Block damage dealt in an area.",
       "unarmed": "Unarmed",
+      "unarmedHint": "Skill with unarmed combat. Unarmed deals 0.5x by default.",
       "endurance": "Endurance",
+      "enduranceHint": "Resist physical damage.",
       "athletics": "Athletics",
+      "athleticsHint": "Swimming, climbing, and similar physical feats.",
       "rangedWeapons": "Ranged Weapons",
+      "rangedWeaponsHint": "Skill with ranged weaponry.",
       "dodge": "Dodge",
+      "dodgeHint": "Avoid damage for yourself only.",
       "throwing": "Throwing",
+      "throwingHint": "Capability with throwing.",
       "coordination": "Coordination",
+      "coordinationHint": "Hand-eye coordination, balance.",
       "stealth": "Stealth",
       "charisma": "Charisma",
+      "charismaHint": "Social skills.",
       "intelligence": "Intelligence",
+      "intelligenceHint": "Smarts and capability for learning.",
       "perception": "Perception",
+      "perceptionHint": "Capability with perceiving and senses.",
       "sanity": "Sanity",
-      "instinct": "Instinct"
+      "sanityHint": "Endure psychological damage.",
+      "instinct": "Instinct",
+      "instinctHint": "Sense impending danger."
     },
 
     "Equipment": {
@@ -67,7 +84,12 @@
       "addWeapon": "Add Weapon",
       "addConsumable": "Add Consumable",
       "addEquipment": "Add Equipment",
-      "addAbility": "Add Ability"
+      "addAbility": "Add Ability",
+      "ammoSection": "Ammo",
+      "ammoSectionEmpty": "No linked ammo.",
+      "qty": "Qt",
+      "roll": "Roll",
+      "ammo": "Ammo"
     },
 
     "Items": {
@@ -78,7 +100,34 @@
       "edit": "Edit",
       "delete": "Delete",
       "equip": "Equip",
-      "unequip": "Unequip"
+      "unequip": "Unequip",
+      "use": "Use",
+      "useTooltip": "Use item (rolls and consumes ammo/durability/quantity)",
+      "rollMultiplier": "Roll Multiplier",
+      "rollMax": "Roll Max",
+      "weapon": "Weapon",
+      "style": "Style",
+      "styleMelee": "Melee",
+      "styleRanged": "Ranged",
+      "styleThrown": "Thrown",
+      "styleUnarmed": "Unarmed",
+      "durability": "Durability",
+      "durabilityPerUse": "Durability Per Use",
+      "ammoEnabled": "Ammo Enabled",
+      "ammoPerUse": "Ammo Per Use",
+      "ammoItem": "Ammo Item",
+      "ammoItemNone": "— None —",
+      "ammoNoConsumables": "No consumables on this actor",
+      "ammoRequiredNames": "Required Ammo Names",
+      "ammoRequiredNamesHint": "Comma separated list of allowed ammo names.",
+      "consumable": "Consumable",
+      "quantity": "Quantity",
+      "equipment": "Equipment",
+      "ability": "Ability",
+      "cost": "Cost",
+      "rank": "Rank",
+      "equipped": "Equipped",
+      "description": "Description"
     },
 
     "Biography": {
@@ -101,7 +150,27 @@
     },
 
     "Notify": {
-      "dicetableMissing": "Virtual Dice Table module is not installed or enabled."
+      "dicetableMissing": "Virtual Dice Table module is not installed or enabled.",
+      "notRollable": "This item has no roll defined.",
+      "ammoNotSelected": "{name} has no ammo selected.",
+      "ammoNotAllowed": "{ammo} is not a valid ammo for {name}. Required: {required}.",
+      "ammoOut": "Not enough {ammo} to fire {name} (need {need}, have {have}).",
+      "ammoMissing": "{name} is linked to ammo that no longer exists on this actor.",
+      "durabilityOut": "{name} doesn't have enough durability (need {need}, have {have}).",
+      "consumableEmpty": "{name} has no uses remaining.",
+      "inventoryFull": "Inventory slots are full ({count}/{max})."
+    }
+  },
+
+  "TYPES": {
+    "Actor": {
+      "character": "Character"
+    },
+    "Item": {
+      "weapon": "Weapon",
+      "consumable": "Consumable",
+      "equipment": "Equipment",
+      "ability": "Ability"
     }
   }
 }

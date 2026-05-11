@@ -24,12 +24,16 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             editItem: FarkPGCharacterSheet.#onEditItem,
             deleteItem: FarkPGCharacterSheet.#onDeleteItem,
             toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
+            useItem: FarkPGCharacterSheet.#onUseItem,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
         },
     };
 
     /** @type {boolean} */
     _biographyEditing = false;
+
+    /** @type {AbortController|null} */
+    _renderListeners = null;
 
     /** @inheritDoc */
     static PARTS = {
@@ -86,9 +90,66 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const isEquipped = (i) => !isAbility(i) && i.system?.isEquipped === true;
         const inInventory = (i) => !isAbility(i) && !isEquipped(i);
 
-        context.equippedItems = items.filter(isEquipped).sort((a, b) => a.sort - b.sort);
-        context.inventoryItems = items.filter(inInventory).sort((a, b) => a.sort - b.sort);
+        const decorate = (item) => {
+            const sys = item.system ?? {};
+            const mult = Number(sys.rollable?.multiplier ?? 0);
+            const maxv = Number(sys.rollable?.max ?? 0);
+            const isRollable = mult > 0 && maxv > 0;
+            const isWeapon = item.type === "weapon";
+            const isConsumable = item.type === "consumable";
+            const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
+            const linkedAmmo = ammoEnabled && sys.ammo?.linkedConsumableId
+                ? this.actor.items.get(sys.ammo.linkedConsumableId)
+                : null;
+            return {
+                id: item.id,
+                uuid: item.uuid,
+                name: item.name,
+                img: item.img,
+                type: item.type,
+                system: sys,
+                isWeapon,
+                isConsumable,
+                isRollable,
+                rollMultiplier: mult,
+                rollMax: maxv,
+                rollLabel: isRollable ? `${mult} × ${maxv}` : "",
+                ammoEnabled,
+                ammoPerUse: ammoEnabled ? Math.max(1, Number(sys.ammo?.perUse ?? 1)) : 0,
+                linkedAmmo: linkedAmmo
+                    ? {
+                          id: linkedAmmo.id,
+                          name: linkedAmmo.name,
+                          qty: Number(linkedAmmo.system?.quantity?.value ?? 0),
+                      }
+                    : null,
+            };
+        };
+
+        const equippedRaw = items.filter(isEquipped).sort((a, b) => a.sort - b.sort);
+        const inventoryRaw = items.filter(inInventory).sort((a, b) => a.sort - b.sort);
+
+        context.equippedItems = equippedRaw.map(decorate);
+        context.inventoryItems = inventoryRaw.map(decorate);
         context.abilities = items.filter(isAbility).sort((a, b) => a.sort - b.sort);
+
+        const linkedAmmoIds = new Set(
+            context.equippedItems
+                .concat(context.inventoryItems)
+                .map((i) => i.linkedAmmo?.id)
+                .filter(Boolean),
+        );
+        context.linkedAmmoItems = items
+            .filter((i) => linkedAmmoIds.has(i.id))
+            .map((i) => ({
+                id: i.id,
+                uuid: i.uuid,
+                name: i.name,
+                img: i.img,
+                qty: Number(i.system?.quantity?.value ?? 0),
+                max: Number(i.system?.quantity?.max ?? 0),
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
 
         context.slots = {
             equipment: {
@@ -127,6 +188,18 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
+     * Resolve a localization key, returning an empty string when the key has no
+     * translation. `game.i18n.localize` returns the raw key when missing, which
+     * would otherwise leak into tooltips.
+     * @param {string} key
+     * @returns {string}
+     */
+    #localizeOptional(key) {
+        const value = game.i18n.localize(key);
+        return value === key ? "" : value;
+    }
+
+    /**
      * @param {"body"|"adroit"|"mind"} key
      * @param {any} system
      */
@@ -137,6 +210,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             key: skillKey,
             id: skillKey,
             label: game.i18n.localize(`FARKPG.Skills.${skillKey}`),
+            hint: this.#localizeOptional(`FARKPG.Skills.${skillKey}Hint`),
             value: Number(system.skills?.[skillKey] ?? 0),
             inputName: `system.skills.${skillKey}`,
         }));
@@ -150,6 +224,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 key: s.id,
                 id: s.id,
                 label: s.name || game.i18n.localize("FARKPG.Skills.customDefault"),
+                hint: "",
                 value: Number(s.value ?? 0),
                 inputName: `system.customSkills.${s.id}.value`,
                 nameInputName: `system.customSkills.${s.id}.name`,
@@ -158,6 +233,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         return {
             key,
             label: game.i18n.localize(`FARKPG.Attributes.${key}`),
+            hint: this.#localizeOptional(`FARKPG.Attributes.${key}Hint`),
             value: attrValue,
             inputName: `system.attributes.${key}`,
             skills: [...builtIn, ...custom],
@@ -207,6 +283,12 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     _onRender(context, options) {
         super._onRender?.(context, options);
 
+        this._renderListeners?.abort();
+        this._renderListeners = new AbortController();
+        const { signal } = this._renderListeners;
+
+        this.element.addEventListener("dragstart", this.#onDragStart.bind(this), { signal });
+
         for (const input of this.element.querySelectorAll(".farkpg-custom-skill-name")) {
             input.addEventListener("change", (ev) => {
                 ev.preventDefault();
@@ -216,8 +298,108 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 const value = String(target.value ?? "").trim();
                 if (!id) return;
                 this.actor.update({ [`system.customSkills.${id}.name`]: value });
-            });
+            }, { signal });
         }
+    }
+
+    /**
+     * Start a Foundry-compatible Item drag using the embedded item's UUID.
+     * @param {DragEvent} event
+     */
+    #onDragStart(event) {
+        const row = event.target?.closest?.("[data-item-id][draggable='true']");
+        if (!row) return;
+        const item = this.actor.items.get(row.dataset.itemId);
+        if (!item) return;
+        event.stopPropagation();
+        event.dataTransfer?.setData(
+            "text/plain",
+            JSON.stringify({
+                type: "Item",
+                uuid: item.uuid,
+                sourceActorUuid: this.actor.uuid,
+            }),
+        );
+        event.dataTransfer?.setData(
+            "application/json",
+            JSON.stringify({
+                type: "Item",
+                uuid: item.uuid,
+                sourceActorUuid: this.actor.uuid,
+            }),
+        );
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    }
+
+    /**
+     * Drop an Item on this actor via the V2 framework. Embedded items from another
+     * actor are moved (create here, delete on source). Overriding this method
+     * replaces the framework default that would otherwise create a second copy.
+     * @param {DragEvent} event
+     * @param {Item} item
+     */
+    async _onDropItem(event, item) {
+        if (!item) return;
+        if (item.parent === this.actor) return;
+        if (!INVENTORY_ITEM_TYPES.includes(item.type)) return;
+
+        if (item.type !== "ability" && this.#isInventoryFull()) {
+            this.#warnInventoryFull();
+            return;
+        }
+
+        const sourceActor = item.parent instanceof Actor ? item.parent : null;
+        const itemData = item.toObject();
+        delete itemData._id;
+        if (itemData.system?.isEquipped !== undefined) itemData.system.isEquipped = false;
+        if (itemData.system?.ammo?.linkedConsumableId !== undefined) {
+            itemData.system.ammo.linkedConsumableId = "";
+        }
+
+        await this.actor.createEmbeddedDocuments("Item", [itemData]);
+        if (sourceActor && sourceActor !== this.actor) {
+            await this.#clearAmmoLinksTo(sourceActor, item.id);
+            await sourceActor.deleteEmbeddedDocuments("Item", [item.id]);
+        }
+    }
+
+    /**
+     * When moving an ammo consumable away from an actor, clear any weapons still
+     * pointing at it. The link is actor-local, so keeping it would leave stale IDs.
+     * @param {Actor} actor
+     * @param {string} itemId
+     */
+    async #clearAmmoLinksTo(actor, itemId) {
+        const linkedWeapons = actor.items.filter((i) => {
+            return i.type === "weapon" && i.system?.ammo?.linkedConsumableId === itemId;
+        });
+        for (const weapon of linkedWeapons) {
+            await weapon.update({ "system.ammo.linkedConsumableId": "" });
+        }
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    #isInventoryFull() {
+        const inventoryCount = this.actor.items.filter((i) => {
+            return i.type !== "ability" && i.system?.isEquipped !== true;
+        }).length;
+        const inventoryMax = Number(this.actor.system?.config?.inventorySlots ?? 0);
+        return inventoryCount >= inventoryMax;
+    }
+
+    #warnInventoryFull() {
+        const inventoryCount = this.actor.items.filter((i) => {
+            return i.type !== "ability" && i.system?.isEquipped !== true;
+        }).length;
+        const inventoryMax = Number(this.actor.system?.config?.inventorySlots ?? 0);
+        ui.notifications?.warn(
+            game.i18n.format("FARKPG.Notify.inventoryFull", {
+                count: inventoryCount,
+                max: inventoryMax,
+            }),
+        );
     }
 
     /* ----------------------------------------- */
@@ -343,6 +525,10 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         event.preventDefault();
         const type = String(target.dataset.itemType ?? "");
         if (!INVENTORY_ITEM_TYPES.includes(type)) return;
+        if (type !== "ability" && this.#isInventoryFull()) {
+            this.#warnInventoryFull();
+            return;
+        }
         const nameKey = `FARKPG.Items.new${type.charAt(0).toUpperCase()}${type.slice(1)}`;
         const [created] = await this.actor.createEmbeddedDocuments("Item", [
             { name: game.i18n.localize(nameKey), type },
@@ -379,6 +565,128 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const item = this.actor.items.get(id);
         if (!item || item.type === "ability") return;
         await item.update({ "system.isEquipped": !item.system?.isEquipped });
+    }
+
+    /**
+     * Use an item: spend ammo / durability / quantity (in that order) then open the
+     * Virtual Dice Table with `count = roll.multiplier` dice of `faces = roll.max`.
+     * Any failure short-circuits with a notification and no resources are spent.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onUseItem(event, target) {
+        event.preventDefault();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        const item = this.actor.items.get(id);
+        if (!item) return;
+
+        const sys = item.system ?? {};
+        const multiplier = Number(sys.rollable?.multiplier ?? 0);
+        const max = Number(sys.rollable?.max ?? 0);
+        if (!(multiplier > 0 && max > 0)) {
+            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.notRollable"));
+            return;
+        }
+
+        // Pre-validate everything before mutating any document. Build a list of
+        // updates and apply them in sequence only after all checks pass.
+        const updates = [];
+
+        if (item.type === "weapon" && sys.ammo?.enabled) {
+            const linkedId = String(sys.ammo.linkedConsumableId ?? "");
+            if (!linkedId) {
+                ui.notifications?.warn(
+                    game.i18n.format("FARKPG.Notify.ammoNotSelected", { name: item.name }),
+                );
+                return;
+            }
+            const ammo = this.actor.items.get(linkedId);
+            if (!ammo) {
+                ui.notifications?.warn(
+                    game.i18n.format("FARKPG.Notify.ammoMissing", { name: item.name }),
+                );
+                return;
+            }
+            const requiredCSV = String(sys.ammo.requiredNames ?? "").trim();
+            if (requiredCSV) {
+                const allowed = requiredCSV
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .map((s) => s.toLowerCase());
+                if (!allowed.includes(String(ammo.name).toLowerCase())) {
+                    ui.notifications?.warn(
+                        game.i18n.format("FARKPG.Notify.ammoNotAllowed", {
+                            ammo: ammo.name,
+                            name: item.name,
+                            required: requiredCSV,
+                        }),
+                    );
+                    return;
+                }
+            }
+            const perUse = Math.max(1, Number(sys.ammo.perUse ?? 1));
+            const have = Number(ammo.system?.quantity?.value ?? 0);
+            if (have < perUse) {
+                ui.notifications?.warn(
+                    game.i18n.format("FARKPG.Notify.ammoOut", {
+                        ammo: ammo.name,
+                        name: item.name,
+                        need: perUse,
+                        have,
+                    }),
+                );
+                return;
+            }
+            updates.push({ doc: ammo, data: { "system.quantity.value": have - perUse } });
+        }
+
+        if (item.type === "weapon") {
+            const dpu = Number(sys.durabilityPerUse ?? 0);
+            if (dpu > 0) {
+                const dur = Number(sys.durability?.value ?? 0);
+                if (dur < dpu) {
+                    ui.notifications?.warn(
+                        game.i18n.format("FARKPG.Notify.durabilityOut", {
+                            name: item.name,
+                            need: dpu,
+                            have: dur,
+                        }),
+                    );
+                    return;
+                }
+                updates.push({ doc: item, data: { "system.durability.value": dur - dpu } });
+            }
+        }
+
+        if (item.type === "consumable") {
+            const qty = Number(sys.quantity?.value ?? 0);
+            if (qty < 1) {
+                ui.notifications?.warn(
+                    game.i18n.format("FARKPG.Notify.consumableEmpty", { name: item.name }),
+                );
+                return;
+            }
+            updates.push({ doc: item, data: { "system.quantity.value": qty - 1 } });
+        }
+
+        for (const { doc, data } of updates) {
+            await doc.update(data);
+        }
+
+        const api = game.modules.get("virtual-dice-table")?.api;
+        if (api?.openStartRollAndRoll) {
+            try {
+                await api.openStartRollAndRoll({ count: multiplier, faces: max });
+                return;
+            } catch (err) {
+                console.error("FarkPG | openStartRollAndRoll failed", err);
+            }
+        }
+        if (api?.openVirtualTable) {
+            api.openVirtualTable();
+            return;
+        }
+        ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
     }
 
     /**

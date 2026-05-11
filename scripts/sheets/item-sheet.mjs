@@ -37,6 +37,20 @@ export class FarkPGItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
         context.isAbility = this.item.type === "ability";
         context.canEquip = !context.isAbility;
 
+        const style = String(this.item.system?.weaponStyle ?? "");
+        context.isMeleeWeapon = context.isWeapon && style === "melee";
+        context.ammoEnabled = context.isWeapon && this.item.system?.ammo?.enabled === true;
+
+        // Consumables on the parent actor (if any) usable as ammo.
+        const actor = this.item.actor;
+        context.actorConsumables = actor
+            ? actor.items
+                .filter((i) => i.type === "consumable" && i.id !== this.item.id)
+                .map((i) => ({ id: i.id, name: i.name }))
+                .sort((a, b) => a.name.localeCompare(b.name))
+            : [];
+        context.hasActor = !!actor;
+
         context.descriptionHTML = await TextEditor.implementation.enrichHTML(
             this.item.system?.description ?? "",
             {
