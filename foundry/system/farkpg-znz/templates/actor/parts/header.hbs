@@ -1,0 +1,130 @@
+<header class="farkpg-header">
+    <div class="farkpg-portrait" {{#if editable}}data-tooltip="{{localize 'FARKPG.Header.portraitEditHint'}}"{{/if}}>
+        <img class="farkpg-portrait-img"
+             src="{{actor.img}}"
+             alt="{{actor.name}}"
+             {{#if editable}}data-farkpg-portrait-picker="1"{{/if}} />
+        {{#if editable}}
+            <button type="button"
+                    class="farkpg-portrait-edit"
+                    data-action="editPortrait"
+                    data-tooltip="{{localize 'FARKPG.Header.portraitEditBtn'}}"
+                    aria-label="{{localize 'FARKPG.Header.portraitEditBtn'}}">
+                <i class="fa-solid fa-image" aria-hidden="true"></i>
+            </button>
+        {{/if}}
+    </div>
+
+    <div class="farkpg-header-body">
+        <div class="farkpg-header-row farkpg-header-name farkpg-header-name-row">
+            <input type="text"
+                   class="farkpg-header-name-input"
+                   name="name"
+                   value="{{actor.name}}"
+                   placeholder="{{localize 'FARKPG.Header.name'}}" />
+            {{#if editable}}
+                <button type="button"
+                        class="farkpg-header-import"
+                        data-action="openCharacterImport"
+                        data-tooltip="{{localize 'FARKPG.Import.buttonTooltip'}}"
+                        aria-label="{{localize 'FARKPG.Import.buttonAria'}}">
+                    {{localize "FARKPG.Import.button"}}
+                </button>
+            {{/if}}
+        </div>
+
+        <div class="farkpg-header-row farkpg-resources farkpg-resources-primary">
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.hp'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.health.value"
+                           value="{{system.resources.health.value}}" />
+                    <span class="farkpg-sep">/</span>
+                    <span class="farkpg-resource-max"
+                          data-tooltip="{{localize 'FARKPG.Config.maxHealth'}}">{{system.resources.health.max}}</span>
+                </span>
+            </label>
+
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.exp'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.exp.value"
+                           value="{{system.resources.exp.value}}" />
+                    <span class="farkpg-sep">/</span>
+                    <input type="number"
+                           name="system.resources.exp.max"
+                           value="{{system.resources.exp.max}}" />
+                </span>
+            </label>
+
+            <label class="farkpg-resource">
+                <span class="farkpg-resource-label">{{localize 'FARKPG.Header.move'}}</span>
+                <span class="farkpg-resource-fields">
+                    <input type="number"
+                           name="system.resources.movement"
+                           value="{{system.resources.movement}}" />
+                </span>
+            </label>
+        </div>
+
+        <div class="farkpg-header-row farkpg-header-ap farkpg-ap-bar">
+            <div class="farkpg-ap-bar-brand" aria-hidden="true">
+                <i class="fa-solid fa-coins"></i>
+                <span class="farkpg-ap-bar-brand-text">{{localize 'FARKPG.ApDrawer.headerStripTitle'}}</span>
+            </div>
+            <div class="farkpg-ap-bar-pills">
+                {{#each apTypes as |row|}}
+                    <div class="farkpg-ap-drawer-cell farkpg-ap-sheet-cell {{#if (eq row.kind "custom")}}farkpg-ap-sheet-cell--custom{{/if}}">
+                        {{#if (eq row.kind "custom")}}
+                            <button type="button"
+                                    class="farkpg-ap-sheet-delete"
+                                    data-action="removeCustomApType"
+                                    data-custom-ap-id="{{row.id}}"
+                                    data-tooltip="{{localize 'FARKPG.Header.removeCustomAp'}}"
+                                    aria-label="{{localize 'FARKPG.Header.removeCustomAp'}}">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        {{/if}}
+                        <div class="farkpg-ap-drawer-label">{{row.label}}</div>
+                        <div class="farkpg-ap-drawer-mid">
+                            <span class="farkpg-ap-drawer-icon-readonly">
+                                <img src="{{row.img}}" alt="" />
+                            </span>
+                        </div>
+                        <div class="farkpg-ap-drawer-frac">
+                            <input type="number"
+                                   class="farkpg-ap-drawer-inp farkpg-ap-drawer-inp-val"
+                                   name="{{row.valueInputName}}"
+                                   value="{{row.value}}"
+                                   min="0"
+                                   step="1" />
+                            {{#if row.hasMax}}
+                                <span class="farkpg-ap-drawer-slash">/</span>
+                                <span class="farkpg-ap-drawer-read-max"
+                                      data-tooltip="{{localize 'FARKPG.Config.maxActionPoints'}}">{{row.maxDisplay}}</span>
+                            {{/if}}
+                        </div>
+                    </div>
+                {{/each}}
+            </div>
+            {{#if editable}}
+                <button type="button"
+                        class="farkpg-ap-bar-btn farkpg-ap-bar-add"
+                        data-action="promptAddCustomAp"
+                        data-tooltip="{{localize 'FARKPG.ApDrawer.addPoolTooltip'}}"
+                        aria-label="{{localize 'FARKPG.ApDrawer.addPoolAria'}}">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                </button>
+            {{/if}}
+            <button type="button"
+                    class="farkpg-ap-bar-btn farkpg-ap-bar-popout"
+                    data-action="openApDrawer"
+                    data-tooltip="{{localize 'FARKPG.ApDrawer.openTooltip'}}"
+                    aria-label="{{localize 'FARKPG.ApDrawer.openAria'}}">
+                <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+            </button>
+        </div>
+    </div>
+</header>

@@ -1,0 +1,75 @@
+{
+  "Actor": {
+    "types": ["character"],
+    "character": {
+      "biography": "",
+      "attributes": {
+        "body": 3,
+        "adroit": 3,
+        "mind": 3
+      },
+      "skills": {
+        "meleeWeapons": 0,
+        "block": 0,
+        "unarmed": 0,
+        "endurance": 0,
+        "athletics": 0,
+        "rangedWeapons": 0,
+        "dodge": 0,
+        "throwing": 0,
+        "coordination": 0,
+        "stealth": 0,
+        "charisma": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "sanity": 0,
+        "instinct": 0
+      },
+      "customSkills": {},
+      "resources": {
+        "health": { "value": 10000, "max": 10000 },
+        "actionPoints": { "value": 18, "max": 18 },
+        "customActionPoints": {},
+        "exp": { "value": 0, "max": 100 },
+        "movement": 20
+      },
+      "config": {
+        "equipmentSlots": 2,
+        "inventorySlots": 4
+      }
+    }
+  },
+  "Item": {
+    "types": ["weapon", "consumable", "equipment", "ability"],
+    "weapon": {
+      "description": "",
+      "durability": { "value": 10, "max": 10 },
+      "durabilityPerUse": 0,
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "weaponStyle": "melee",
+      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "", "requiredNames": "" },
+      "isEquipped": false
+    },
+    "consumable": {
+      "description": "",
+      "durability": { "value": 0, "max": 0 },
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "quantity": { "value": 1, "max": 99 },
+      "isEquipped": false
+    },
+    "equipment": {
+      "description": "",
+      "durability": { "value": 10, "max": 10 },
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "equipmentSlots": 0,
+      "inventorySlots": 0,
+      "isEquipped": false
+    },
+    "ability": {
+      "description": "",
+      "cost": 0,
+      "rank": 1,
+      "maxRank": 1
+    }
+  }
+}

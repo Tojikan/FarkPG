@@ -1,0 +1,277 @@
+{
+  "FARKPG": {
+    "Title": "FarkPG-ZnZ",
+
+    "Tabs": {
+      "character": "Character",
+      "inventory": "Inventory",
+      "config": "Config"
+    },
+
+    "Import": {
+      "button": "Import",
+      "buttonTooltip": "Import character JSON from the FarkPG web ZnZ builder",
+      "buttonAria": "Import character from JSON",
+      "dialogTitle": "Import character JSON",
+      "dialogHint": "Paste the JSON copied from the FarkPG site (ZnZ builder → Export to clipboard). This replaces attributes, core skills, custom skills, biography, resources, experience, and ability items on this actor.",
+      "placeholder": "{ \"formatId\": \"farkpg-znz-character-export\", ... }",
+      "jsonLabel": "Character JSON",
+      "confirm": "Import",
+      "empty": "Paste JSON before importing.",
+      "success": "Character import completed.",
+      "errJson": "Invalid JSON — check for typos or truncated paste.",
+      "errNotObject": "JSON must be an object.",
+      "errFormat": "Unrecognized export (wrong formatId). Use JSON from the FarkPG ZnZ builder.",
+      "errVersion": "Unsupported formatVersion for this import.",
+      "errSystemId": "Wrong systemId in JSON (expected farkpg-znz).",
+      "unnamed": "Unnamed",
+      "addonFallback": "Imported add-on {n}",
+      "applyFailed": "Import failed: {message}"
+    },
+
+    "Header": {
+      "name": "Name",
+      "hp": "HP",
+      "ap": "AP",
+      "exp": "EXP",
+      "move": "Move",
+      "portraitEditHint": "Click the portrait or the image button to choose a new picture.",
+      "portraitEditBtn": "Change portrait",
+      "removeCustomAp": "Remove this custom AP pool",
+      "removeCustomApConfirmTitle": "Remove custom AP pool?",
+      "removeCustomApConfirmBody": "Remove the pool \"{name}\"? This cannot be undone.",
+      "removeCustomApConfirmDelete": "Remove"
+    },
+
+    "ApDrawer": {
+      "title": "Action Points",
+      "headerStripTitle": "AP",
+      "openTooltip": "Open the compact AP window (same pools; quick spend with minus).",
+      "openAria": "Open action points window",
+      "decrementTooltip": "Click the icon to spend 1 from this pool",
+      "decrementAria": "Spend one from this pool (click icon)",
+      "customApDefaultName": "Custom AP",
+      "addPoolTooltip": "Add a custom AP pool",
+      "addPoolAria": "Add custom action points pool",
+      "addPoolDialogTitle": "Add custom AP pool",
+      "addPoolName": "Label",
+      "addPoolImg": "Icon image path",
+      "addPoolImgBrowse": "Browse for image",
+      "addPoolAmount": "Starting amount",
+      "addPoolConfirm": "Add",
+      "addPoolNameRequired": "Enter a label for the new pool."
+    },
+
+    "Attributes": {
+      "label": "Attributes & Skills",
+      "body": "Body",
+      "bodyHint": "Physical capabilities. Determines Max Health; ",
+      "adroit": "Adroit",
+      "adroitHint": "Expertise and dexterity. Determines Movement Speed; ",
+      "mind": "Mind",
+      "mindHint": "Mental and social skills. Determines Max AP; "
+    },
+
+    "Skills": {
+      "addCustom": "Add Custom Skill",
+      "customDefault": "New Skill",
+      "remove": "Remove Skill",
+      "edit": "Edit custom skills",
+      "editDone": "Done editing custom skills",
+      "roll": "Roll d20 + Attribute + Skill",
+      "diceTable": "Open Virtual Dice Table",
+
+      "meleeWeapons": "Melee Weapons",
+      "meleeWeaponsHint": "Skill with melee weaponry.",
+      "block": "Block",
+      "blockHint": "Block damage dealt in an area.",
+      "unarmed": "Unarmed",
+      "unarmedHint": "Skill with unarmed combat. Unarmed deals 0.5x by default.",
+      "endurance": "Endurance",
+      "enduranceHint": "Resist physical damage.",
+      "athletics": "Athletics",
+      "athleticsHint": "Swimming, climbing, and similar physical feats.",
+      "rangedWeapons": "Ranged Weapons",
+      "rangedWeaponsHint": "Skill with ranged weaponry.",
+      "dodge": "Dodge",
+      "dodgeHint": "Avoid damage for yourself only.",
+      "throwing": "Throwing",
+      "throwingHint": "Capability with throwing.",
+      "coordination": "Coordination",
+      "coordinationHint": "Hand-eye coordination, balance.",
+      "stealth": "Stealth",
+      "charisma": "Charisma",
+      "charismaHint": "Social skills.",
+      "intelligence": "Intelligence",
+      "intelligenceHint": "Smarts and capability for learning.",
+      "perception": "Perception",
+      "perceptionHint": "Capability with perceiving and senses.",
+      "sanity": "Sanity",
+      "sanityHint": "Endure psychological damage.",
+      "instinct": "Instinct",
+      "instinctHint": "Sense impending danger."
+    },
+
+    "Equipment": {
+      "title": "Equipment",
+      "slots": "Slots",
+      "empty": "No items equipped."
+    },
+
+    "Abilities": {
+      "title": "Abilities",
+      "empty": "No abilities.",
+      "rank": "Rank",
+      "cost": "Cost"
+    },
+
+    "Inventory": {
+      "title": "Inventory",
+      "slots": "Slots",
+      "empty": "No items in inventory.",
+      "addWeapon": "Add Weapon",
+      "addConsumable": "Add Consumable",
+      "addEquipment": "Add Equipment",
+      "addAbility": "Add Ability",
+      "ammoSection": "Ammo",
+      "ammoSectionEmpty": "No linked ammo.",
+      "qty": "Qt",
+      "roll": "Roll",
+      "ammo": "Ammo"
+    },
+
+    "Items": {
+      "newWeapon": "New Weapon",
+      "newConsumable": "New Consumable",
+      "newEquipment": "New Equipment",
+      "newAbility": "New Ability",
+      "edit": "Edit",
+      "delete": "Delete",
+      "equip": "Equip",
+      "unequip": "Unequip",
+      "use": "Use",
+      "useTooltip": "Use item and consume ammo / durability / consumable if applicable. Multiply score by {multiplier} \u2014 multiplied result cannot exceed {max} unless naturally rolled without the multiplier.",
+      "useTooltipSimple": "Use item (consumes ammo / durability / quantity if applicable).",
+      "useTooltipOpenTable": "Open the virtual dice table.",
+      "rollEnabled": "Roll Enabled",
+      "rollMultiplier": "Roll Multiplier",
+      "rollMultiplierHint": "Multiply score by this number to produce the final score. Set to 0 to disable the multiplier.",
+      "rollMax": "Roll Max",
+      "rollMaxHint": "Cap on the multiplied score. A natural dice total (rolled without the multiplier) may still exceed this cap. Set to 0 to disable the cap.",
+      "attachedSkill": "Attached Skill",
+      "attachedSkillNone": "— None —",
+      "attachedSkillHint": "When set, using this weapon rolls (attribute + skill) dice instead of the multiplier. Die faces are taken from Roll Max (defaults to 6).",
+      "weapon": "Weapon",
+      "ammo": "Ammo",
+      "style": "Style",
+      "styleMelee": "Melee",
+      "styleRanged": "Ranged",
+      "styleThrown": "Thrown",
+      "styleUnarmed": "Unarmed",
+      "durability": "Durability",
+      "durabilityPerUse": "Durability Per Use",
+      "ammoEnabled": "Ammo Enabled",
+      "ammoPerUse": "Ammo Per Use",
+      "ammoItem": "Ammo Item",
+      "ammoItemNone": "— None —",
+      "ammoNoConsumables": "No consumables on this actor",
+      "requiredAmmo": "Required Ammo",
+      "requiredAmmoHint": "Comma separated list of allowed ammo names. When set, only matching consumables can be selected.",
+      "requiredAmmoAny": "any",
+      "selectAmmoTooltip": "Click to attach a consumable as ammo.",
+      "selectAmmoTitle": "Select Ammo",
+      "selectAmmoPrompt": "Choose a consumable to attach to {name}.",
+      "selectAmmoConfirm": "Attach",
+      "editAmmoTooltip": "Double-click to edit ammo item.",
+      "ammoRequiredNames": "Required Ammo",
+      "ammoRequiredNamesHint": "Comma separated list of allowed ammo names. When set, only matching consumables can be selected.",
+      "consumable": "Consumable",
+      "quantity": "Quantity",
+      "equipment": "Equipment",
+      "equipmentSlotsBonus": "Equipment Slots Bonus",
+      "equipmentSlotsBonusHint": "Adds to the wearer's available equipment slots while equipped.",
+      "inventorySlotsBonus": "Inventory Slots Bonus",
+      "inventorySlotsBonusHint": "Adds to the wearer's available inventory slots while equipped.",
+      "equipmentSlotsShort": "Equip",
+      "inventorySlotsShort": "Inv",
+      "badgeAmmo": "ammo \u2212{amount}",
+      "badgeAmmoTooltip": "Spends {amount} \u00d7 attached ammo on use.",
+      "badgeDurability": "dur \u2212{amount}",
+      "badgeDurabilityTooltip": "Spends {amount} durability on use.",
+      "badgeQuantity": "qty \u22121",
+      "badgeQuantityTooltip": "Spends 1 quantity on use.",
+      "ability": "Ability",
+      "cost": "Cost",
+      "costPlaceholder": "e.g. 2 AP, reaction, 1/day",
+      "rank": "Rank",
+      "equipped": "Equipped",
+      "imageEdit": "Choose item image",
+      "description": "Description"
+    },
+
+    "Biography": {
+      "title": "Biography",
+      "edit": "Edit",
+      "view": "View"
+    },
+
+    "Config": {
+      "title": "Configuration",
+      "maxHealth": "Max HP",
+      "currentActionPoints": "Current AP",
+      "maxActionPoints": "Max AP",
+      "equipmentSlots": "Base Equipment Slot",
+      "inventorySlots": "Base Inventory Slot",
+      "customApTitle": "Custom action points",
+      "customApHint": "Extra AP pools (no cap). Set current amounts here, or spend from the AP pop-out on the character header.",
+      "addCustomAp": "Add custom AP type",
+      "customApName": "Name",
+      "customApValue": "Current",
+      "customApImg": "Icon path",
+      "customApImgPlaceholder": "icons/svg/aura.svg",
+      "removeCustomAp": "Remove pool",
+      "customApEmpty": "No custom AP types yet."
+    },
+
+    "Rolls": {
+      "attribute": "{attribute} Check",
+      "skill": "{skill} ({attribute})",
+      "dicePool": "Rolled {count}d{faces}",
+      "dicePoolNoSkill": "Dice Roll",
+      "openTable": "Open Virtual Dice Table",
+      "farkrollLabel": "Farkroll",
+      "usedItem": "Used {name}",
+      "usedItemWithRoll": "Used {name} with multiplier {multiplier}x and max multiplier score of {max}",
+      "consumedAmmo": "Spent {amount} \u00d7 {name}",
+      "consumedDurability": "Durability \u2212{amount}",
+      "consumedQuantity": "Quantity \u22121"
+    },
+
+    "Notify": {
+      "dicetableMissing": "Virtual Dice Table module is not installed or enabled.",
+      "notRollable": "This item has no roll defined.",
+      "ammoNotSelected": "{name} has no ammo selected.",
+      "ammoNotAllowed": "{ammo} is not a valid ammo for {name}. Required: {required}.",
+      "ammoOut": "Not enough {ammo} to fire {name} (need {need}, have {have}).",
+      "ammoMissing": "{name} is linked to ammo that no longer exists on this actor.",
+      "durabilityOut": "{name} doesn't have enough durability (need {need}, have {have}).",
+      "consumableEmpty": "{name} has no uses remaining.",
+      "inventoryFull": "Inventory slots are full ({count}/{max}).",
+      "equipmentFull": "Equipment slots are full ({count}/{max}).",
+      "noAmmoCandidates": "No consumable matches the required ammo for {name} ({required}).",
+      "noActorUpdatePermission": "You do not have permission to update this actor."
+    }
+  },
+
+  "TYPES": {
+    "Actor": {
+      "character": "Character"
+    },
+    "Item": {
+      "weapon": "Weapon",
+      "consumable": "Consumable",
+      "equipment": "Equipment",
+      "ability": "Ability"
+    }
+  }
+}

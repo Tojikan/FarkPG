@@ -1,0 +1,146 @@
+{{!-- Reusable item card. Inputs:
+       item       (decorated item from prepareContext)
+       isEquipped (boolean) — controls toggle icon
+--}}
+<article class="farkpg-card farkpg-card-{{item.type}}"
+         data-item-id="{{item.id}}"
+         data-uuid="{{item.uuid}}"
+         draggable="true">
+    <div class="farkpg-card-controls">
+        <button type="button"
+                class="farkpg-card-ctrl"
+                data-action="editItem"
+                data-tooltip="{{localize 'FARKPG.Items.edit'}}"
+                aria-label="{{localize 'FARKPG.Items.edit'}}">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button type="button"
+                class="farkpg-card-ctrl"
+                data-action="toggleEquip"
+                data-tooltip="{{#if isEquipped}}{{localize 'FARKPG.Items.unequip'}}{{else}}{{localize 'FARKPG.Items.equip'}}{{/if}}"
+                aria-label="{{#if isEquipped}}{{localize 'FARKPG.Items.unequip'}}{{else}}{{localize 'FARKPG.Items.equip'}}{{/if}}">
+            <i class="fa-solid {{#if isEquipped}}fa-circle-minus{{else}}fa-circle-plus{{/if}}"></i>
+        </button>
+        <button type="button"
+                class="farkpg-card-ctrl"
+                data-action="deleteItem"
+                data-tooltip="{{localize 'FARKPG.Items.delete'}}"
+                aria-label="{{localize 'FARKPG.Items.delete'}}">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+    </div>
+
+    <header class="farkpg-card-header">
+        <span class="farkpg-card-name" title="{{item.name}}">{{item.name}}</span>
+        <span class="farkpg-card-type">{{item.typeLabel}}</span>
+    </header>
+
+    <div class="farkpg-card-image">
+        <img src="{{item.img}}" alt="" />
+    </div>
+
+    {{#if item.descShort}}
+        <div class="farkpg-card-desc">{{item.descShort}}</div>
+    {{/if}}
+
+    <div class="farkpg-card-stats">
+        {{#if item.hasDurability}}
+            <div class="farkpg-card-stat" data-tooltip="{{localize 'FARKPG.Items.durability'}}">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Items.durability'}}</span>
+                <span class="farkpg-card-stat-value">{{item.system.durability.value}} / {{item.system.durability.max}}</span>
+            </div>
+        {{/if}}
+
+        {{#if item.isConsumable}}
+            <div class="farkpg-card-stat" data-tooltip="{{localize 'FARKPG.Items.quantity'}}">
+                <i class="fa-solid fa-cubes-stacked"></i>
+                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Inventory.qty'}}</span>
+                <span class="farkpg-card-stat-value">{{item.system.quantity.value}} / {{item.system.quantity.max}}</span>
+            </div>
+        {{/if}}
+
+        {{#if item.hasSlotBonus}}
+            <div class="farkpg-card-stat farkpg-card-stat-slots">
+                <i class="fa-solid fa-vest"></i>
+                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Equipment.slots'}}</span>
+                <span class="farkpg-card-stat-value farkpg-card-slot-bonuses">
+                    {{#if item.equipmentSlotsBonus}}
+                        <span class="farkpg-card-slot-bonus"
+                              data-tooltip="{{localize 'FARKPG.Items.equipmentSlotsBonus'}}">
+                            <i class="fa-solid fa-vest"></i>+{{item.equipmentSlotsBonus}}
+                        </span>
+                    {{/if}}
+                    {{#if item.inventorySlotsBonus}}
+                        <span class="farkpg-card-slot-bonus"
+                              data-tooltip="{{localize 'FARKPG.Items.inventorySlotsBonus'}}">
+                            <i class="fa-solid fa-box"></i>+{{item.inventorySlotsBonus}}
+                        </span>
+                    {{/if}}
+                </span>
+            </div>
+        {{/if}}
+
+        {{#if item.ammoEnabled}}
+            <div class="farkpg-card-stat farkpg-card-stat-ammo">
+                <i class="fa-solid fa-crosshairs"></i>
+                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Items.ammo'}}</span>
+                {{#if item.linkedAmmo}}
+                    <span class="farkpg-card-ammo-box">
+                        <span class="farkpg-card-ammo-main">
+                            <img class="farkpg-card-ammo-img"
+                                 src="{{item.linkedAmmo.img}}"
+                                 alt=""
+                                 data-ammo-id="{{item.linkedAmmo.id}}"
+                                 data-tooltip="{{localize 'FARKPG.Items.editAmmoTooltip'}}" />
+                            <span class="farkpg-card-ammo-name">{{item.linkedAmmo.name}}</span>
+                        </span>
+                        <span class="farkpg-card-ammo-qty">{{item.linkedAmmo.qty}}</span>
+                    </span>
+                {{else}}
+                    <button type="button"
+                            class="farkpg-card-ammo-box farkpg-card-ammo-empty"
+                            data-action="selectAmmo"
+                            data-tooltip="{{localize 'FARKPG.Items.selectAmmoTooltip'}}"
+                            aria-label="{{localize 'FARKPG.Items.selectAmmoTooltip'}}">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="farkpg-card-ammo-name">{{localize 'FARKPG.Items.ammoItemNone'}}</span>
+                    </button>
+                {{/if}}
+            </div>
+        {{/if}}
+
+        {{#if item.isRollable}}
+            <div class="farkpg-card-stat farkpg-card-stat-roll">
+                <i class="fa-solid fa-dice"></i>
+                <div class="farkpg-card-roll-meta">
+                    <span class="farkpg-card-stat-label">{{localize 'FARKPG.Inventory.roll'}}</span>
+                    {{#if item.consumptionBadges.length}}
+                        <ul class="farkpg-card-consume">
+                            {{#each item.consumptionBadges as |badge|}}
+                                <li class="farkpg-card-consume-badge"
+                                    data-tooltip="{{badge.tooltip}}">
+                                    <i class="{{badge.icon}}"></i>
+                                    <span class="farkpg-card-consume-amount">&minus;{{badge.amount}}</span>
+                                </li>
+                            {{/each}}
+                        </ul>
+                    {{/if}}
+                </div>
+                <button type="button"
+                        class="farkpg-card-use{{#if item.iconOnlyRoll}} farkpg-card-use-icon-only{{/if}}"
+                        data-action="useItem"
+                        data-tooltip="{{item.useTooltip}}"
+                        aria-label="{{localize 'FARKPG.Items.use'}}">
+                    {{#if item.rollDiceLabel}}
+                        <span class="farkpg-card-use-dice">{{item.rollDiceLabel}}</span>
+                    {{/if}}
+                    <i class="fa-solid fa-bolt"></i>
+                    {{#if item.rollMultLabel}}
+                        <span class="farkpg-card-use-mult">{{item.rollMultLabel}}</span>
+                    {{/if}}
+                </button>
+            </div>
+        {{/if}}
+    </div>
+</article>

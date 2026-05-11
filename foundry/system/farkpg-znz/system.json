@@ -1,0 +1,34 @@
+{
+  "id": "farkpg-znz",
+  "title": "FarkPG-ZnZ",
+  "description": "FarkPG system for the ZnZ game.",
+  "version": "0.1.0",
+  "authors": [{ "name": "FarkPG" }],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "esmodules": ["scripts/farkpg.mjs"],
+  "styles": ["styles/farkpg.css"],
+  "languages": [
+    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  ],
+  "grid": { "distance": 5, "units": "ft" },
+  "primaryTokenAttribute": "resources.health",
+  "documentTypes": {
+    "Actor": {
+      "character": {
+        "htmlFields": ["biography"]
+      }
+    },
+    "Item": {
+      "weapon":     { "htmlFields": ["description"] },
+      "consumable": { "htmlFields": ["description"] },
+      "equipment":  { "htmlFields": ["description"] },
+      "ability":    { "htmlFields": ["description"] }
+    }
+  },
+  "flags": {
+    "hotReload": true
+  }
+}
