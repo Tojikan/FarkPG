@@ -59,6 +59,41 @@ const DEFAULT_ATTACHED_SKILL = {
  * payload AND no value already stored on the item, so subsequent toggles and
  * manual selections are preserved.
  */
+/**
+ * Delegate clicks on the "Open Virtual Dice Table" button rendered inside our
+ * Fark-roll chat messages. Using a single document-level listener avoids
+ * having to attach handlers per message-render and works with both v12's
+ * `renderChatMessage` and v13's `renderChatMessageHTML` hooks.
+ */
+Hooks.once("ready", () => {
+    document.addEventListener(
+        "click",
+        (event) => {
+            const btn = event.target?.closest?.(
+                "[data-farkpg-action='open-virtual-table']",
+            );
+            if (!btn) return;
+            event.preventDefault();
+            const api = game.modules.get("virtual-dice-table")?.api;
+            if (api?.openVirtualTable) {
+                api.openVirtualTable();
+                return;
+            }
+            const direct = globalThis.virtualDiceTable;
+            if (direct?.openVirtualTable) {
+                direct.openVirtualTable();
+                return;
+            }
+            if (direct?.open) {
+                direct.open();
+                return;
+            }
+            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
+        },
+        { capture: false },
+    );
+});
+
 Hooks.on("preUpdateItem", (item, changes) => {
     if (item.type !== "weapon" && item.type !== "equipment") return;
 

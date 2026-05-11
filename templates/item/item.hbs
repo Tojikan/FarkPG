@@ -69,11 +69,11 @@
                         <span>{{localize 'FARKPG.Items.durabilityPerUse'}}</span>
                         <input type="number" name="system.durabilityPerUse" value="{{system.durabilityPerUse}}" min="0" step="1" />
                     </label>
-                    <label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMultiplierHint'}}">
                         <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
                         <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
                     </label>
-                    <label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMaxHint'}}">
                         <span>{{localize 'FARKPG.Items.rollMax'}}</span>
                         <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                     </label>
@@ -121,6 +121,18 @@
         {{#if isConsumable}}
             <fieldset class="farkpg-fieldset">
                 <legend>{{localize 'FARKPG.Items.consumable'}}</legend>
+
+                <div class="farkpg-item-toggles">
+                    <label class="farkpg-toggle">
+                        <input type="checkbox" name="system.rollable.enabled" {{#if system.rollable.enabled}}checked{{/if}} />
+                        <span>{{localize 'FARKPG.Items.rollEnabled'}}</span>
+                    </label>
+                    <label class="farkpg-toggle">
+                        <input type="checkbox" name="system.isEquipped" {{#if system.isEquipped}}checked{{/if}} />
+                        <span>{{localize 'FARKPG.Items.equipped'}}</span>
+                    </label>
+                </div>
+
                 <label>
                     <span>{{localize 'FARKPG.Items.quantity'}}</span>
                     <span class="farkpg-pair">
@@ -129,14 +141,26 @@
                         <input type="number" name="system.quantity.max" value="{{system.quantity.max}}" min="0" step="1" />
                     </span>
                 </label>
-                <label>
-                    <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
-                    <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
-                </label>
-                <label>
-                    <span>{{localize 'FARKPG.Items.rollMax'}}</span>
-                    <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
-                </label>
+
+                {{#if system.rollable.enabled}}
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMultiplierHint'}}">
+                        <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
+                        <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
+                    </label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMaxHint'}}">
+                        <span>{{localize 'FARKPG.Items.rollMax'}}</span>
+                        <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
+                    </label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.attachedSkillHint'}}">
+                        <span>{{localize 'FARKPG.Items.attachedSkill'}}</span>
+                        <select name="system.rollable.attachedSkill">
+                            <option value="">{{localize 'FARKPG.Items.attachedSkillNone'}}</option>
+                            {{#each attachedSkillOptions as |opt|}}
+                                <option value="{{opt.value}}" {{#if (eq opt.value ../system.rollable.attachedSkill)}}selected{{/if}}>{{opt.label}}</option>
+                            {{/each}}
+                        </select>
+                    </label>
+                {{/if}}
             </fieldset>
         {{/if}}
 
@@ -165,11 +189,11 @@
                 </label>
 
                 {{#if system.rollable.enabled}}
-                    <label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMultiplierHint'}}">
                         <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
                         <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
                     </label>
-                    <label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.rollMaxHint'}}">
                         <span>{{localize 'FARKPG.Items.rollMax'}}</span>
                         <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
                     </label>
@@ -213,16 +237,9 @@
             </fieldset>
         {{/if}}
 
-        {{#if canEquip}}
-            {{#unless isWeapon}}
-                {{#unless isEquipment}}
-                    <label class="farkpg-equipped-check">
-                        <input type="checkbox" name="system.isEquipped" {{#if system.isEquipped}}checked{{/if}} />
-                        <span>{{localize 'FARKPG.Items.equipped'}}</span>
-                    </label>
-                {{/unless}}
-            {{/unless}}
-        {{/if}}
+        {{!-- Weapon / consumable / equipment fieldsets each render their own
+              "Equipped" toggle in the farkpg-item-toggles row; abilities have
+              no equipped state. So no separate fallback block is needed. --}}
 
     </div>
 </section>

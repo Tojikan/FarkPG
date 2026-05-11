@@ -102,10 +102,14 @@
       "equip": "Equip",
       "unequip": "Unequip",
       "use": "Use",
-      "useTooltip": "Use item (rolls and consumes ammo/durability/quantity)",
+      "useTooltip": "Use item and consume ammo / durability / consumable if applicable. Multiply score by {multiplier} \u2014 multiplied result cannot exceed {max} unless naturally rolled without the multiplier.",
+      "useTooltipSimple": "Use item (consumes ammo / durability / quantity if applicable).",
+      "useTooltipOpenTable": "Open the virtual dice table.",
       "rollEnabled": "Roll Enabled",
       "rollMultiplier": "Roll Multiplier",
+      "rollMultiplierHint": "Multiply score by this number to produce the final score. Set to 0 to disable the multiplier.",
       "rollMax": "Roll Max",
+      "rollMaxHint": "Cap on the multiplied score. A natural dice total (rolled without the multiplier) may still exceed this cap. Set to 0 to disable the cap.",
       "attachedSkill": "Attached Skill",
       "attachedSkillNone": "— None —",
       "attachedSkillHint": "When set, using this weapon rolls (attribute + skill) dice instead of the multiplier. Die faces are taken from Roll Max (defaults to 6).",
@@ -130,6 +134,7 @@
       "selectAmmoTitle": "Select Ammo",
       "selectAmmoPrompt": "Choose a consumable to attach to {name}.",
       "selectAmmoConfirm": "Attach",
+      "editAmmoTooltip": "Double-click to edit ammo item.",
       "ammoRequiredNames": "Required Ammo",
       "ammoRequiredNamesHint": "Comma separated list of allowed ammo names. When set, only matching consumables can be selected.",
       "consumable": "Consumable",
@@ -139,6 +144,14 @@
       "equipmentSlotsBonusHint": "Adds to the wearer's available equipment slots while equipped.",
       "inventorySlotsBonus": "Inventory Slots Bonus",
       "inventorySlotsBonusHint": "Adds to the wearer's available inventory slots while equipped.",
+      "equipmentSlotsShort": "Equip",
+      "inventorySlotsShort": "Inv",
+      "badgeAmmo": "ammo \u2212{amount}",
+      "badgeAmmoTooltip": "Spends {amount} \u00d7 attached ammo on use.",
+      "badgeDurability": "dur \u2212{amount}",
+      "badgeDurabilityTooltip": "Spends {amount} durability on use.",
+      "badgeQuantity": "qty \u22121",
+      "badgeQuantityTooltip": "Spends 1 quantity on use.",
       "ability": "Ability",
       "cost": "Cost",
       "rank": "Rank",
@@ -162,7 +175,16 @@
 
     "Rolls": {
       "attribute": "{attribute} Check",
-      "skill": "{skill} ({attribute})"
+      "skill": "{skill} ({attribute})",
+      "dicePool": "Rolled {count}d{faces}",
+      "dicePoolNoSkill": "Dice Roll",
+      "openTable": "Open Virtual Dice Table",
+      "farkrollLabel": "Farkroll",
+      "usedItem": "Used {name}",
+      "usedItemWithRoll": "Used {name} with multiplier {multiplier}x and max multiplier score of {max}",
+      "consumedAmmo": "Spent {amount} \u00d7 {name}",
+      "consumedDurability": "Durability \u2212{amount}",
+      "consumedQuantity": "Quantity \u22121"
     },
 
     "Notify": {
@@ -175,6 +197,7 @@
       "durabilityOut": "{name} doesn't have enough durability (need {need}, have {have}).",
       "consumableEmpty": "{name} has no uses remaining.",
       "inventoryFull": "Inventory slots are full ({count}/{max}).",
+      "equipmentFull": "Equipment slots are full ({count}/{max}).",
       "noAmmoCandidates": "No consumable matches the required ammo for {name} ({required})."
     }
   },

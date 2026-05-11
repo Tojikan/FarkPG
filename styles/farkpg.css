@@ -1018,6 +1018,88 @@ input.farkpg-skill-name:focus {
     font-style: italic;
 }
 
+/* ------------------------- Chat message: Fark roll ------------------------- */
+/* Rendered inside Foundry's chat log, outside of `.farkpg.sheet` scope, so
+   these rules deliberately use neutral translucent fills that adapt to any
+   chat background (light parchment or dark theme). */
+
+.farkpg-table-roll {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 2px 0;
+}
+
+.farkpg-table-roll-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.farkpg-table-roll-body {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+}
+
+.farkpg-table-roll-body > i {
+    opacity: 0.7;
+}
+
+.farkpg-table-roll-consume {
+    list-style: none;
+    margin: 0;
+    padding: 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.82rem;
+    color: inherit;
+    opacity: 0.85;
+}
+
+.farkpg-table-roll-consume > li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.farkpg-table-roll-consume > li > i {
+    width: 14px;
+    text-align: center;
+    opacity: 0.7;
+    font-size: 0.78rem;
+}
+
+.farkpg-open-table-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    padding: 3px 9px;
+    margin-top: 2px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    color: inherit;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.farkpg-open-table-btn:hover {
+    background: rgba(0, 0, 0, 0.14);
+    border-color: rgba(0, 0, 0, 0.5);
+}
+
+.farkpg-open-table-btn > i {
+    opacity: 0.8;
+}
+
 .farkpg-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -1283,6 +1365,18 @@ input.farkpg-skill-name:focus {
     flex: 0 0 auto;
 }
 
+.farkpg-card-ammo-img[data-ammo-id] {
+    cursor: pointer;
+    transition:
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.farkpg-card-ammo-img[data-ammo-id]:hover {
+    border-color: var(--card-accent, var(--farkpg-accent));
+    box-shadow: 0 0 0 1px var(--card-accent-soft, var(--farkpg-accent-soft));
+}
+
 .farkpg-card-ammo-name {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1300,13 +1394,21 @@ input.farkpg-skill-name:focus {
 }
 
 .farkpg-card-stat-roll {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 16px 1fr auto;
+    align-items: center;
+}
+
+.farkpg-card-roll-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .farkpg-card-use {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     background: var(--card-accent);
     color: #fff;
     border: none;
@@ -1314,6 +1416,7 @@ input.farkpg-skill-name:focus {
     padding: 3px 8px;
     font-weight: 700;
     font-size: 0.78rem;
+    line-height: 1;
     cursor: pointer;
 }
 
@@ -1321,8 +1424,83 @@ input.farkpg-skill-name:focus {
     filter: brightness(1.15);
 }
 
-.farkpg-card-use-value {
+.farkpg-card-use-icon-only {
+    padding: 4px 7px;
+    gap: 0;
+}
+
+.farkpg-card-use-dice,
+.farkpg-card-use-mult {
     letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.farkpg-card-use-dice {
+    opacity: 0.95;
+}
+
+.farkpg-card-use-mult {
+    padding-left: 4px;
+    border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Per-use consumption rows rendered beneath the "Roll" label. */
+.farkpg-card-consume {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.farkpg-card-consume-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--farkpg-muted);
+    font-size: 0.68rem;
+    line-height: 1.1;
+}
+
+.farkpg-card-consume-badge i {
+    width: 11px;
+    text-align: center;
+    font-size: 0.66rem;
+    opacity: 0.85;
+}
+
+.farkpg-card-consume-amount {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Equipment slot-bonus chips on cards. */
+.farkpg-card-slot-bonuses {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.farkpg-card-slot-bonus {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--farkpg-accent-soft);
+    color: var(--farkpg-text);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.farkpg-card-slot-bonus i {
+    font-size: 0.65rem;
+    opacity: 0.85;
 }
 
 /* Inventory toolbar buttons reskinned to fit the dark cards header. */

@@ -60,6 +60,27 @@
             </div>
         {{/if}}
 
+        {{#if item.hasSlotBonus}}
+            <div class="farkpg-card-stat farkpg-card-stat-slots">
+                <i class="fa-solid fa-vest"></i>
+                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Equipment.slots'}}</span>
+                <span class="farkpg-card-stat-value farkpg-card-slot-bonuses">
+                    {{#if item.equipmentSlotsBonus}}
+                        <span class="farkpg-card-slot-bonus"
+                              data-tooltip="{{localize 'FARKPG.Items.equipmentSlotsBonus'}}">
+                            <i class="fa-solid fa-vest"></i>+{{item.equipmentSlotsBonus}}
+                        </span>
+                    {{/if}}
+                    {{#if item.inventorySlotsBonus}}
+                        <span class="farkpg-card-slot-bonus"
+                              data-tooltip="{{localize 'FARKPG.Items.inventorySlotsBonus'}}">
+                            <i class="fa-solid fa-box"></i>+{{item.inventorySlotsBonus}}
+                        </span>
+                    {{/if}}
+                </span>
+            </div>
+        {{/if}}
+
         {{#if item.ammoEnabled}}
             <div class="farkpg-card-stat farkpg-card-stat-ammo">
                 <i class="fa-solid fa-crosshairs"></i>
@@ -67,7 +88,11 @@
                 {{#if item.linkedAmmo}}
                     <span class="farkpg-card-ammo-box">
                         <span class="farkpg-card-ammo-main">
-                            <img src="{{item.linkedAmmo.img}}" alt="" />
+                            <img class="farkpg-card-ammo-img"
+                                 src="{{item.linkedAmmo.img}}"
+                                 alt=""
+                                 data-ammo-id="{{item.linkedAmmo.id}}"
+                                 data-tooltip="{{localize 'FARKPG.Items.editAmmoTooltip'}}" />
                             <span class="farkpg-card-ammo-name">{{item.linkedAmmo.name}}</span>
                         </span>
                         <span class="farkpg-card-ammo-qty">{{item.linkedAmmo.qty}}</span>
@@ -87,14 +112,33 @@
 
         {{#if item.isRollable}}
             <div class="farkpg-card-stat farkpg-card-stat-roll">
-                <span class="farkpg-card-stat-label">{{localize 'FARKPG.Inventory.roll'}}</span>
+                <i class="fa-solid fa-dice"></i>
+                <div class="farkpg-card-roll-meta">
+                    <span class="farkpg-card-stat-label">{{localize 'FARKPG.Inventory.roll'}}</span>
+                    {{#if item.consumptionBadges.length}}
+                        <ul class="farkpg-card-consume">
+                            {{#each item.consumptionBadges as |badge|}}
+                                <li class="farkpg-card-consume-badge"
+                                    data-tooltip="{{badge.tooltip}}">
+                                    <i class="{{badge.icon}}"></i>
+                                    <span class="farkpg-card-consume-amount">&minus;{{badge.amount}}</span>
+                                </li>
+                            {{/each}}
+                        </ul>
+                    {{/if}}
+                </div>
                 <button type="button"
-                        class="farkpg-card-use"
+                        class="farkpg-card-use{{#if item.iconOnlyRoll}} farkpg-card-use-icon-only{{/if}}"
                         data-action="useItem"
-                        data-tooltip="{{localize 'FARKPG.Items.useTooltip'}}"
+                        data-tooltip="{{item.useTooltip}}"
                         aria-label="{{localize 'FARKPG.Items.use'}}">
+                    {{#if item.rollDiceLabel}}
+                        <span class="farkpg-card-use-dice">{{item.rollDiceLabel}}</span>
+                    {{/if}}
                     <i class="fa-solid fa-bolt"></i>
-                    <span class="farkpg-card-use-value">{{item.rollLabel}}</span>
+                    {{#if item.rollMultLabel}}
+                        <span class="farkpg-card-use-mult">{{item.rollMultLabel}}</span>
+                    {{/if}}
                 </button>
             </div>
         {{/if}}

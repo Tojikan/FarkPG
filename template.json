@@ -52,7 +52,7 @@
     "consumable": {
       "description": "",
       "durability": { "value": 0, "max": 0 },
-      "rollable": { "multiplier": 0, "max": 0 },
+      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
       "quantity": { "value": 1, "max": 99 },
       "isEquipped": false
     },
