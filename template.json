@@ -47,7 +47,14 @@
       "durabilityPerUse": 0,
       "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
       "weaponStyle": "melee",
-      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "", "requiredNames": "" },
+      "ammo": {
+        "enabled": false,
+        "value": 0,
+        "max": 0,
+        "perUse": 1,
+        "reloadFromId": "",
+        "requiredNames": ""
+      },
       "isEquipped": false
     },
     "consumable": {
@@ -67,7 +74,7 @@
     },
     "ability": {
       "description": "",
-      "cost": 0,
+      "cost": "",
       "rank": 1,
       "maxRank": 1
     }

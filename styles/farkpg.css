@@ -1913,7 +1913,8 @@ input.farkpg-skill-name:focus {
     font-size: 0.78rem;
     line-height: 1.3;
     color: var(--card-muted);
-    padding: 6px 8px 0;
+    padding: 6px 8px 8px;
+    margin-bottom: 4px;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -1970,8 +1971,102 @@ input.farkpg-skill-name:focus {
     letter-spacing: 0;
 }
 
-.farkpg-card-stat-ammo {
-    grid-template-columns: 16px auto minmax(0, 1fr);
+/* Combined ammo + reload stat. Each row keeps its icon + label flush left and
+ * pushes values / controls to the right. */
+.farkpg-card-stat-ammo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 6px;
+}
+
+.farkpg-card-ammo-counter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+}
+
+.farkpg-card-ammo-counter > i {
+    color: var(--card-accent);
+    font-size: 0.85rem;
+    width: 16px;
+    text-align: center;
+}
+
+.farkpg-card-ammo-counter .farkpg-card-stat-label {
+    flex: 0 0 auto;
+}
+
+.farkpg-card-ammo-counter .farkpg-card-stat-value {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+/* Reload sub-row. Icon + "Reload" caption sit flush left; the source box and
+ * the reload action button are pushed to the far right via `margin-left: auto`
+ * on the label, leaving a flexible gap between the two groups. */
+.farkpg-card-reload-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+}
+
+.farkpg-card-reload-row .farkpg-card-reload-label {
+    margin-right: auto;
+}
+
+.farkpg-card-reload-row .farkpg-card-ammo-box {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+/* The reload label IS the reload button: clicking the "Reload" pill triggers
+ * the `reloadAmmo` action. Resets default button chrome and adds a subtle
+ * pill appearance with hover/disabled states. */
+.farkpg-card-reload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--card-muted);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    background: var(--card-surface-2, transparent);
+    border: 1px solid var(--card-border, transparent);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+
+.farkpg-card-reload-label i {
+    color: var(--card-accent);
+    font-size: 0.78rem;
+    transition: color 0.12s ease;
+}
+
+.farkpg-card-reload-label:hover:not(:disabled),
+.farkpg-card-reload-label:focus-visible:not(:disabled) {
+    background: var(--farkpg-accent, #6b3f17);
+    border-color: var(--farkpg-accent, #6b3f17);
+    color: #f7efe0;
+    outline: none;
+}
+
+.farkpg-card-reload-label:hover:not(:disabled) i,
+.farkpg-card-reload-label:focus-visible:not(:disabled) i {
+    color: #f7efe0;
+}
+
+.farkpg-card-reload-label:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .farkpg-card-ammo-box {
@@ -1980,6 +2075,7 @@ input.farkpg-skill-name:focus {
     justify-content: space-between;
     gap: 6px;
     min-width: 0;
+    overflow: hidden;
     padding: 2px 5px 2px 2px;
     background: rgba(0, 0, 0, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1990,9 +2086,8 @@ input.farkpg-skill-name:focus {
     color: var(--card-muted);
     cursor: pointer;
     font: inherit;
-    text-align: left;
-    padding: 2px 6px;
-    gap: 5px;
+    justify-content: center;
+    padding: 2px 7px;
     transition:
         background 0.12s ease,
         border-color 0.12s ease,
@@ -2005,10 +2100,6 @@ input.farkpg-skill-name:focus {
     border-color: var(--card-accent);
     color: var(--card-text);
     outline: none;
-}
-
-.farkpg-card-ammo-empty > i {
-    color: var(--card-accent);
 }
 
 .farkpg-card-ammo-main {
@@ -2040,11 +2131,13 @@ input.farkpg-skill-name:focus {
 }
 
 .farkpg-card-ammo-name {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--card-text);
     font-weight: 600;
+    max-width: 46px;
     min-width: 0;
 }
 
@@ -2089,6 +2182,30 @@ input.farkpg-skill-name:focus {
 .farkpg-card-use-icon-only {
     padding: 4px 7px;
     gap: 0;
+}
+
+.farkpg-card-use:disabled,
+.farkpg-card-use-broken {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+}
+
+.farkpg-card-use:disabled:hover,
+.farkpg-card-use-broken:hover {
+    filter: grayscale(0.6);
+}
+
+/* Durability row turns red while the item is broken so it's obvious at a
+ * glance why the Use / Reload buttons are disabled. */
+.farkpg-card-stat-broken {
+    color: #d9534f;
+}
+
+.farkpg-card-stat-broken .farkpg-card-stat-value,
+.farkpg-card-stat-broken .farkpg-card-stat-label,
+.farkpg-card-stat-broken i {
+    color: #d9534f;
 }
 
 .farkpg-card-use-dice,

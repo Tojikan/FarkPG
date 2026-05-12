@@ -120,16 +120,6 @@ function safeCustomSkillId(id) {
 }
 
 /**
- * @param {string} costText
- */
-function abilityCostNumber(costText) {
-    const s = String(costText ?? "").toLowerCase();
-    if (s.includes("passive")) return 0;
-    const m = String(costText ?? "").match(/(\d+)/);
-    return m ? clampInt(m[1], 0, 99, 0) : 0;
-}
-
-/**
  * @param {string} text
  * @returns {{ ok: true, data: object } | { ok: false, error: string }}
  */
@@ -305,7 +295,7 @@ export async function applyCharacterImport(actor, data) {
                     img: "icons/svg/aura.svg",
                     system: {
                         description: desc,
-                        cost: abilityCostNumber(def.costText),
+                        cost: String(def.costText ?? ""),
                         rank: 1,
                         maxRank: 1,
                     },

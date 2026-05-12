@@ -117,6 +117,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
             useItem: FarkPGCharacterSheet.#onUseItem,
             selectAmmo: FarkPGCharacterSheet.#onSelectAmmo,
+            reloadAmmo: FarkPGCharacterSheet.#onReloadAmmo,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
             toggleSkillsEdit: FarkPGCharacterSheet.#onToggleSkillsEdit,
             editPortrait: FarkPGCharacterSheet.#onEditPortrait,
@@ -203,9 +204,27 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             const isConsumable = item.type === "consumable";
             const isEquipment = item.type === "equipment";
             const hasDurability = isWeapon || isEquipment;
+            // "Uses durability" = the item spends durability on every use. Cards
+            // only show the durability row for items that actually wear out
+            // (otherwise the field is just decoration). `isBroken` flips true
+            // when such an item has hit 0 durability -- rolls and actions are
+            // disabled in that state.
+            const durabilityPerUse = hasDurability ? Number(sys.durabilityPerUse ?? 0) : 0;
+            const usesDurability = durabilityPerUse > 0;
+            const durabilityValue = hasDurability ? Number(sys.durability?.value ?? 0) : 0;
+            const isBroken = usesDurability && durabilityValue <= 0;
             const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
-            const linkedAmmo = ammoEnabled && sys.ammo?.linkedConsumableId
-                ? this.actor.items.get(sys.ammo.linkedConsumableId)
+            // The weapon now holds its own loaded ammo (value/max). The
+            // "reload source" is a separate consumable that refills `value`
+            // up to `max` when the Reload button is pressed. `linkedConsumableId`
+            // is the pre-rework name we still honour when reading old data.
+            const ammoValue = ammoEnabled ? Number(sys.ammo?.value ?? 0) : 0;
+            const ammoMax = ammoEnabled ? Number(sys.ammo?.max ?? 0) : 0;
+            const reloadFromId = ammoEnabled
+                ? String(sys.ammo?.reloadFromId ?? sys.ammo?.linkedConsumableId ?? "")
+                : "";
+            const reloadSourceItem = reloadFromId
+                ? this.actor.items.get(reloadFromId)
                 : null;
 
             // Resolve attached-skill rolling: when an attached skill is set,
@@ -246,7 +265,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
              // legend.
             const consumptionBadges = [];
             if (isRollable && !iconOnlyRoll) {
-                if (isWeapon && ammoEnabled && linkedAmmo) {
+                if (isWeapon && ammoEnabled) {
                     const perUse = Math.max(1, Number(sys.ammo?.perUse ?? 1));
                     consumptionBadges.push({
                         kind: "ammo",
@@ -312,6 +331,11 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 isConsumable,
                 isEquipment,
                 hasDurability,
+                usesDurability,
+                isBroken,
+                brokenTooltip: isBroken
+                    ? game.i18n.format("FARKPG.Items.brokenTooltip", { name: item.name })
+                    : "",
                 descShort,
                 isRollable,
                 rollMultiplier: mult,
@@ -342,14 +366,45 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 attachedSkillLabel,
                 ammoEnabled,
                 ammoPerUse: ammoEnabled ? Math.max(1, Number(sys.ammo?.perUse ?? 1)) : 0,
-                linkedAmmo: linkedAmmo
+                ammoValue,
+                ammoMax,
+                reloadSource: reloadSourceItem
                     ? {
-                          id: linkedAmmo.id,
-                          name: linkedAmmo.name,
-                          img: linkedAmmo.img,
-                          qty: Number(linkedAmmo.system?.quantity?.value ?? 0),
+                          id: reloadSourceItem.id,
+                          name: reloadSourceItem.name,
+                          img: reloadSourceItem.img,
+                          qty: Number(reloadSourceItem.system?.quantity?.value ?? 0),
                       }
                     : null,
+                // Button is only hard-disabled for states the player can't
+                // act on at all (broken / no capacity / already full). Missing
+                // or empty source still leaves it enabled so the handler can
+                // fire and explain via `ui.notifications`.
+                canReload: ammoEnabled
+                    && !isBroken
+                    && ammoMax > 0
+                    && ammoValue < ammoMax,
+                reloadTooltip: ammoEnabled
+                    ? (() => {
+                          if (isBroken)
+                              return game.i18n.format("FARKPG.Items.brokenTooltip", {
+                                  name: item.name,
+                              });
+                          if (ammoMax <= 0)
+                              return game.i18n.localize("FARKPG.Items.reloadTooltipUnconfigured");
+                          if (ammoValue >= ammoMax)
+                              return game.i18n.format("FARKPG.Items.reloadTooltipFull", {
+                                  name: item.name,
+                                  value: ammoValue,
+                                  max: ammoMax,
+                              });
+                          return game.i18n.format("FARKPG.Items.reloadTooltip", {
+                              name: item.name,
+                              source: reloadSourceItem?.name ?? "—",
+                              need: ammoMax - ammoValue,
+                          });
+                      })()
+                    : "",
             };
         };
 
@@ -374,24 +429,6 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     hasDesc: descPlain.length > 0,
                 };
             });
-
-        const linkedAmmoIds = new Set(
-            context.equippedItems
-                .concat(context.inventoryItems)
-                .map((i) => i.linkedAmmo?.id)
-                .filter(Boolean),
-        );
-        context.linkedAmmoItems = items
-            .filter((i) => linkedAmmoIds.has(i.id))
-            .map((i) => ({
-                id: i.id,
-                uuid: i.uuid,
-                name: i.name,
-                img: i.img,
-                qty: Number(i.system?.quantity?.value ?? 0),
-                max: Number(i.system?.quantity?.max ?? 0),
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name));
 
         const slotMaxes = this.#computeSlotMaxes();
         context.slots = {
@@ -706,6 +743,11 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const itemData = item.toObject();
         delete itemData._id;
         if (itemData.system?.isEquipped !== undefined) itemData.system.isEquipped = false;
+        // Ammo / reload links are actor-local — clear both the new and legacy
+        // keys when copying an item to a different actor.
+        if (itemData.system?.ammo?.reloadFromId !== undefined) {
+            itemData.system.ammo.reloadFromId = "";
+        }
         if (itemData.system?.ammo?.linkedConsumableId !== undefined) {
             itemData.system.ammo.linkedConsumableId = "";
         }
@@ -725,10 +767,15 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      */
     async #clearAmmoLinksTo(actor, itemId) {
         const linkedWeapons = actor.items.filter((i) => {
-            return i.type === "weapon" && i.system?.ammo?.linkedConsumableId === itemId;
+            if (i.type !== "weapon") return false;
+            const a = i.system?.ammo ?? {};
+            return a.reloadFromId === itemId || a.linkedConsumableId === itemId;
         });
         for (const weapon of linkedWeapons) {
-            await weapon.update({ "system.ammo.linkedConsumableId": "" });
+            await weapon.update({
+                "system.ammo.reloadFromId": "",
+                "system.ammo.linkedConsumableId": "",
+            });
         }
     }
 
@@ -1345,9 +1392,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Open a prompt to attach a consumable as the weapon's ammo. Filters the
-     * candidate list by the weapon's `system.ammo.requiredNames` CSV when set,
-     * so only matching consumables can be selected.
+     * Open a prompt to pick a consumable as the weapon's reload source. The
+     * candidate list is filtered by the weapon's `system.ammo.requiredNames`
+     * CSV when set. Writes to `system.ammo.reloadFromId`.
      * @this {FarkPGCharacterSheet}
      */
     static async #onSelectAmmo(event, target) {
@@ -1392,27 +1439,131 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             .join("");
 
         const content = `
-            <p>${escape(game.i18n.format("FARKPG.Items.selectAmmoPrompt", { name: item.name }))}</p>
+            <p>${escape(game.i18n.format("FARKPG.Items.selectReloadPrompt", { name: item.name }))}</p>
             <div class="form-group">
-                <label for="farkpg-ammo-pick">${escape(game.i18n.localize("FARKPG.Items.ammoItem"))}</label>
+                <label for="farkpg-ammo-pick">${escape(game.i18n.localize("FARKPG.Items.reloadFrom"))}</label>
                 <select id="farkpg-ammo-pick" name="ammoId">${optionsHtml}</select>
             </div>
         `;
 
         const DialogV2 = foundry.applications.api.DialogV2;
         const chosenId = await DialogV2.prompt({
-            window: { title: game.i18n.localize("FARKPG.Items.selectAmmoTitle") },
+            window: { title: game.i18n.localize("FARKPG.Items.selectReloadTitle") },
             content,
             modal: true,
             rejectClose: false,
             ok: {
-                label: game.i18n.localize("FARKPG.Items.selectAmmoConfirm"),
+                label: game.i18n.localize("FARKPG.Items.selectReloadConfirm"),
                 callback: (_event, button) => button.form?.elements?.ammoId?.value ?? null,
             },
         });
 
         if (!chosenId) return;
-        await item.update({ "system.ammo.linkedConsumableId": chosenId });
+        await item.update({
+            "system.ammo.reloadFromId": chosenId,
+            // Clear the legacy field so the two never disagree.
+            "system.ammo.linkedConsumableId": "",
+        });
+    }
+
+    /**
+     * Refill this weapon's loaded ammo up to its max, drawing the difference
+     * from the consumable named in `system.ammo.reloadFromId`. Partial reloads
+     * are allowed: when the source has fewer rounds than the deficit, transfer
+     * everything the source has.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onReloadAmmo(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Resolve the item id defensively. `target` is normally the element
+        // that owns `data-action`, but if Foundry's signature drifts in a
+        // future minor we still want a click on the inner <i> to work.
+        const root =
+            target?.closest?.("[data-item-id]") ??
+            event.currentTarget?.closest?.("[data-item-id]") ??
+            event.target?.closest?.("[data-item-id]");
+        const id = root?.dataset?.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type !== "weapon") {
+            console.warn("FarkPG | reloadAmmo: could not resolve weapon item", { id, target });
+            return;
+        }
+
+        const sys = item.system ?? {};
+        if (sys.ammo?.enabled !== true) return;
+
+        const dpu = Number(sys.durabilityPerUse ?? 0);
+        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
+            );
+            return;
+        }
+
+        const ammoMax = Number(sys.ammo?.max ?? 0);
+        if (ammoMax <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
+            );
+            return;
+        }
+        const ammoValue = Number(sys.ammo?.value ?? 0);
+        if (ammoValue >= ammoMax) {
+            ui.notifications?.info(
+                game.i18n.format("FARKPG.Notify.reloadFull", {
+                    name: item.name,
+                    value: ammoValue,
+                    max: ammoMax,
+                }),
+            );
+            return;
+        }
+
+        // Honour the legacy `linkedConsumableId` field as a fallback so existing
+        // data keeps reloading without forcing the user to re-pick the source.
+        const sourceId = String(sys.ammo?.reloadFromId ?? sys.ammo?.linkedConsumableId ?? "");
+        if (!sourceId) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadNoSource", { name: item.name }),
+            );
+            return;
+        }
+        const source = this.actor.items.get(sourceId);
+        if (!source) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadSourceMissing", { name: item.name }),
+            );
+            return;
+        }
+        const haveInSource = Number(source.system?.quantity?.value ?? 0);
+        if (haveInSource <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadSourceEmpty", {
+                    name: item.name,
+                    source: source.name,
+                }),
+            );
+            return;
+        }
+
+        const need = ammoMax - ammoValue;
+        const transfer = Math.min(need, haveInSource);
+        const newAmmoValue = ammoValue + transfer;
+        const newSourceQty = haveInSource - transfer;
+
+        await item.update({ "system.ammo.value": newAmmoValue });
+        await source.update({ "system.quantity.value": newSourceQty });
+
+        ui.notifications?.info(
+            game.i18n.format("FARKPG.Notify.reloaded", {
+                name: item.name,
+                amount: transfer,
+                source: source.name,
+                value: newAmmoValue,
+                max: ammoMax,
+            }),
+        );
     }
 
     /**
@@ -1449,6 +1600,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             return;
         }
 
+        // Items that wear out (durabilityPerUse > 0) refuse to be used at 0
+        // durability. Done before the dice-table shortcut so a broken weapon
+        // can't even open the table for a manual roll.
+        const dpu = Number(sys.durabilityPerUse ?? 0);
+        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
+            );
+            return;
+        }
+
         // Roll-enabled item with no formula configured: just open the dice
         // table for manual rolling. Nothing is consumed and no chat message
         // is posted -- this is purely a shortcut to bring up the table.
@@ -1464,44 +1626,18 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const consumed = [];
 
         if (item.type === "weapon" && sys.ammo?.enabled) {
-            const linkedId = String(sys.ammo.linkedConsumableId ?? "");
-            if (!linkedId) {
+            const ammoMax = Number(sys.ammo?.max ?? 0);
+            if (ammoMax <= 0) {
                 ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoNotSelected", { name: item.name }),
+                    game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
                 );
                 return;
-            }
-            const ammo = this.actor.items.get(linkedId);
-            if (!ammo) {
-                ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoMissing", { name: item.name }),
-                );
-                return;
-            }
-            const requiredCSV = String(sys.ammo.requiredNames ?? "").trim();
-            if (requiredCSV) {
-                const allowed = requiredCSV
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                    .map((s) => s.toLowerCase());
-                if (!allowed.includes(String(ammo.name).toLowerCase())) {
-                    ui.notifications?.warn(
-                        game.i18n.format("FARKPG.Notify.ammoNotAllowed", {
-                            ammo: ammo.name,
-                            name: item.name,
-                            required: requiredCSV,
-                        }),
-                    );
-                    return;
-                }
             }
             const perUse = Math.max(1, Number(sys.ammo.perUse ?? 1));
-            const have = Number(ammo.system?.quantity?.value ?? 0);
+            const have = Number(sys.ammo?.value ?? 0);
             if (have < perUse) {
                 ui.notifications?.warn(
                     game.i18n.format("FARKPG.Notify.ammoOut", {
-                        ammo: ammo.name,
                         name: item.name,
                         need: perUse,
                         have,
@@ -1509,11 +1645,13 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 );
                 return;
             }
-            updates.push({ doc: ammo, data: { "system.quantity.value": have - perUse } });
+            const after = have - perUse;
+            updates.push({ doc: item, data: { "system.ammo.value": after } });
             consumed.push(
                 game.i18n.format("FARKPG.Rolls.consumedAmmo", {
                     amount: perUse,
-                    name: ammo.name,
+                    value: after,
+                    max: ammoMax,
                 }),
             );
         }
