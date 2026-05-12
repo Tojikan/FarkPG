@@ -59,7 +59,14 @@
       "addPoolImgBrowse": "Browse for image",
       "addPoolAmount": "Starting amount",
       "addPoolConfirm": "Add",
-      "addPoolNameRequired": "Enter a label for the new pool."
+      "addPoolNameRequired": "Enter a label for the new pool.",
+      "healthLabel": "Health",
+      "healthCurrentTooltip": "Current HP. Clamped to the configured Max HP.",
+      "healthDeltaLabel": "Adjust",
+      "healthDeltaTooltip": "Amount applied by the + and \u2212 buttons.",
+      "healthIncrease": "Heal by the amount shown",
+      "healthDecrease": "Take damage equal to the amount shown",
+      "healthAdjustAria": "Adjust health"
     },
 
     "Attributes": {

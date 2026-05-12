@@ -96,10 +96,11 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
     static DEFAULT_OPTIONS = {
         classes: ["farkpg", "ap-drawer"],
         tag: "section",
-        position: { width: 620, height: 168 },
+        position: { width: 620, height: 240 },
         window: { resizable: true, icon: "fa-solid fa-coins" },
         actions: {
             decrementApFromDrawer: FarkPGApDrawer.#onDecrement,
+            adjustHealth: FarkPGApDrawer.#onAdjustHealth,
         },
     };
 
@@ -116,6 +117,16 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         const context = await super._prepareContext(options);
         context.apTypes = buildApTypeRowsForActor(this.actor);
         context.editable = this.actor.canUserModify(game.user, "update");
+
+        const health = this.actor.system?.resources?.health ?? {};
+        const hpValue = Math.max(0, Math.floor(Number(health.value ?? 0)) || 0);
+        const hpMax = Math.max(0, Math.floor(Number(health.max ?? 0)) || 0);
+        context.health = {
+            value: hpValue,
+            max: hpMax,
+            valueDisplay: formatApNumber(hpValue),
+            maxDisplay: formatApNumber(hpMax),
+        };
         return context;
     }
 
@@ -130,17 +141,42 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         this.element?.addEventListener(
             "change",
             (ev) => {
-                const inp = ev.target?.closest?.("input[data-ap-path]");
-                if (!inp) return;
-                if (!this.actor.canUserModify(game.user, "update")) return;
-                const path = String(inp.dataset.apPath ?? "");
-                if (!path) return;
-                const raw = Math.floor(Number(inp.value ?? 0));
-                const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
-                void this.#applyValueFromPath(path, n);
+                const apInp = ev.target?.closest?.("input[data-ap-path]");
+                if (apInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const path = String(apInp.dataset.apPath ?? "");
+                    if (!path) return;
+                    const raw = Math.floor(Number(apInp.value ?? 0));
+                    const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                    void this.#applyValueFromPath(path, n);
+                    return;
+                }
+                const hpInp = ev.target?.closest?.("input[data-farkpg-health-value]");
+                if (hpInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const raw = Math.floor(Number(hpInp.value ?? 0));
+                    const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                    void this.#applyHealth(n);
+                }
             },
             { signal },
         );
+    }
+
+    /**
+     * Clamp an absolute HP value to `[0, max]` and persist it on the actor.
+     * The drawer re-renders so the field reflects the clamped value.
+     * @param {number} n  Desired HP value (already non-negative integer).
+     */
+    async #applyHealth(n) {
+        const actor = this.actor;
+        const max = Number(actor.system?.resources?.health?.max ?? 0);
+        const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
+        // If no max is configured (0), allow any non-negative value so the
+        // field stays usable; otherwise clamp.
+        const clamped = finiteMax > 0 ? Math.min(finiteMax, n) : n;
+        await actor.update({ "system.resources.health.value": clamped });
+        await this.render();
     }
 
     /** @inheritDoc */
@@ -194,6 +230,30 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
             await actor.update({ [`system.resources.customActionPoints.${id}.value`]: next });
         }
         await self.render();
+    }
+
+    /**
+     * Add or subtract the value entered in the adjacent delta input from the
+     * actor's current HP, clamped to the configured Max HP.
+     * @this {FarkPGApDrawer}
+     */
+    static async #onAdjustHealth(event, target) {
+        event.preventDefault();
+        /** @type {FarkPGApDrawer} */
+        const self = this;
+        const actor = self.actor;
+        if (!actor.canUserModify(game.user, "update")) return;
+
+        const dir = Number(target.dataset.direction ?? 0);
+        if (!Number.isFinite(dir) || dir === 0) return;
+
+        const deltaInput = self.element?.querySelector?.(".farkpg-drawer-health-delta");
+        const rawDelta = Math.floor(Number(deltaInput?.value ?? 1));
+        const delta = Number.isFinite(rawDelta) ? Math.max(1, rawDelta) : 1;
+
+        const cur = Math.floor(Number(actor.system?.resources?.health?.value ?? 0)) || 0;
+        const next = cur + dir * delta;
+        await self.#applyHealth(Math.max(0, next));
     }
 
     /** @param {Actor} actor */

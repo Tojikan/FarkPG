@@ -186,8 +186,15 @@
     gap: 0.3rem;
 }
 
+/* HP and EXP each take an equal flexible slot; Move is fixed-width and gets an
+ * extra left margin to put visible breathing room between EXP and Move. */
 .farkpg-resources-primary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 76px;
+    column-gap: 0.45rem;
+}
+
+.farkpg-resources-primary .farkpg-resource-move {
+    margin-left: 0.4rem;
 }
 
 .farkpg-resource {
@@ -240,6 +247,35 @@
     height: 1.45rem;
     line-height: 1.35rem;
     cursor: help;
+}
+
+/* HP Max input lives in the header but is intentionally subdued so it reads
+ * as a secondary value alongside the active HP figure. Picks up full focus
+ * styling when the user clicks into it so editing remains obvious. */
+.farkpg-resource-max-input {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--farkpg-muted);
+    background: var(--farkpg-panel-bg-2);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    padding: 1px 3px;
+    height: 1.45rem;
+    line-height: 1.35rem;
+    opacity: 0.78;
+    transition: opacity 0.12s ease, color 0.12s ease;
+}
+
+.farkpg-resource-max-input:hover {
+    opacity: 0.95;
+}
+
+.farkpg-resource-max-input:focus {
+    opacity: 1;
+    color: var(--farkpg-text);
+    outline: none;
 }
 
 .farkpg-sep {
@@ -470,7 +506,98 @@
 }
 
 .farkpg-ap-drawer-window {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
     padding: 0.35rem 0.45rem;
+}
+
+/* Health editor sits above the AP cells. Two cells side-by-side: the current
+ * health fraction on the left and a +/- quick-adjust on the right. */
+.farkpg-drawer-health-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.farkpg-drawer-health-cell,
+.farkpg-drawer-health-adjust {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    background: var(--farkpg-panel-bg);
+}
+
+.farkpg-drawer-health-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.farkpg-drawer-health-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-panel-bg-2);
+    color: #d9534f;
+    font-size: 0.95rem;
+}
+
+.farkpg-drawer-health-inp {
+    width: 3rem;
+}
+
+.farkpg-drawer-health-adjust-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.farkpg-drawer-health-delta {
+    width: 2.75rem;
+}
+
+.farkpg-drawer-health-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-panel-bg-2);
+    color: var(--farkpg-text);
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.farkpg-drawer-health-btn:hover,
+.farkpg-drawer-health-btn:focus-visible {
+    border-color: var(--farkpg-accent);
+    background: var(--farkpg-accent-soft);
+    outline: none;
+}
+
+.farkpg-drawer-health-btn-minus {
+    color: #d9534f;
+}
+
+.farkpg-drawer-health-btn-plus {
+    color: #6abf69;
 }
 
 .farkpg-ap-drawer-row {

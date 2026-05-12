@@ -41,8 +41,12 @@
                            name="system.resources.health.value"
                            value="{{system.resources.health.value}}" />
                     <span class="farkpg-sep">/</span>
-                    <span class="farkpg-resource-max"
-                          data-tooltip="{{localize 'FARKPG.Config.maxHealth'}}">{{system.resources.health.max}}</span>
+                    <input type="number"
+                           class="farkpg-resource-max-input"
+                           name="system.resources.health.max"
+                           value="{{system.resources.health.max}}"
+                           min="0" step="1"
+                           data-tooltip="{{localize 'FARKPG.Config.maxHealth'}}" />
                 </span>
             </label>
 
@@ -59,7 +63,7 @@
                 </span>
             </label>
 
-            <label class="farkpg-resource">
+            <label class="farkpg-resource farkpg-resource-move">
                 <span class="farkpg-resource-label">{{localize 'FARKPG.Header.move'}}</span>
                 <span class="farkpg-resource-fields">
                     <input type="number"
