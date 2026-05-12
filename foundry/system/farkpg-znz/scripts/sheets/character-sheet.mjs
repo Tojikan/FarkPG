@@ -990,8 +990,8 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
     /**
      * Try the Virtual Dice Table module APIs in priority order:
-     * `openStartRollAndRoll` first (auto-fills count/faces), then plain
-     * `openVirtualTable`, then the legacy `globalThis.virtualDiceTable.open()`.
+     * `openStartRollAndRoll` (opens table + **Start roll** only — no green Roll),
+     * then plain `openVirtualTable`, then the legacy `globalThis.virtualDiceTable.open()`.
      *
      * A FarkPG roll can never put more than 6 dice on the table at once. Any
      * dice beyond that show up in the table's "Free Rolls" pool instead, which
