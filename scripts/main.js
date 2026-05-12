@@ -103,19 +103,28 @@ async function postOpenBoardChatButton(opts) {
 }
 
 /**
- * Open the table (if needed), start a roll on the caller's own board, then
- * immediately roll `count` dice of `faces` sides. Awaitable.
+ * Open the table (if needed), start a roll on the caller's own board only
+ * (no dice rolled). Awaitable.
  *
- * Example:
- *   await game.modules.get("virtual-dice-table").api.openStartRollAndRoll({ count: 5, faces: 8 });
- *
- * @param {{ count?: number; faces?: number }} [payload]
+ * @param {{ count?: number; faces?: number; freeRolls?: number }} [payload]
  * @returns {Promise<void>}
  */
 async function openStartRollAndRoll(payload = {}) {
     await openVirtualTable();
     if (!globalVirtualTable) return;
-    await globalVirtualTable.apiStartRollAndRoll(payload);
+    await globalVirtualTable.apiStartRollOnly(payload);
+}
+
+/**
+ * Open, start roll if needed, then roll `count` dice (same as toolbar Roll).
+ *
+ * @param {{ count?: number; faces?: number; freeRolls?: number }} [payload]
+ * @returns {Promise<void>}
+ */
+async function openStartRollAndRollDice(payload = {}) {
+    await openVirtualTable();
+    if (!globalVirtualTable) return;
+    await globalVirtualTable.apiStartRollAndRollDice(payload);
 }
 
 Hooks.once("init", async () => {
@@ -202,10 +211,12 @@ Hooks.once("ready", () => {
             /** Short alias for macros / systems */
             open: openVirtualTable,
             /**
-             * Open + start a roll + roll N dice of X sides in one call.
-             * Awaitable; suitable for macros with Asynchronous = ON.
+             * Open + start roll only (no automatic dice roll). Use for macros that
+             * should mirror clicking "Start roll".
              */
             openStartRollAndRoll,
+            /** Open + start roll + evaluate dice (toolbar Roll behavior). */
+            openStartRollAndRollDice,
             /** Post a chat button that opens the table on a tab (GM private → Overview). */
             postOpenBoardChatButton,
         };

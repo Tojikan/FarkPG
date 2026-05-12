@@ -10,7 +10,7 @@
     <div class="vdt-overview">
         {{#if overviewPanels.length}}
         {{#each overviewPanels}}
-        <article class="vdt-overview-card">
+        <article class="vdt-overview-card vdt-overview-card--open-board" data-overview-open-board="{{boardId}}" title="{{vdtL10n 'overviewOpenBoardHint'}}">
             <header class="vdt-overview-card-head">{{label}}</header>
             <div class="vdt-overview-card-body">
                 <div class="vdt-overview-board">
@@ -59,7 +59,10 @@
     {{else}}
 
     {{#if spectatorHint}}
-    <p class="vdt-hint"><i class="fa-solid fa-eye"></i> {{vdtL10n "spectatorHint"}}</p>
+    <div class="vdt-spectator-hint">
+        <button type="button" class="vdt-hint-return" data-action="vdt-return-overview">{{vdtL10n "spectatorReturnOverview"}}</button>
+        <p class="vdt-hint-spectator-msg"><i class="fa-solid fa-eye"></i> {{vdtL10n "spectatorHintPrefix"}}<button type="button" class="vdt-own-tab-link" data-action="vdt-open-own-board" data-board-id="{{spectatorOwnBoardId}}">{{vdtL10n "spectatorOwnTabLink"}}</button>{{vdtL10n "spectatorHintSuffix"}}</p>
+    </div>
     {{/if}}
 
     {{#if rollInProgress}}
@@ -120,9 +123,9 @@
             </div>
             {{/if}}
         </div>
-        <div class="vdt-region vdt-region-score vdt-drop-target" data-drop-region="zone" data-zone-target="new">
+        <div class="vdt-region vdt-region-score">
             <header>{{vdtL10n "zone"}}</header>
-            <div class="vdt-zone-rows-wrap">
+            <div class="vdt-zone-rows-wrap vdt-drop-target" data-drop-region="zone" data-zone-target="new">
                 {{#each zoneRows}}
                 <div class="vdt-zone-row vdt-drop-target" data-drop-region="zone" data-zone-row-id="{{id}}">
                     <div class="vdt-zone-row-dice">

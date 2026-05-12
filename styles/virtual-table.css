@@ -50,6 +50,60 @@
     border-left: 3px solid var(--color-warm-2, #e79c17);
 }
 
+.virtual-dice-table .vdt-spectator-hint {
+    margin: 0.65rem 0 0.85rem;
+    padding: 0.5rem 0.55rem 0.55rem;
+    background: var(--color-bg-option-active, #333);
+    border-radius: 6px;
+    border-left: 3px solid var(--color-warm-2, #e79c17);
+}
+
+.virtual-dice-table .vdt-hint-return {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.35rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-hyperlink, #6ba8ff);
+    cursor: pointer;
+    font-size: var(--font-size-13, 13px);
+    text-align: left;
+    text-decoration: underline;
+}
+
+.virtual-dice-table .vdt-hint-return:hover {
+    filter: brightness(1.12);
+}
+
+.virtual-dice-table .vdt-spectator-hint .vdt-hint-spectator-msg {
+    margin: 0.35rem 0 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: var(--font-size-13, 13px);
+    line-height: 1.35;
+    opacity: 0.95;
+}
+
+.virtual-dice-table .vdt-own-tab-link {
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-hyperlink, #6ba8ff);
+    cursor: pointer;
+    font: inherit;
+    line-height: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.virtual-dice-table .vdt-own-tab-link:hover {
+    filter: brightness(1.12);
+}
+
 .virtual-dice-table .vdt-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -296,6 +350,12 @@
     background: rgba(120, 46, 34, 0.06);
 }
 
+.virtual-dice-table .vdt-zone-rows-wrap.vdt-drop-target.vdt-drag-active {
+    box-shadow: inset 0 0 0 2px var(--color-primary, #782e22);
+    background: rgba(120, 46, 34, 0.06);
+    border-radius: 4px;
+}
+
 .virtual-dice-table .vdt-marquee-band {
     position: absolute;
     z-index: 2;
@@ -492,6 +552,15 @@
     border-radius: 6px;
     padding: 0.5rem;
     background: rgba(0, 0, 0, 0.2);
+}
+
+.virtual-dice-table .vdt-overview-card--open-board {
+    cursor: pointer;
+    transition: filter 0.12s ease;
+}
+
+.virtual-dice-table .vdt-overview-card--open-board:hover {
+    filter: brightness(1.07);
 }
 
 .virtual-dice-table .vdt-overview-card-head {

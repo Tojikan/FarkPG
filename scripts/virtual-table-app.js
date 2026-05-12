@@ -67,6 +67,12 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         this._dieSelectDelayTimer = null;
         /** @type {Set<string> | null} Dice to animate after next render */
         this._pendingRollAnimIds = null;
+        /**
+         * Last "Roll" count from the toolbar or API (not tableDice.length).
+         * Keeps the count field stable when dice move to score or after Reroll Board.
+         * @type {number | undefined}
+         */
+        this._rollCountToolbarPref = undefined;
     }
 
     /**
@@ -270,13 +276,24 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         data.faces = board.faces;
         data.canMutate = canMutateBoard(game.user.id, safeViewId, isGm);
         data.spectatorHint = rollInProgress && !data.canMutate;
+        if (data.spectatorHint) {
+            data.spectatorOwnBoardId = game.user.id;
+        }
         data.isGm = isGm;
         data.selectedCount = selectedArr.length;
         data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
         {
             const defaultCount = Math.min(6, data.maxDice);
-            const countFromBoard = board.tableDice?.length ?? 0;
-            data.rollCountInput = countFromBoard > 0 ? countFromBoard : defaultCount;
+            const pref = this._rollCountToolbarPref;
+            if (pref !== undefined && pref !== null && Number.isFinite(Number(pref))) {
+                data.rollCountInput = Math.min(
+                    Math.max(0, Math.floor(Number(pref))),
+                    data.maxDice,
+                );
+            } else {
+                const countFromBoard = board.tableDice?.length ?? 0;
+                data.rollCountInput = countFromBoard > 0 ? countFromBoard : defaultCount;
+            }
         }
         data.freeRolls = Number(board.freeRolls ?? 0);
         data.showRerollSelected = rollInProgress && data.canMutate && selectedArr.length > 0;
@@ -321,6 +338,42 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             () => void this._rerollSelected(),
             { signal },
         );
+        root.querySelector("[data-action='vdt-return-overview']")?.addEventListener(
+            "click",
+            (ev) => {
+                ev.preventDefault();
+                this.viewBoardId = OVERVIEW_TAB_ID;
+                this.selectedDieIds.clear();
+                void this.render(true);
+            },
+            { signal },
+        );
+        root.querySelector("[data-action='vdt-open-own-board']")?.addEventListener(
+            "click",
+            (ev) => {
+                ev.preventDefault();
+                const raw = ev.currentTarget?.dataset?.boardId;
+                const id = raw != null && String(raw).trim() ? String(raw).trim() : game.user.id;
+                if (!this.navigateToBoard(id)) return;
+                void this.render(true);
+            },
+            { signal },
+        );
+        root.querySelectorAll("[data-overview-open-board]").forEach((el) => {
+            el.addEventListener(
+                "click",
+                (ev) => {
+                    if (ev.target.closest("a, button, input, select, textarea")) return;
+                    const id = el.dataset.overviewOpenBoard;
+                    if (!id) return;
+                    if (!canViewBoard(id, game.user.isGM)) return;
+                    this.viewBoardId = id;
+                    this.selectedDieIds.clear();
+                    void this.render(true);
+                },
+                { signal },
+            );
+        });
         root.querySelector('[name="vdt-free-rolls"]')?.addEventListener(
             "change",
             (ev) => this._onFreeRollsInputChange(ev),
@@ -510,6 +563,30 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         /** Drops often land on child dice; resolve the nearest marked drop surface. */
         const resolveDropEl = (t) => (t instanceof Element ? t.closest(".vdt-drop-target") : null);
 
+        /** Score row under pointer (handles drops on SVG pips / gaps where `ev.target` misses the row). */
+        const findScoreRowUnderPointer = (ev) => {
+            const doc = root.ownerDocument;
+            if (!doc?.elementsFromPoint) return null;
+            const x = ev.clientX;
+            const y = ev.clientY;
+            if (typeof x !== "number" || typeof y !== "number" || Number.isNaN(x) || Number.isNaN(y)) {
+                return null;
+            }
+            let stack;
+            try {
+                stack = doc.elementsFromPoint(x, y);
+            } catch {
+                return null;
+            }
+            for (const el of stack) {
+                if (!(el instanceof Element)) continue;
+                if (!root.contains(el)) continue;
+                const row = el.closest?.(".vdt-zone-row[data-zone-row-id]");
+                if (row instanceof HTMLElement && row.dataset.zoneRowId) return row;
+            }
+            return null;
+        };
+
         root.addEventListener(
             "dragenter",
             (ev) => {
@@ -563,20 +640,32 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 for (const i of ids) {
                     if (findVdtDie(root, i)?.dataset.region !== actualFrom) return;
                 }
+                /** Prefer an explicit score row over the generic "new row" zone (same for all clients). */
+                const resolveZoneDrop = () => {
+                    const under = findScoreRowUnderPointer(ev);
+                    if (under) return under;
+                    const t = ev.target;
+                    if (!(t instanceof Element)) return dropEl;
+                    const onRow = t.closest?.(".vdt-zone-row[data-zone-row-id]");
+                    if (onRow instanceof HTMLElement && onRow.dataset.zoneRowId) return onRow;
+                    return dropEl;
+                };
                 if (actualFrom === "table" && targetRegion === "zone") {
-                    const zoneRowId = dropEl.dataset.zoneRowId ? String(dropEl.dataset.zoneRowId) : "";
+                    const zEl = resolveZoneDrop();
+                    const zoneRowId = zEl.dataset.zoneRowId ? String(zEl.dataset.zoneRowId) : "";
                     if (zoneRowId) {
                         this._commitMoveDice({ ids, to: "zone", zoneNewRow: false, zoneRowId });
-                    } else if (dropEl.dataset.zoneTarget === "new") {
+                    } else if (zEl.dataset.zoneTarget === "new" || dropEl.dataset.zoneTarget === "new") {
                         this._commitMoveDice({ ids, to: "zone", zoneNewRow: true });
                     }
                 } else if (actualFrom === "zone" && targetRegion === "table") {
                     this._commitMoveDice({ ids, to: "table" });
                 } else if (actualFrom === "zone" && targetRegion === "zone") {
-                    const zoneRowId = dropEl.dataset.zoneRowId ? String(dropEl.dataset.zoneRowId) : "";
+                    const zEl = resolveZoneDrop();
+                    const zoneRowId = zEl.dataset.zoneRowId ? String(zEl.dataset.zoneRowId) : "";
                     if (zoneRowId) {
                         this._commitMoveDice({ ids, to: "zone", zoneNewRow: false, zoneRowId });
-                    } else if (dropEl.dataset.zoneTarget === "new") {
+                    } else if (zEl.dataset.zoneTarget === "new" || dropEl.dataset.zoneTarget === "new") {
                         this._commitMoveDice({ ids, to: "zone", zoneNewRow: true });
                     }
                 }
@@ -702,6 +791,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 payload: {},
             })
         ) {
+            this._rollCountToolbarPref = undefined;
             this.selectedDieIds.clear();
             void this.render(true);
         }
@@ -750,8 +840,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     /**
-     * Shared roll-and-commit path used by both the toolbar button and the public
-     * `openStartRollAndRoll` API. Clamps `count` to the world maxDice setting and
+     * Shared roll-and-commit path used by both the toolbar button and
+     * `apiStartRollAndRollDice`. Clamps `count` to the world maxDice setting and
      * filters `faces` to the legal die set (defaults to `DEFAULT_FACES`).
      * @param {string} boardId
      * @param {number} count
@@ -784,6 +874,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 })
             ) {
                 this._pendingRollAnimIds = null;
+            } else {
+                this._rollCountToolbarPref = n;
             }
             this.selectedDieIds.clear();
         } catch (err) {
@@ -793,19 +885,12 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     /**
-     * Programmatic entry: ensure a roll is in progress on the caller's own
-     * board (GM private for GMs), then immediately roll `count` dice of
-     * `faces` sides. Invoked from `api.openStartRollAndRoll(...)`.
-     *
-     * `freeRolls` (optional) seeds the board's free-rolls pool so callers can
-     * communicate "I rolled X dice but only N fit on the table -- the player
-     * has (X - N) free re-rolls available via double-click". When the caller
-     * triggers this on an already-running roll, the pool is *replaced* rather
-     * than added to, matching the "this is a brand new attempt" semantics.
+     * Start (or sync) a roll on the caller's board without rolling dice.
+     * Used by macros that should only press "Start roll".
      *
      * @param {{ count?: number; faces?: number; freeRolls?: number }} payload
      */
-    async apiStartRollAndRoll({ count = 1, faces = DEFAULT_FACES, freeRolls = 0 } = {}) {
+    async apiStartRollOnly({ count, faces = DEFAULT_FACES, freeRolls = 0 } = {}) {
         const isGm = !!game.user.isGM;
         const targetId = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
         if (!canMutateBoard(game.user.id, targetId, isGm)) return;
@@ -814,6 +899,12 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             this.viewBoardId = targetId;
             this.selectedDieIds.clear();
             await this.render(true);
+        }
+
+        const maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
+        if (count !== undefined && count !== null) {
+            const n = Math.max(0, Math.min(Math.floor(Number(count) || 0), maxDice));
+            this._rollCountToolbarPref = n;
         }
 
         const fr = Math.max(0, Math.floor(Number(freeRolls) || 0));
@@ -826,8 +917,6 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 payload: { faces, freeRolls: fr },
             });
         } else {
-            // A roll is already running -- update the free-rolls pool to match
-            // the new attempt so the player isn't stuck with stale values.
             commitMutation({
                 type: "setFreeRolls",
                 actorUserId: game.user.id,
@@ -835,7 +924,17 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 payload: { value: fr },
             });
         }
+    }
 
+    /**
+     * Same as {@link apiStartRollOnly} then evaluates and commits `rollNew`.
+     *
+     * @param {{ count?: number; faces?: number; freeRolls?: number }} payload
+     */
+    async apiStartRollAndRollDice({ count = 1, faces = DEFAULT_FACES, freeRolls = 0 } = {}) {
+        await this.apiStartRollOnly({ count, faces, freeRolls });
+        const isGm = !!game.user.isGM;
+        const targetId = isGm ? GM_PRIVATE_BOARD_ID : game.user.id;
         await this._rollNewOnBoard(targetId, count, faces);
     }
 
@@ -903,19 +1002,23 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     /**
-     * @param {{ ids: string[]; to: "zone"|"table"; zoneNewRow?: boolean; zoneRowId?: string }} payload
+     * @param {{ ids: string[]; to: "zone"|"table"; zoneNewRow?: boolean; zoneRowId?: string; newZoneRowId?: string }} payload
      */
     _commitMoveDice(payload) {
         const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
-        if (payload.to === "zone") {
-            for (const id of payload.ids) this.selectedDieIds.delete(id);
+        const pl = { ...payload };
+        if (pl.to === "zone" && pl.zoneNewRow && !String(pl.newZoneRowId ?? "").trim()) {
+            pl.newZoneRowId = foundry.utils.randomID();
+        }
+        if (pl.to === "zone") {
+            for (const id of pl.ids) this.selectedDieIds.delete(id);
         }
         commitMutation({
             type: "moveDice",
             actorUserId: game.user.id,
             targetBoardId: boardId,
-            payload,
+            payload: pl,
         });
     }
 

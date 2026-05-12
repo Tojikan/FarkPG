@@ -18,7 +18,8 @@ After **`ready`**, or any time (open is deferred until `ready` if needed):
 - `await game.modules.get("virtual-dice-table")?.api?.openVirtualTable()` — or `.open()` (alias). Optional tab: `openVirtualTable({ boardId })` where `boardId` is a **user id**, **`__vdt_shared__`**, **`__vdt_overview__`**, or **`__gm_private__`**. Requesting **`__gm_private__`** opens **Overview** (not the hidden GM tab).
 - `globalThis.virtualDiceTable` exposes the same API.
 - `await api.postOpenBoardChatButton({ boardId })` — posts a **chat button**; clicking it runs `openVirtualTable` for that tab (GM private → Overview). Optional `label` overrides the button text.
-- `await game.modules.get("virtual-dice-table")?.api?.openStartRollAndRoll({ count, faces, freeRolls })` — open, start a roll on the caller's own board (GM private for GMs), and roll `count` dice of `faces` sides in one step. Awaitable; use in macros with **Asynchronous = ON**. `count` is clamped to the `maxDice` setting and `faces` is filtered to `{4, 6, 8, 10, 12, 20}` (defaults to `DEFAULT_FACES`). Optional `freeRolls` seeds the board's **Free Rolls** input -- each double-click reroll decrements it by 1 (floor 0).
+- `await game.modules.get("virtual-dice-table")?.api?.openStartRollAndRoll({ count, faces, freeRolls })` — open and **start** a roll only (same as clicking **Start roll**); does **not** roll dice. Sets toolbar count / faces / free rolls when passed. Awaitable; **Asynchronous = ON** in macros.
+- `await game.modules.get("virtual-dice-table")?.api?.openStartRollAndRollDice({ count, faces, freeRolls })` — open, start if needed, then **Roll** `count` dice (`faces`, optional `freeRolls` pool). Use when you want the old one-step macro behavior.
 
 On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", api)`** so a system can `Hooks.on("virtualDiceTableReady", (api) => { ... })` and store `api` for a toolbar button.
 
@@ -41,7 +42,7 @@ On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", 
 
 `rollNew`, `startRoll`, `endRoll`, `rerollDieIds`, `moveDice`, `resetScore`, plus `syncFullState` / `requestFullSync` for GM full push.
 
-`moveDice`: `to` is `"table"` or `"zone"`; for zone use `zoneNewRow` and/or `zoneRowId`.
+`moveDice`: `to` is `"table"` or `"zone"`; for zone use `zoneNewRow` and/or `zoneRowId`. New rows must send `newZoneRowId` (generated once by the mutator) so all clients share the same row id.
 
 ## Sorting
 

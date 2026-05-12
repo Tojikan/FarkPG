@@ -297,13 +297,18 @@ export function applySocketMessage(state, msg) {
                     const row = board.zoneRows.find((r) => r.id === zoneRowId);
                     if (row) row.dice.push(...moving);
                     else
+                        // Keep sender's row id so out-of-order socket applies stay
+                        // convergent (avoids one die per row on other clients).
                         board.zoneRows.push({
-                            id: foundry.utils.randomID(),
+                            id: zoneRowId,
                             dice: [...moving],
                         });
                 } else {
+                    // `newZoneRowId` must come from the mutator's payload so every
+                    // client creates the same row id (randomID() here would fork per peer).
+                    const nid = msg.payload?.newZoneRowId ? String(msg.payload.newZoneRowId).trim() : "";
                     board.zoneRows.push({
-                        id: foundry.utils.randomID(),
+                        id: nid || foundry.utils.randomID(),
                         dice: [...moving],
                     });
                 }
