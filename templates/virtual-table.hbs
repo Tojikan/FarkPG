@@ -11,6 +11,10 @@
         {{#if overviewPanels.length}}
         {{#each overviewPanels}}
         <article class="vdt-overview-card vdt-overview-card--open-board" data-overview-open-board="{{boardId}}" title="{{vdtL10n 'overviewOpenBoardHint'}}">
+            <div class="vdt-overview-roll-count" title="{{vdtL10n 'sessionRollCountHint'}}" aria-label="{{vdtL10n 'sessionRollCount'}}: {{sessionRollCount}}">
+                <span class="vdt-overview-roll-count-label">{{vdtL10n "sessionRollCount"}}</span>
+                <span class="vdt-overview-roll-count-value">{{sessionRollCount}}</span>
+            </div>
             <header class="vdt-overview-card-head">{{label}}</header>
             <div class="vdt-overview-card-body">
                 <div class="vdt-overview-board">
@@ -88,6 +92,10 @@
             <label class="vdt-field vdt-field-free-rolls" title="{{vdtL10n 'freeRollsHint'}}">{{vdtL10n "freeRolls"}}
                 <input type="number" name="vdt-free-rolls" min="0" step="1" value="{{freeRolls}}" {{#unless canMutate}}disabled{{/unless}} />
             </label>
+            <div class="vdt-session-roll-stat" title="{{vdtL10n 'sessionRollCountHint'}}">
+                <span class="vdt-session-roll-label">{{vdtL10n "sessionRollCount"}}</span>
+                <span class="vdt-session-roll-value">{{sessionRollCount}}</span>
+            </div>
         </div>
         {{#if canMutate}}
         <div class="vdt-toolbar-end">
@@ -120,6 +128,10 @@
             <div class="vdt-roll-footer">
                 <button type="button" class="vdt-btn" data-action="reroll-selected"
                     title="{{vdtL10n 'rerollSelected'}}"><i class="fa-solid fa-rotate-right"></i> {{vdtL10n "rerollSelected"}}</button>
+                {{#if showUseFreeRoll}}
+                <button type="button" class="vdt-btn vdt-btn-use-free-roll" data-action="use-free-roll"
+                    title="{{vdtL10n 'useFreeRollHint'}}"><i class="fa-solid fa-gift"></i> {{vdtL10n "useFreeRoll"}}</button>
+                {{/if}}
             </div>
             {{/if}}
         </div>

@@ -260,13 +260,27 @@
 
 .virtual-dice-table .vdt-roll-footer {
     flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
     padding: 0.5rem 0.35rem 0.15rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     margin-top: 0.25rem;
 }
 
 .virtual-dice-table .vdt-roll-footer .vdt-btn {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.virtual-dice-table .vdt-btn-use-free-roll {
+    border-color: var(--color-warm-2, #e79c17);
+    background: rgba(231, 156, 23, 0.12);
+}
+
+.virtual-dice-table .vdt-btn-use-free-roll:hover:not(:disabled) {
+    filter: brightness(1.1);
+    background: rgba(231, 156, 23, 0.22);
 }
 
 .virtual-dice-table .vdt-region-score {
@@ -547,11 +561,73 @@
     font-size: var(--font-size-13, 13px);
 }
 
+.virtual-dice-table .vdt-session-roll-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.1rem;
+    min-width: 2.75rem;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid var(--color-border-light-primary, #444);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.virtual-dice-table .vdt-session-roll-label {
+    font-size: var(--font-size-10, 10px);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+    line-height: 1.1;
+}
+
+.virtual-dice-table .vdt-session-roll-value {
+    font-size: var(--font-size-16, 16px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--color-text-light-emphasis, #fff);
+}
+
 .virtual-dice-table .vdt-overview-card {
+    position: relative;
     border: 1px solid var(--color-border-light-primary, #444);
     border-radius: 6px;
     padding: 0.5rem;
     background: rgba(0, 0, 0, 0.2);
+}
+
+.virtual-dice-table .vdt-overview-roll-count {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.4rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    background: var(--color-bg-option-active, #333);
+    border: 1px solid var(--color-border-light-primary, #555);
+    pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.virtual-dice-table .vdt-overview-roll-count-label {
+    font-size: var(--font-size-10, 10px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.75;
+    line-height: 1.1;
+}
+
+.virtual-dice-table .vdt-overview-roll-count-value {
+    font-size: var(--font-size-12, 12px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
 }
 
 .virtual-dice-table .vdt-overview-card--open-board {
