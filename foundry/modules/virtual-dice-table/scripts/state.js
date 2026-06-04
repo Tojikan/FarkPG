@@ -304,8 +304,11 @@ export function applySocketMessage(state, msg) {
                             dice: [...moving],
                         });
                 } else {
+                    // `newZoneRowId` must come from the mutator's payload so every
+                    // client creates the same row id (randomID() here would fork per peer).
+                    const nid = msg.payload?.newZoneRowId ? String(msg.payload.newZoneRowId).trim() : "";
                     board.zoneRows.push({
-                        id: foundry.utils.randomID(),
+                        id: nid || foundry.utils.randomID(),
                         dice: [...moving],
                     });
                 }

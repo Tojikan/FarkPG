@@ -67,7 +67,11 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         this._dieSelectDelayTimer = null;
         /** @type {Set<string> | null} Dice to animate after next render */
         this._pendingRollAnimIds = null;
-        /** Last count from API / macro; drives toolbar count until roll ends. */
+        /**
+         * Last "Roll" count from the toolbar or API (not tableDice.length).
+         * Keeps the count field stable when dice move to score or after Reroll Board.
+         * @type {number | undefined}
+         */
         this._rollCountToolbarPref = undefined;
     }
 
@@ -272,6 +276,9 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         data.faces = board.faces;
         data.canMutate = canMutateBoard(game.user.id, safeViewId, isGm);
         data.spectatorHint = rollInProgress && !data.canMutate;
+        if (data.spectatorHint) {
+            data.spectatorOwnBoardId = game.user.id;
+        }
         data.isGm = isGm;
         data.selectedCount = selectedArr.length;
         data.maxDice = game.settings.get(MODULE_ID, "maxDice") ?? 50;
@@ -331,6 +338,42 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             () => void this._rerollSelected(),
             { signal },
         );
+        root.querySelector("[data-action='vdt-return-overview']")?.addEventListener(
+            "click",
+            (ev) => {
+                ev.preventDefault();
+                this.viewBoardId = OVERVIEW_TAB_ID;
+                this.selectedDieIds.clear();
+                void this.render(true);
+            },
+            { signal },
+        );
+        root.querySelector("[data-action='vdt-open-own-board']")?.addEventListener(
+            "click",
+            (ev) => {
+                ev.preventDefault();
+                const raw = ev.currentTarget?.dataset?.boardId;
+                const id = raw != null && String(raw).trim() ? String(raw).trim() : game.user.id;
+                if (!this.navigateToBoard(id)) return;
+                void this.render(true);
+            },
+            { signal },
+        );
+        root.querySelectorAll("[data-overview-open-board]").forEach((el) => {
+            el.addEventListener(
+                "click",
+                (ev) => {
+                    if (ev.target.closest("a, button, input, select, textarea")) return;
+                    const id = el.dataset.overviewOpenBoard;
+                    if (!id) return;
+                    if (!canViewBoard(id, game.user.isGM)) return;
+                    this.viewBoardId = id;
+                    this.selectedDieIds.clear();
+                    void this.render(true);
+                },
+                { signal },
+            );
+        });
         root.querySelector('[name="vdt-free-rolls"]')?.addEventListener(
             "change",
             (ev) => this._onFreeRollsInputChange(ev),
@@ -959,19 +1002,23 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     /**
-     * @param {{ ids: string[]; to: "zone"|"table"; zoneNewRow?: boolean; zoneRowId?: string }} payload
+     * @param {{ ids: string[]; to: "zone"|"table"; zoneNewRow?: boolean; zoneRowId?: string; newZoneRowId?: string }} payload
      */
     _commitMoveDice(payload) {
         const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
-        if (payload.to === "zone") {
-            for (const id of payload.ids) this.selectedDieIds.delete(id);
+        const pl = { ...payload };
+        if (pl.to === "zone" && pl.zoneNewRow && !String(pl.newZoneRowId ?? "").trim()) {
+            pl.newZoneRowId = foundry.utils.randomID();
+        }
+        if (pl.to === "zone") {
+            for (const id of pl.ids) this.selectedDieIds.delete(id);
         }
         commitMutation({
             type: "moveDice",
             actorUserId: game.user.id,
             targetBoardId: boardId,
-            payload,
+            payload: pl,
         });
     }
 

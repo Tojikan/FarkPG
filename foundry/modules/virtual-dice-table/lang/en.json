@@ -4,7 +4,9 @@
     "virtual-dice-table.gmPrivateBoard": "GM (private)",
     "virtual-dice-table.sharedBoard": "Shared board",
     "virtual-dice-table.boardPickerAria": "Board picker",
-    "virtual-dice-table.spectatorHint": "You are viewing another player's board; switch to your own tab to roll or change dice.",
+    "virtual-dice-table.spectatorHintPrefix": "You are viewing another player's board; ",
+    "virtual-dice-table.spectatorOwnTabLink": "switch to your own tab",
+    "virtual-dice-table.spectatorHintSuffix": " to roll or change dice.",
     "virtual-dice-table.count": "Count",
     "virtual-dice-table.freeRolls": "Free Rolls",
     "virtual-dice-table.freeRollsHint": "Free re-rolls available. Each double-click re-roll consumes one (down to 0).",
@@ -29,5 +31,7 @@
     "virtual-dice-table.chatOpenGmPrivateAsOverview": "Open dice table (overview)",
     "virtual-dice-table.chatOpenSharedBoard": "Open shared dice table",
     "virtual-dice-table.chatOpenMyBoard": "Open my dice table",
-    "virtual-dice-table.chatOpenUserBoard": "Open {name}'s dice table"
+    "virtual-dice-table.chatOpenUserBoard": "Open {name}'s dice table",
+    "virtual-dice-table.spectatorReturnOverview": "Return to Overview",
+    "virtual-dice-table.overviewOpenBoardHint": "Click to open this board"
 }
