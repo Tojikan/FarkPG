@@ -186,8 +186,15 @@
     gap: 0.3rem;
 }
 
+/* HP and EXP each take an equal flexible slot; Move is fixed-width and gets an
+ * extra left margin to put visible breathing room between EXP and Move. */
 .farkpg-resources-primary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 76px;
+    column-gap: 0.45rem;
+}
+
+.farkpg-resources-primary .farkpg-resource-move {
+    margin-left: 0.4rem;
 }
 
 .farkpg-resource {
@@ -240,6 +247,35 @@
     height: 1.45rem;
     line-height: 1.35rem;
     cursor: help;
+}
+
+/* HP Max input lives in the header but is intentionally subdued so it reads
+ * as a secondary value alongside the active HP figure. Picks up full focus
+ * styling when the user clicks into it so editing remains obvious. */
+.farkpg-resource-max-input {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--farkpg-muted);
+    background: var(--farkpg-panel-bg-2);
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    padding: 1px 3px;
+    height: 1.45rem;
+    line-height: 1.35rem;
+    opacity: 0.78;
+    transition: opacity 0.12s ease, color 0.12s ease;
+}
+
+.farkpg-resource-max-input:hover {
+    opacity: 0.95;
+}
+
+.farkpg-resource-max-input:focus {
+    opacity: 1;
+    color: var(--farkpg-text);
+    outline: none;
 }
 
 .farkpg-sep {
@@ -311,6 +347,11 @@
     position: relative;
     overflow: visible;
     margin: 0;
+}
+
+.farkpg.sheet .farkpg-ap-bar-pills .farkpg-ac-cell .farkpg-ac-chip-mid,
+.farkpg.sheet .farkpg-ap-bar-pills .farkpg-ac-cell .farkpg-ac-icon-hit {
+    overflow: visible;
 }
 
 .farkpg.sheet .farkpg-ap-bar-pills .farkpg-ap-drawer-read-max {
@@ -470,7 +511,98 @@
 }
 
 .farkpg-ap-drawer-window {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
     padding: 0.35rem 0.45rem;
+}
+
+/* Health editor sits above the AP cells. Two cells side-by-side: the current
+ * health fraction on the left and a +/- quick-adjust on the right. */
+.farkpg-drawer-health-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.farkpg-drawer-health-cell,
+.farkpg-drawer-health-adjust {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    background: var(--farkpg-panel-bg);
+}
+
+.farkpg-drawer-health-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.farkpg-drawer-health-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-panel-bg-2);
+    color: #d9534f;
+    font-size: 0.95rem;
+}
+
+.farkpg-drawer-health-inp {
+    width: 3rem;
+}
+
+.farkpg-drawer-health-adjust-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.farkpg-drawer-health-delta {
+    width: 2.75rem;
+}
+
+.farkpg-drawer-health-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-panel-bg-2);
+    color: var(--farkpg-text);
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
+}
+
+.farkpg-drawer-health-btn:hover,
+.farkpg-drawer-health-btn:focus-visible {
+    border-color: var(--farkpg-accent);
+    background: var(--farkpg-accent-soft);
+    outline: none;
+}
+
+.farkpg-drawer-health-btn-minus {
+    color: #d9534f;
+}
+
+.farkpg-drawer-health-btn-plus {
+    color: #6abf69;
 }
 
 .farkpg-ap-drawer-row {
@@ -596,30 +728,597 @@
     color: var(--farkpg-muted);
 }
 
-.farkpg-config-custom-ap {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--farkpg-border);
+.farkpg-read-max-muted,
+.farkpg-header-read-max {
+    font-weight: 600;
+    color: var(--farkpg-muted);
+    opacity: 0.72;
+    font-size: 0.78rem;
 }
 
-.farkpg-config-custom-ap-header {
+.farkpg-header-resources-strip .farkpg-resource-fields {
+    flex-wrap: nowrap;
+}
+
+.farkpg-header-resource-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.farkpg-resource-delta-anchor {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Delta icon: empty padded circle; icon centered with absolute positioning. */
+.farkpg-header-icon-hit {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--farkpg-panel-bg-2);
+    box-shadow: 0 0 0 1px var(--farkpg-border);
+    line-height: 0;
+    vertical-align: middle;
+    cursor: pointer;
+    transition:
+        color 0.12s ease,
+        background 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.farkpg-header-icon-hit i {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.72rem;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.farkpg-header-hp-delta,
+.farkpg-header-icon-hit--hp {
+    color: #d9534f;
+}
+
+.farkpg-header-hp-delta:hover,
+.farkpg-drawer-hp-delta-trigger:hover {
+    color: #ff7a7a;
+    box-shadow: 0 0 0 1px rgba(217, 83, 79, 0.55);
+}
+
+.farkpg-header-exp-delta,
+.farkpg-header-icon-hit--exp {
+    color: #e8c547;
+}
+
+.farkpg-header-exp-delta:hover,
+.farkpg-drawer-exp-delta-trigger:hover {
+    color: #ffe08a;
+    box-shadow: 0 0 0 1px rgba(232, 197, 71, 0.45);
+}
+
+.farkpg-header-icon-readonly {
+    cursor: default;
+    opacity: 0.85;
+}
+
+.farkpg-header-read-val,
+.farkpg-header-move-val {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--farkpg-text);
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+/* Header resource inputs: look like read-only text until focused. */
+.farkpg-header-ghost-inp {
+    flex: 0 1 auto;
+    min-width: 1.5rem;
+    max-width: 3.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--farkpg-text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--farkpg-radius);
+    padding: 1px 3px;
+    height: 1.45rem;
+    line-height: 1.35rem;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+.farkpg-header-ghost-inp:hover {
+    background: rgb(255 255 255 / 4%);
+}
+
+.farkpg-header-ghost-inp:focus,
+.farkpg-header-ghost-inp:focus-visible {
+    outline: none;
+    background: var(--farkpg-input-bg);
+    border-color: var(--farkpg-border);
+    box-shadow: 0 0 0 1px var(--farkpg-accent-soft, rgb(255 255 255 / 8%));
+}
+
+.farkpg-header-ghost-inp.farkpg-resource-max-input {
+    color: var(--farkpg-muted);
+    font-weight: 600;
+    opacity: 0.78;
+}
+
+.farkpg-header-ghost-inp.farkpg-resource-max-input:hover {
+    opacity: 0.95;
+}
+
+.farkpg-header-ghost-inp.farkpg-resource-max-input:focus,
+.farkpg-header-ghost-inp.farkpg-resource-max-input:focus-visible {
+    opacity: 1;
+    color: var(--farkpg-text);
+}
+
+.farkpg-header-move-readonly {
+    justify-content: center;
+}
+
+.farkpg-delta-popover {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 50;
+    min-width: 10rem;
+    padding: 0.4rem 0.45rem;
+    border: 4px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    background: var(--farkpg-panel-bg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.farkpg-delta-popover-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.farkpg-delta-popover-lbl {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--farkpg-muted);
+}
+
+.farkpg-delta-popover-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.35rem;
+}
+
+.farkpg-delta-popover-inp {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.85rem;
+    height: 1.55rem;
+    border-radius: var(--farkpg-radius);
+    border: 1px solid var(--farkpg-border);
+    background: var(--farkpg-input-bg);
+    color: var(--farkpg-text);
+}
+
+.farkpg-delta-popover-apply {
+    flex: 0 0 auto;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: var(--farkpg-radius);
+    border: 1px solid var(--farkpg-accent);
+    background: var(--farkpg-accent-soft);
+    color: var(--farkpg-text);
+    cursor: pointer;
+}
+
+.farkpg-drawer-resources-row {
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 0.35rem;
 }
 
-.farkpg-config-custom-ap-header h3 {
+.farkpg-drawer-res-cell {
+    flex: 1 1 12rem;
+}
+
+.farkpg-drawer-exp-inp {
+    width: 3rem;
+}
+
+.farkpg-ap-drawer-row--currency .farkpg-ap-drawer-cell {
+    min-width: 4.75rem;
+}
+
+.farkpg-ac-chip-mid {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 3.15rem;
+    overflow: visible;
+}
+
+.farkpg-ac-icon-hit {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     margin: 0;
-    font-size: 0.95rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--farkpg-radius);
+    overflow: visible;
 }
 
-.farkpg-config-hint {
-    margin: 0 0 0.5rem;
-    font-size: 0.78rem;
-    color: var(--farkpg-muted);
-    line-height: 1.35;
+.farkpg-ac-icon-hit:hover {
+    filter: brightness(1.12);
+}
+
+.farkpg-ac-icon-hit--sheet .farkpg-chip-stack--sm {
+    transform: scale(0.82);
+    transform-origin: center bottom;
+}
+
+.farkpg-chip-stack {
+    position: relative;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    width: auto;
+    /* Room for 10 stacked disc layers (layer 0–9 offsets + disc height). */
+    min-height: calc(0.28rem * 9 + 0.5rem);
+    overflow: visible;
+    pointer-events: auto;
+}
+
+.farkpg-chip-stack--sm {
+    min-height: calc(0.24rem * 9 + 0.45rem);
+    gap: 1px;
+}
+
+.farkpg-chip-column {
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    width: 1.85rem;
+    height: calc(0.28rem * 9 + 0.5rem);
+    overflow: visible;
+}
+
+.farkpg-chip-stack--sm .farkpg-chip-column {
+    width: 1.55rem;
+    height: calc(0.24rem * 9 + 0.45rem);
+}
+
+.farkpg-chip-stack--dual .farkpg-chip-column--b {
+    margin-left: 1px;
+}
+
+.farkpg-chip--disc {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--chip-layer, 0) * 0.28rem);
+    width: 1.85rem;
+    height: 0.42rem;
+    margin-left: -0.925rem;
+    border-radius: 999px;
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+        0 2px 4px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    z-index: calc(var(--chip-layer, 0) + 1);
+}
+
+.farkpg-chip-stack--sm .farkpg-chip--disc {
+    width: 1.55rem;
+    margin-left: -0.775rem;
+    height: 0.36rem;
+    bottom: calc(var(--chip-layer, 0) * 0.24rem);
+}
+
+/* Chip visibility: parent `farkpg-chips-N` shows chips 1..N; `farkpg-chips-0` hides stack. */
+.farkpg-chips .farkpg-chip {
+    display: none;
+}
+
+.farkpg-chips-0 {
+    display: none !important;
+}
+
+.farkpg-chips:not(.farkpg-chips-dual) .farkpg-chip-column--b {
+    display: none;
+}
+
+.farkpg-chips-1 .farkpg-chip--1 { display: block; }
+.farkpg-chips-2 .farkpg-chip--1,
+.farkpg-chips-2 .farkpg-chip--2 { display: block; }
+.farkpg-chips-3 .farkpg-chip--1,
+.farkpg-chips-3 .farkpg-chip--2,
+.farkpg-chips-3 .farkpg-chip--3 { display: block; }
+.farkpg-chips-4 .farkpg-chip--1,
+.farkpg-chips-4 .farkpg-chip--2,
+.farkpg-chips-4 .farkpg-chip--3,
+.farkpg-chips-4 .farkpg-chip--4 { display: block; }
+.farkpg-chips-5 .farkpg-chip--1,
+.farkpg-chips-5 .farkpg-chip--2,
+.farkpg-chips-5 .farkpg-chip--3,
+.farkpg-chips-5 .farkpg-chip--4,
+.farkpg-chips-5 .farkpg-chip--5 { display: block; }
+.farkpg-chips-6 .farkpg-chip--1,
+.farkpg-chips-6 .farkpg-chip--2,
+.farkpg-chips-6 .farkpg-chip--3,
+.farkpg-chips-6 .farkpg-chip--4,
+.farkpg-chips-6 .farkpg-chip--5,
+.farkpg-chips-6 .farkpg-chip--6 { display: block; }
+.farkpg-chips-7 .farkpg-chip--1,
+.farkpg-chips-7 .farkpg-chip--2,
+.farkpg-chips-7 .farkpg-chip--3,
+.farkpg-chips-7 .farkpg-chip--4,
+.farkpg-chips-7 .farkpg-chip--5,
+.farkpg-chips-7 .farkpg-chip--6,
+.farkpg-chips-7 .farkpg-chip--7 { display: block; }
+.farkpg-chips-8 .farkpg-chip--1,
+.farkpg-chips-8 .farkpg-chip--2,
+.farkpg-chips-8 .farkpg-chip--3,
+.farkpg-chips-8 .farkpg-chip--4,
+.farkpg-chips-8 .farkpg-chip--5,
+.farkpg-chips-8 .farkpg-chip--6,
+.farkpg-chips-8 .farkpg-chip--7,
+.farkpg-chips-8 .farkpg-chip--8 { display: block; }
+.farkpg-chips-9 .farkpg-chip--1,
+.farkpg-chips-9 .farkpg-chip--2,
+.farkpg-chips-9 .farkpg-chip--3,
+.farkpg-chips-9 .farkpg-chip--4,
+.farkpg-chips-9 .farkpg-chip--5,
+.farkpg-chips-9 .farkpg-chip--6,
+.farkpg-chips-9 .farkpg-chip--7,
+.farkpg-chips-9 .farkpg-chip--8,
+.farkpg-chips-9 .farkpg-chip--9 { display: block; }
+.farkpg-chips-10 .farkpg-chip--1,
+.farkpg-chips-10 .farkpg-chip--2,
+.farkpg-chips-10 .farkpg-chip--3,
+.farkpg-chips-10 .farkpg-chip--4,
+.farkpg-chips-10 .farkpg-chip--5,
+.farkpg-chips-10 .farkpg-chip--6,
+.farkpg-chips-10 .farkpg-chip--7,
+.farkpg-chips-10 .farkpg-chip--8,
+.farkpg-chips-10 .farkpg-chip--9,
+.farkpg-chips-10 .farkpg-chip--10 { display: block; }
+.farkpg-chips-11 .farkpg-chip--1,
+.farkpg-chips-11 .farkpg-chip--2,
+.farkpg-chips-11 .farkpg-chip--3,
+.farkpg-chips-11 .farkpg-chip--4,
+.farkpg-chips-11 .farkpg-chip--5,
+.farkpg-chips-11 .farkpg-chip--6,
+.farkpg-chips-11 .farkpg-chip--7,
+.farkpg-chips-11 .farkpg-chip--8,
+.farkpg-chips-11 .farkpg-chip--9,
+.farkpg-chips-11 .farkpg-chip--10,
+.farkpg-chips-11 .farkpg-chip--11 { display: block; }
+.farkpg-chips-12 .farkpg-chip--1,
+.farkpg-chips-12 .farkpg-chip--2,
+.farkpg-chips-12 .farkpg-chip--3,
+.farkpg-chips-12 .farkpg-chip--4,
+.farkpg-chips-12 .farkpg-chip--5,
+.farkpg-chips-12 .farkpg-chip--6,
+.farkpg-chips-12 .farkpg-chip--7,
+.farkpg-chips-12 .farkpg-chip--8,
+.farkpg-chips-12 .farkpg-chip--9,
+.farkpg-chips-12 .farkpg-chip--10,
+.farkpg-chips-12 .farkpg-chip--11,
+.farkpg-chips-12 .farkpg-chip--12 { display: block; }
+.farkpg-chips-13 .farkpg-chip--1,
+.farkpg-chips-13 .farkpg-chip--2,
+.farkpg-chips-13 .farkpg-chip--3,
+.farkpg-chips-13 .farkpg-chip--4,
+.farkpg-chips-13 .farkpg-chip--5,
+.farkpg-chips-13 .farkpg-chip--6,
+.farkpg-chips-13 .farkpg-chip--7,
+.farkpg-chips-13 .farkpg-chip--8,
+.farkpg-chips-13 .farkpg-chip--9,
+.farkpg-chips-13 .farkpg-chip--10,
+.farkpg-chips-13 .farkpg-chip--11,
+.farkpg-chips-13 .farkpg-chip--12,
+.farkpg-chips-13 .farkpg-chip--13 { display: block; }
+.farkpg-chips-14 .farkpg-chip--1,
+.farkpg-chips-14 .farkpg-chip--2,
+.farkpg-chips-14 .farkpg-chip--3,
+.farkpg-chips-14 .farkpg-chip--4,
+.farkpg-chips-14 .farkpg-chip--5,
+.farkpg-chips-14 .farkpg-chip--6,
+.farkpg-chips-14 .farkpg-chip--7,
+.farkpg-chips-14 .farkpg-chip--8,
+.farkpg-chips-14 .farkpg-chip--9,
+.farkpg-chips-14 .farkpg-chip--10,
+.farkpg-chips-14 .farkpg-chip--11,
+.farkpg-chips-14 .farkpg-chip--12,
+.farkpg-chips-14 .farkpg-chip--13,
+.farkpg-chips-14 .farkpg-chip--14 { display: block; }
+.farkpg-chips-15 .farkpg-chip--1,
+.farkpg-chips-15 .farkpg-chip--2,
+.farkpg-chips-15 .farkpg-chip--3,
+.farkpg-chips-15 .farkpg-chip--4,
+.farkpg-chips-15 .farkpg-chip--5,
+.farkpg-chips-15 .farkpg-chip--6,
+.farkpg-chips-15 .farkpg-chip--7,
+.farkpg-chips-15 .farkpg-chip--8,
+.farkpg-chips-15 .farkpg-chip--9,
+.farkpg-chips-15 .farkpg-chip--10,
+.farkpg-chips-15 .farkpg-chip--11,
+.farkpg-chips-15 .farkpg-chip--12,
+.farkpg-chips-15 .farkpg-chip--13,
+.farkpg-chips-15 .farkpg-chip--14,
+.farkpg-chips-15 .farkpg-chip--15 { display: block; }
+.farkpg-chips-16 .farkpg-chip--1,
+.farkpg-chips-16 .farkpg-chip--2,
+.farkpg-chips-16 .farkpg-chip--3,
+.farkpg-chips-16 .farkpg-chip--4,
+.farkpg-chips-16 .farkpg-chip--5,
+.farkpg-chips-16 .farkpg-chip--6,
+.farkpg-chips-16 .farkpg-chip--7,
+.farkpg-chips-16 .farkpg-chip--8,
+.farkpg-chips-16 .farkpg-chip--9,
+.farkpg-chips-16 .farkpg-chip--10,
+.farkpg-chips-16 .farkpg-chip--11,
+.farkpg-chips-16 .farkpg-chip--12,
+.farkpg-chips-16 .farkpg-chip--13,
+.farkpg-chips-16 .farkpg-chip--14,
+.farkpg-chips-16 .farkpg-chip--15,
+.farkpg-chips-16 .farkpg-chip--16 { display: block; }
+.farkpg-chips-17 .farkpg-chip--1,
+.farkpg-chips-17 .farkpg-chip--2,
+.farkpg-chips-17 .farkpg-chip--3,
+.farkpg-chips-17 .farkpg-chip--4,
+.farkpg-chips-17 .farkpg-chip--5,
+.farkpg-chips-17 .farkpg-chip--6,
+.farkpg-chips-17 .farkpg-chip--7,
+.farkpg-chips-17 .farkpg-chip--8,
+.farkpg-chips-17 .farkpg-chip--9,
+.farkpg-chips-17 .farkpg-chip--10,
+.farkpg-chips-17 .farkpg-chip--11,
+.farkpg-chips-17 .farkpg-chip--12,
+.farkpg-chips-17 .farkpg-chip--13,
+.farkpg-chips-17 .farkpg-chip--14,
+.farkpg-chips-17 .farkpg-chip--15,
+.farkpg-chips-17 .farkpg-chip--16,
+.farkpg-chips-17 .farkpg-chip--17 { display: block; }
+.farkpg-chips-18 .farkpg-chip--1,
+.farkpg-chips-18 .farkpg-chip--2,
+.farkpg-chips-18 .farkpg-chip--3,
+.farkpg-chips-18 .farkpg-chip--4,
+.farkpg-chips-18 .farkpg-chip--5,
+.farkpg-chips-18 .farkpg-chip--6,
+.farkpg-chips-18 .farkpg-chip--7,
+.farkpg-chips-18 .farkpg-chip--8,
+.farkpg-chips-18 .farkpg-chip--9,
+.farkpg-chips-18 .farkpg-chip--10,
+.farkpg-chips-18 .farkpg-chip--11,
+.farkpg-chips-18 .farkpg-chip--12,
+.farkpg-chips-18 .farkpg-chip--13,
+.farkpg-chips-18 .farkpg-chip--14,
+.farkpg-chips-18 .farkpg-chip--15,
+.farkpg-chips-18 .farkpg-chip--16,
+.farkpg-chips-18 .farkpg-chip--17,
+.farkpg-chips-18 .farkpg-chip--18 { display: block; }
+.farkpg-chips-19 .farkpg-chip--1,
+.farkpg-chips-19 .farkpg-chip--2,
+.farkpg-chips-19 .farkpg-chip--3,
+.farkpg-chips-19 .farkpg-chip--4,
+.farkpg-chips-19 .farkpg-chip--5,
+.farkpg-chips-19 .farkpg-chip--6,
+.farkpg-chips-19 .farkpg-chip--7,
+.farkpg-chips-19 .farkpg-chip--8,
+.farkpg-chips-19 .farkpg-chip--9,
+.farkpg-chips-19 .farkpg-chip--10,
+.farkpg-chips-19 .farkpg-chip--11,
+.farkpg-chips-19 .farkpg-chip--12,
+.farkpg-chips-19 .farkpg-chip--13,
+.farkpg-chips-19 .farkpg-chip--14,
+.farkpg-chips-19 .farkpg-chip--15,
+.farkpg-chips-19 .farkpg-chip--16,
+.farkpg-chips-19 .farkpg-chip--17,
+.farkpg-chips-19 .farkpg-chip--18,
+.farkpg-chips-19 .farkpg-chip--19 { display: block; }
+.farkpg-chips-20 .farkpg-chip--1,
+.farkpg-chips-20 .farkpg-chip--2,
+.farkpg-chips-20 .farkpg-chip--3,
+.farkpg-chips-20 .farkpg-chip--4,
+.farkpg-chips-20 .farkpg-chip--5,
+.farkpg-chips-20 .farkpg-chip--6,
+.farkpg-chips-20 .farkpg-chip--7,
+.farkpg-chips-20 .farkpg-chip--8,
+.farkpg-chips-20 .farkpg-chip--9,
+.farkpg-chips-20 .farkpg-chip--10,
+.farkpg-chips-20 .farkpg-chip--11,
+.farkpg-chips-20 .farkpg-chip--12,
+.farkpg-chips-20 .farkpg-chip--13,
+.farkpg-chips-20 .farkpg-chip--14,
+.farkpg-chips-20 .farkpg-chip--15,
+.farkpg-chips-20 .farkpg-chip--16,
+.farkpg-chips-20 .farkpg-chip--17,
+.farkpg-chips-20 .farkpg-chip--18,
+.farkpg-chips-20 .farkpg-chip--19,
+.farkpg-chips-20 .farkpg-chip--20 { display: block; }
+
+/* Raw pool above 20: full stack + subtle cap indicator. */
+.farkpg-chips-over.farkpg-chips-20 {
+    filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.45));
+}
+
+.farkpg-chip-column--a .farkpg-chip--1 { --chip-layer: 0; }
+.farkpg-chip-column--a .farkpg-chip--2 { --chip-layer: 1; }
+.farkpg-chip-column--a .farkpg-chip--3 { --chip-layer: 2; }
+.farkpg-chip-column--a .farkpg-chip--4 { --chip-layer: 3; }
+.farkpg-chip-column--a .farkpg-chip--5 { --chip-layer: 4; }
+.farkpg-chip-column--a .farkpg-chip--6 { --chip-layer: 5; }
+.farkpg-chip-column--a .farkpg-chip--7 { --chip-layer: 6; }
+.farkpg-chip-column--a .farkpg-chip--8 { --chip-layer: 7; }
+.farkpg-chip-column--a .farkpg-chip--9 { --chip-layer: 8; }
+.farkpg-chip-column--a .farkpg-chip--10 { --chip-layer: 9; }
+.farkpg-chip-column--b .farkpg-chip--11 { --chip-layer: 0; }
+.farkpg-chip-column--b .farkpg-chip--12 { --chip-layer: 1; }
+.farkpg-chip-column--b .farkpg-chip--13 { --chip-layer: 2; }
+.farkpg-chip-column--b .farkpg-chip--14 { --chip-layer: 3; }
+.farkpg-chip-column--b .farkpg-chip--15 { --chip-layer: 4; }
+.farkpg-chip-column--b .farkpg-chip--16 { --chip-layer: 5; }
+.farkpg-chip-column--b .farkpg-chip--17 { --chip-layer: 6; }
+.farkpg-chip-column--b .farkpg-chip--18 { --chip-layer: 7; }
+.farkpg-chip-column--b .farkpg-chip--19 { --chip-layer: 8; }
+.farkpg-chip-column--b .farkpg-chip--20 { --chip-layer: 9; }
+
+.farkpg-chip-tone--white .farkpg-chip--disc {
+    background: linear-gradient(180deg, #f4f4f4 0%, #c8c8c8 100%);
+}
+.farkpg-chip-tone--red .farkpg-chip--disc {
+    background: linear-gradient(180deg, #e85a5a 0%, #9a1e1e 100%);
+}
+.farkpg-chip-tone--blue .farkpg-chip--disc {
+    background: linear-gradient(180deg, #5a8fe8 0%, #1e3f9a 100%);
+}
+.farkpg-chip-tone--orange .farkpg-chip--disc {
+    background: linear-gradient(180deg, #f0a040 0%, #a85a0a 100%);
+}
+.farkpg-chip-tone--black .farkpg-chip--disc {
+    background: linear-gradient(180deg, #4a4a52 0%, #0f0f12 100%);
+}
+
+.farkpg-ac-label--white {
+    color: #e8e8ea;
+}
+.farkpg-ac-label--red {
+    color: #f08080;
+}
+.farkpg-ac-label--blue {
+    color: #8ab4ff;
+}
+.farkpg-ac-label--orange {
+    color: #ffb86b;
+}
+.farkpg-ac-label--black {
+    color: #b0b0b8;
 }
 
 .farkpg-custom-ap-list {
@@ -1913,7 +2612,8 @@ input.farkpg-skill-name:focus {
     font-size: 0.78rem;
     line-height: 1.3;
     color: var(--card-muted);
-    padding: 6px 8px 0;
+    padding: 6px 8px 8px;
+    margin-bottom: 4px;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -1970,8 +2670,102 @@ input.farkpg-skill-name:focus {
     letter-spacing: 0;
 }
 
-.farkpg-card-stat-ammo {
-    grid-template-columns: 16px auto minmax(0, 1fr);
+/* Combined ammo + reload stat. Each row keeps its icon + label flush left and
+ * pushes values / controls to the right. */
+.farkpg-card-stat-ammo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 6px;
+}
+
+.farkpg-card-ammo-counter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    min-width: 0;
+}
+
+.farkpg-card-ammo-counter > i {
+    color: var(--card-accent);
+    font-size: 0.85rem;
+    width: 16px;
+    text-align: center;
+}
+
+.farkpg-card-ammo-counter .farkpg-card-stat-label {
+    flex: 0 0 auto;
+}
+
+.farkpg-card-ammo-counter .farkpg-card-stat-value {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+/* Reload sub-row. Icon + "Reload" caption sit flush left; the source box and
+ * the reload action button are pushed to the far right via `margin-left: auto`
+ * on the label, leaving a flexible gap between the two groups. */
+.farkpg-card-reload-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+}
+
+.farkpg-card-reload-row .farkpg-card-reload-label {
+    margin-right: auto;
+}
+
+.farkpg-card-reload-row .farkpg-card-ammo-box {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+/* The reload label IS the reload button: clicking the "Reload" pill triggers
+ * the `reloadAmmo` action. Resets default button chrome and adds a subtle
+ * pill appearance with hover/disabled states. */
+.farkpg-card-reload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--card-muted);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    background: var(--card-surface-2, transparent);
+    border: 1px solid var(--card-border, transparent);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+}
+
+.farkpg-card-reload-label i {
+    color: var(--card-accent);
+    font-size: 0.78rem;
+    transition: color 0.12s ease;
+}
+
+.farkpg-card-reload-label:hover:not(:disabled),
+.farkpg-card-reload-label:focus-visible:not(:disabled) {
+    background: var(--farkpg-accent, #6b3f17);
+    border-color: var(--farkpg-accent, #6b3f17);
+    color: #f7efe0;
+    outline: none;
+}
+
+.farkpg-card-reload-label:hover:not(:disabled) i,
+.farkpg-card-reload-label:focus-visible:not(:disabled) i {
+    color: #f7efe0;
+}
+
+.farkpg-card-reload-label:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .farkpg-card-ammo-box {
@@ -1980,6 +2774,7 @@ input.farkpg-skill-name:focus {
     justify-content: space-between;
     gap: 6px;
     min-width: 0;
+    overflow: hidden;
     padding: 2px 5px 2px 2px;
     background: rgba(0, 0, 0, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1990,9 +2785,8 @@ input.farkpg-skill-name:focus {
     color: var(--card-muted);
     cursor: pointer;
     font: inherit;
-    text-align: left;
-    padding: 2px 6px;
-    gap: 5px;
+    justify-content: center;
+    padding: 2px 7px;
     transition:
         background 0.12s ease,
         border-color 0.12s ease,
@@ -2005,10 +2799,6 @@ input.farkpg-skill-name:focus {
     border-color: var(--card-accent);
     color: var(--card-text);
     outline: none;
-}
-
-.farkpg-card-ammo-empty > i {
-    color: var(--card-accent);
 }
 
 .farkpg-card-ammo-main {
@@ -2040,11 +2830,13 @@ input.farkpg-skill-name:focus {
 }
 
 .farkpg-card-ammo-name {
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--card-text);
     font-weight: 600;
+    max-width: 46px;
     min-width: 0;
 }
 
@@ -2089,6 +2881,30 @@ input.farkpg-skill-name:focus {
 .farkpg-card-use-icon-only {
     padding: 4px 7px;
     gap: 0;
+}
+
+.farkpg-card-use:disabled,
+.farkpg-card-use-broken {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+}
+
+.farkpg-card-use:disabled:hover,
+.farkpg-card-use-broken:hover {
+    filter: grayscale(0.6);
+}
+
+/* Durability row turns red while the item is broken so it's obvious at a
+ * glance why the Use / Reload buttons are disabled. */
+.farkpg-card-stat-broken {
+    color: #d9534f;
+}
+
+.farkpg-card-stat-broken .farkpg-card-stat-value,
+.farkpg-card-stat-broken .farkpg-card-stat-label,
+.farkpg-card-stat-broken i {
+    color: #d9534f;
 }
 
 .farkpg-card-use-dice,

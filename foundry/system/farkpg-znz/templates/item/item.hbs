@@ -98,17 +98,26 @@
                 {{/if}}
 
                 {{#if system.ammo.enabled}}
+                    <label data-tooltip="{{localize 'FARKPG.Items.ammoCurrentHint'}}">
+                        <span>{{localize 'FARKPG.Items.ammoCurrent'}}</span>
+                        <span class="farkpg-pair">
+                            <input type="number" name="system.ammo.value" value="{{system.ammo.value}}" min="0" step="1" />
+                            <span class="farkpg-sep">/</span>
+                            <input type="number" name="system.ammo.max" value="{{system.ammo.max}}" min="0" step="1"
+                                   data-tooltip="{{localize 'FARKPG.Items.ammoMaxHint'}}" />
+                        </span>
+                    </label>
                     <label>
                         <span>{{localize 'FARKPG.Items.ammoPerUse'}}</span>
                         <input type="number" name="system.ammo.perUse" value="{{system.ammo.perUse}}" min="1" step="1" />
                     </label>
                     <label>
-                        <span>{{localize 'FARKPG.Items.ammoItem'}}</span>
+                        <span>{{localize 'FARKPG.Items.reloadFrom'}}</span>
                         {{#if hasActor}}
-                            <select name="system.ammo.linkedConsumableId">
-                                <option value="">{{localize 'FARKPG.Items.ammoItemNone'}}</option>
+                            <select name="system.ammo.reloadFromId">
+                                <option value="">{{localize 'FARKPG.Items.reloadFromNone'}}</option>
                                 {{#each actorConsumables as |c|}}
-                                    <option value="{{c.id}}" {{#if (eq c.id ../system.ammo.linkedConsumableId)}}selected{{/if}}>{{c.name}}</option>
+                                    <option value="{{c.id}}" {{#if (eq c.id ../system.ammo.reloadFromId)}}selected{{/if}}>{{c.name}}</option>
                                 {{/each}}
                             </select>
                         {{else}}
@@ -233,7 +242,10 @@
                 <legend>{{localize 'FARKPG.Items.ability'}}</legend>
                 <label>
                     <span>{{localize 'FARKPG.Items.cost'}}</span>
-                    <input type="number" name="system.cost" value="{{system.cost}}" min="0" step="1" />
+                    <input type="text"
+                           name="system.cost"
+                           value="{{system.cost}}"
+                           placeholder="{{localize 'FARKPG.Items.costPlaceholder'}}" />
                 </label>
                 <label>
                     <span>{{localize 'FARKPG.Items.rank'}}</span>

@@ -1,9 +1,12 @@
-import { FarkPGApDrawer, buildApTypeRowsForActor } from "../ap-drawer.mjs";
+import {
+    ACTION_CURRENCY_KEYS,
+    FarkPGApDrawer,
+    buildApTypeRowsForActor,
+    ensureActorActionCurrency,
+} from "../ap-drawer.mjs";
 import { promptCharacterImport } from "../character-import.mjs";
 import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
-
-/** Preview image when a custom AP type has no `img` path set. */
-const CUSTOM_AP_IMG_FALLBACK = "icons/svg/aura.svg";
+import { bindDeltaPopover } from "../resource-delta-popover.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -18,8 +21,7 @@ function getFilePickerImplementation() {
 }
 
 /**
- * Delete one keyed entry under `system` (e.g. `system.customSkills[id]` or
- * `system.resources.customActionPoints[id]`).
+ * Delete one keyed entry under `system` (e.g. `system.customSkills[id]`).
  *
  * Prefers `ForcedDeletion.create()` on the **leaf** path — passing the
  * `ForcedDeletion` class itself (instead of an operator instance) is ignored /
@@ -69,29 +71,6 @@ function openActorPortraitPicker(actor, editable) {
 }
 
 /**
- * Open Foundry's image file picker and pass the chosen path to `onPick`.
- * @param {string} current
- * @param {(path: string) => void} onPick
- */
-function openImagePathPicker(current, onPick) {
-    const Picker = getFilePickerImplementation();
-    if (!Picker) {
-        ui.notifications?.error("FilePicker is not available in this Foundry build.");
-        return;
-    }
-    const fp = new Picker({
-        type: "image",
-        current: current ?? "",
-        callback: (path) => {
-            if (path) onPick(path);
-        },
-    });
-    void Promise.resolve(fp.render(true)).then(() => {
-        fp.bringToTop?.();
-    });
-}
-
-/**
  * Character sheet. Uses the v13 native tab system: each tab is its own PART, and the
  * `tabs` part renders Foundry's generic tab navigation template.
  */
@@ -106,17 +85,16 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             rollSkill: FarkPGCharacterSheet.#onRollSkill,
             openDiceTable: FarkPGCharacterSheet.#onOpenDiceTable,
             openApDrawer: FarkPGCharacterSheet.#onOpenApDrawer,
+            decrementApFromSheet: FarkPGCharacterSheet.#onDecrementApFromSheet,
             addCustomSkill: FarkPGCharacterSheet.#onAddCustomSkill,
             removeCustomSkill: FarkPGCharacterSheet.#onRemoveCustomSkill,
-            addCustomApType: FarkPGCharacterSheet.#onAddCustomApType,
-            promptAddCustomAp: FarkPGCharacterSheet.#onPromptAddCustomAp,
-            removeCustomApType: FarkPGCharacterSheet.#onRemoveCustomApType,
             createItem: FarkPGCharacterSheet.#onCreateItem,
             editItem: FarkPGCharacterSheet.#onEditItem,
             deleteItem: FarkPGCharacterSheet.#onDeleteItem,
             toggleEquip: FarkPGCharacterSheet.#onToggleEquip,
             useItem: FarkPGCharacterSheet.#onUseItem,
             selectAmmo: FarkPGCharacterSheet.#onSelectAmmo,
+            reloadAmmo: FarkPGCharacterSheet.#onReloadAmmo,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
             toggleSkillsEdit: FarkPGCharacterSheet.#onToggleSkillsEdit,
             editPortrait: FarkPGCharacterSheet.#onEditPortrait,
@@ -180,7 +158,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     /** @inheritDoc */
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
-        const system = this.actor.system ?? {};
+        let system = this.actor.system ?? {};
 
         context.system = system;
         context.actor = this.actor;
@@ -189,6 +167,25 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         context.biographyEditing = this._biographyEditing;
         context.skillsEditing = this._skillsEditing;
         context.tabs = this._prepareTabs("primary");
+
+        if (this.actor.canUserModify(game.user, "update")) {
+            await ensureActorActionCurrency(this.actor);
+        }
+        system = this.actor.system ?? {};
+        context.system = system;
+
+        const hpV = Math.trunc(Number(system.resources?.health?.value ?? 0));
+        const hpM = Math.trunc(Number(system.resources?.health?.max ?? 0));
+        const expV = Math.trunc(Number(system.resources?.exp?.value ?? 0));
+        const expM = Math.trunc(Number(system.resources?.exp?.max ?? 0));
+        const mv = Math.trunc(Number(system.resources?.movement ?? 0));
+        context.resourceDisplay = {
+            hpValue: String(Number.isFinite(hpV) ? Math.max(0, hpV) : 0),
+            hpMax: String(Number.isFinite(hpM) ? Math.max(0, hpM) : 0),
+            expValue: String(Number.isFinite(expV) ? Math.max(0, expV) : 0),
+            expMax: String(Number.isFinite(expM) ? Math.max(0, expM) : 0),
+            move: String(Number.isFinite(mv) ? Math.max(0, mv) : 0),
+        };
 
         const items = this.actor.items.contents;
         const isAbility = (i) => i.type === "ability";
@@ -203,9 +200,27 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             const isConsumable = item.type === "consumable";
             const isEquipment = item.type === "equipment";
             const hasDurability = isWeapon || isEquipment;
+            // "Uses durability" = the item spends durability on every use. Cards
+            // only show the durability row for items that actually wear out
+            // (otherwise the field is just decoration). `isBroken` flips true
+            // when such an item has hit 0 durability -- rolls and actions are
+            // disabled in that state.
+            const durabilityPerUse = hasDurability ? Number(sys.durabilityPerUse ?? 0) : 0;
+            const usesDurability = durabilityPerUse > 0;
+            const durabilityValue = hasDurability ? Number(sys.durability?.value ?? 0) : 0;
+            const isBroken = usesDurability && durabilityValue <= 0;
             const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
-            const linkedAmmo = ammoEnabled && sys.ammo?.linkedConsumableId
-                ? this.actor.items.get(sys.ammo.linkedConsumableId)
+            // The weapon now holds its own loaded ammo (value/max). The
+            // "reload source" is a separate consumable that refills `value`
+            // up to `max` when the Reload button is pressed. `linkedConsumableId`
+            // is the pre-rework name we still honour when reading old data.
+            const ammoValue = ammoEnabled ? Number(sys.ammo?.value ?? 0) : 0;
+            const ammoMax = ammoEnabled ? Number(sys.ammo?.max ?? 0) : 0;
+            const reloadFromId = ammoEnabled
+                ? String(sys.ammo?.reloadFromId ?? sys.ammo?.linkedConsumableId ?? "")
+                : "";
+            const reloadSourceItem = reloadFromId
+                ? this.actor.items.get(reloadFromId)
                 : null;
 
             // Resolve attached-skill rolling: when an attached skill is set,
@@ -246,7 +261,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
              // legend.
             const consumptionBadges = [];
             if (isRollable && !iconOnlyRoll) {
-                if (isWeapon && ammoEnabled && linkedAmmo) {
+                if (isWeapon && ammoEnabled) {
                     const perUse = Math.max(1, Number(sys.ammo?.perUse ?? 1));
                     consumptionBadges.push({
                         kind: "ammo",
@@ -312,6 +327,11 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 isConsumable,
                 isEquipment,
                 hasDurability,
+                usesDurability,
+                isBroken,
+                brokenTooltip: isBroken
+                    ? game.i18n.format("FARKPG.Items.brokenTooltip", { name: item.name })
+                    : "",
                 descShort,
                 isRollable,
                 rollMultiplier: mult,
@@ -342,14 +362,45 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 attachedSkillLabel,
                 ammoEnabled,
                 ammoPerUse: ammoEnabled ? Math.max(1, Number(sys.ammo?.perUse ?? 1)) : 0,
-                linkedAmmo: linkedAmmo
+                ammoValue,
+                ammoMax,
+                reloadSource: reloadSourceItem
                     ? {
-                          id: linkedAmmo.id,
-                          name: linkedAmmo.name,
-                          img: linkedAmmo.img,
-                          qty: Number(linkedAmmo.system?.quantity?.value ?? 0),
+                          id: reloadSourceItem.id,
+                          name: reloadSourceItem.name,
+                          img: reloadSourceItem.img,
+                          qty: Number(reloadSourceItem.system?.quantity?.value ?? 0),
                       }
                     : null,
+                // Button is only hard-disabled for states the player can't
+                // act on at all (broken / no capacity / already full). Missing
+                // or empty source still leaves it enabled so the handler can
+                // fire and explain via `ui.notifications`.
+                canReload: ammoEnabled
+                    && !isBroken
+                    && ammoMax > 0
+                    && ammoValue < ammoMax,
+                reloadTooltip: ammoEnabled
+                    ? (() => {
+                          if (isBroken)
+                              return game.i18n.format("FARKPG.Items.brokenTooltip", {
+                                  name: item.name,
+                              });
+                          if (ammoMax <= 0)
+                              return game.i18n.localize("FARKPG.Items.reloadTooltipUnconfigured");
+                          if (ammoValue >= ammoMax)
+                              return game.i18n.format("FARKPG.Items.reloadTooltipFull", {
+                                  name: item.name,
+                                  value: ammoValue,
+                                  max: ammoMax,
+                              });
+                          return game.i18n.format("FARKPG.Items.reloadTooltip", {
+                              name: item.name,
+                              source: reloadSourceItem?.name ?? "—",
+                              need: ammoMax - ammoValue,
+                          });
+                      })()
+                    : "",
             };
         };
 
@@ -374,24 +425,6 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     hasDesc: descPlain.length > 0,
                 };
             });
-
-        const linkedAmmoIds = new Set(
-            context.equippedItems
-                .concat(context.inventoryItems)
-                .map((i) => i.linkedAmmo?.id)
-                .filter(Boolean),
-        );
-        context.linkedAmmoItems = items
-            .filter((i) => linkedAmmoIds.has(i.id))
-            .map((i) => ({
-                id: i.id,
-                uuid: i.uuid,
-                name: i.name,
-                img: i.img,
-                qty: Number(i.system?.quantity?.value ?? 0),
-                max: Number(i.system?.quantity?.max ?? 0),
-            }))
-            .sort((a, b) => a.name.localeCompare(b.name));
 
         const slotMaxes = this.#computeSlotMaxes();
         context.slots = {
@@ -431,25 +464,6 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     rollData: this.actor.getRollData?.() ?? {},
                 },
             );
-        }
-        if (partId === "config") {
-            const map = this.actor.system?.resources?.customActionPoints ?? {};
-            context.customApEntries = Object.entries(map)
-                .map(([id, entry]) => {
-                    const e = entry && typeof entry === "object" ? entry : {};
-                    const img = String(e.img ?? "").trim();
-                    return {
-                        id,
-                        name: String(e.name ?? ""),
-                        value: Number(e.value ?? 0),
-                        img,
-                        imgResolved: img || CUSTOM_AP_IMG_FALLBACK,
-                        nameInputName: `system.resources.customActionPoints.${id}.name`,
-                        valueInputName: `system.resources.customActionPoints.${id}.value`,
-                        imgInputName: `system.resources.customActionPoints.${id}.img`,
-                    };
-                })
-                .sort((a, b) => a.name.localeCompare(b.name));
         }
         return context;
     }
@@ -556,24 +570,60 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 }
             }
         }
-        const apBlock = foundry.utils.getProperty(data, "system.resources.actionPoints");
-        if (apBlock && typeof apBlock === "object") {
-            const maxFromData = apBlock.max;
-            const maxFromActor = Number(this.actor.system?.resources?.actionPoints?.max ?? 0);
+        const health = foundry.utils.getProperty(data, "system.resources.health");
+        if (health && typeof health === "object") {
+            const maxFromData = health.max;
+            const maxFromActor = Number(this.actor.system?.resources?.health?.max ?? 0);
             const max = maxFromData !== undefined ? Number(maxFromData) : maxFromActor;
             const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
-            if ("value" in apBlock) {
-                apBlock.value = clamp(apBlock.value, 0, finiteMax);
+            if ("value" in health) {
+                const v = Math.trunc(Number(health.value));
+                const n = Number.isFinite(v) ? v : 0;
+                health.value = finiteMax > 0 ? clamp(n, 0, finiteMax) : Math.max(0, n);
+            }
+            if ("max" in health) {
+                health.max = Math.max(0, Math.trunc(Number(health.max)) || 0);
             }
         }
-        const customAp = foundry.utils.getProperty(data, "system.resources.customActionPoints");
-        if (customAp && typeof customAp === "object") {
-            for (const entry of Object.values(customAp)) {
-                if (entry && typeof entry === "object" && "value" in entry) {
-                    const v = Number(entry.value);
-                    entry.value = Number.isFinite(v) ? Math.max(0, Math.min(99999, v)) : 0;
-                }
+        const expBlock = foundry.utils.getProperty(data, "system.resources.exp");
+        if (expBlock && typeof expBlock === "object") {
+            const maxFromData = expBlock.max;
+            const maxFromActor = Number(this.actor.system?.resources?.exp?.max ?? 0);
+            const max = maxFromData !== undefined ? Number(maxFromData) : maxFromActor;
+            const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
+            if ("value" in expBlock) {
+                const v = Math.trunc(Number(expBlock.value));
+                const n = Number.isFinite(v) ? v : 0;
+                expBlock.value = finiteMax > 0 ? clamp(n, 0, finiteMax) : Math.max(0, n);
             }
+            if ("max" in expBlock) {
+                expBlock.max = Math.max(0, Math.trunc(Number(expBlock.max)) || 0);
+            }
+        }
+        const movePath = "system.resources.movement";
+        if (foundry.utils.hasProperty(data, movePath)) {
+            foundry.utils.setProperty(
+                data,
+                movePath,
+                clamp(Math.trunc(Number(foundry.utils.getProperty(data, movePath))), 0, 9999),
+            );
+        }
+        const ac = foundry.utils.getProperty(data, "system.resources.actionCurrency");
+        if (ac && typeof ac === "object") {
+            const current = this.actor.system?.resources?.actionCurrency ?? {};
+            const merged = {};
+            for (const id of ACTION_CURRENCY_KEYS) {
+                const incoming = ac[id];
+                const raw =
+                    incoming && typeof incoming === "object" && "value" in incoming
+                        ? incoming.value
+                        : current[id]?.value;
+                const v = Math.trunc(Number(raw));
+                merged[id] = {
+                    value: Number.isFinite(v) ? Math.max(0, Math.min(999999, v)) : 0,
+                };
+            }
+            foundry.utils.setProperty(data, "system.resources.actionCurrency", merged);
         }
         return data;
     }
@@ -592,26 +642,6 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
         this.element.addEventListener("dragstart", this.#onDragStart.bind(this), { signal });
 
-        // Header AP remove lives outside the tab body; ensure clicks still run the
-        // same handler as `data-action` (and run before other listeners).
-        this.element.addEventListener(
-            "click",
-            async (event) => {
-                const btn = event.target.closest?.("button[data-action='removeCustomApType'][data-custom-ap-id]");
-                if (!btn) return;
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-                try {
-                    await FarkPGCharacterSheet.#onRemoveCustomApType.call(this, event, btn);
-                } catch (err) {
-                    console.error(err);
-                    ui.notifications?.error(err?.message ?? String(err));
-                }
-            },
-            { capture: true, signal },
-        );
-
         const portraitImg = this.element.querySelector(".farkpg-portrait-img[data-farkpg-portrait-picker]");
         if (portraitImg && this.isEditable) {
             portraitImg.addEventListener(
@@ -623,6 +653,69 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 },
                 { signal },
             );
+        }
+
+        this.element.addEventListener(
+            "change",
+            (ev) => {
+                const inp = ev.target?.closest?.("input[data-ap-path]");
+                if (!inp) return;
+                if (!this.isEditable || !this.actor.canUserModify(game.user, "update")) return;
+                const path = String(inp.dataset.apPath ?? "");
+                if (!path.startsWith("system.resources.actionCurrency.") || !path.endsWith(".value")) {
+                    return;
+                }
+                const raw = Math.floor(Number(inp.value ?? 0));
+                const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                void this.actor.update({ [path]: n });
+            },
+            { signal },
+        );
+
+        if (this.isEditable && this.actor.canUserModify(game.user, "update")) {
+            const hpBtn = this.element.querySelector(".farkpg-header-hp-delta");
+            const hpAnchor = hpBtn?.closest?.(".farkpg-resource-delta-anchor");
+            if (hpBtn instanceof HTMLElement && hpAnchor instanceof HTMLElement) {
+                bindDeltaPopover(
+                    hpAnchor,
+                    hpBtn,
+                    async (delta) => {
+                        const cur = Math.trunc(Number(this.actor.system?.resources?.health?.value ?? 0)) || 0;
+                        const max = Math.trunc(Number(this.actor.system?.resources?.health?.max ?? 0)) || 0;
+                        const next = cur + delta;
+                        const finiteMax = Number.isFinite(max) && max > 0;
+                        const clamped = finiteMax ? Math.min(max, Math.max(0, next)) : Math.max(0, next);
+                        await this.actor.update({ "system.resources.health.value": clamped });
+                    },
+                    signal,
+                    {
+                        inputLabel: game.i18n.localize("FARKPG.ResourceDelta.hpLabel"),
+                        applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
+                    },
+                );
+            }
+
+            const expBtn = this.element.querySelector(".farkpg-header-exp-delta");
+            const expAnchor = expBtn?.closest?.(".farkpg-resource-delta-anchor");
+            if (expBtn instanceof HTMLElement && expAnchor instanceof HTMLElement) {
+                bindDeltaPopover(
+                    expAnchor,
+                    expBtn,
+                    async (delta) => {
+                        const cur = Math.trunc(Number(this.actor.system?.resources?.exp?.value ?? 0)) || 0;
+                        const max = Math.trunc(Number(this.actor.system?.resources?.exp?.max ?? 0)) || 0;
+                        const next = cur + delta;
+                        const finiteMax = Number.isFinite(max) && max > 0;
+                        const clamped = finiteMax ? Math.min(max, Math.max(0, next)) : Math.max(0, next);
+                        await this.actor.update({ "system.resources.exp.value": clamped });
+                    },
+                    signal,
+                    {
+                        inputLabel: game.i18n.localize("FARKPG.ResourceDelta.expLabel"),
+                        applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
+                    },
+                );
+            }
         }
 
         // Double-clicking the attached-ammo icon on a weapon card opens the
@@ -706,6 +799,11 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const itemData = item.toObject();
         delete itemData._id;
         if (itemData.system?.isEquipped !== undefined) itemData.system.isEquipped = false;
+        // Ammo / reload links are actor-local — clear both the new and legacy
+        // keys when copying an item to a different actor.
+        if (itemData.system?.ammo?.reloadFromId !== undefined) {
+            itemData.system.ammo.reloadFromId = "";
+        }
         if (itemData.system?.ammo?.linkedConsumableId !== undefined) {
             itemData.system.ammo.linkedConsumableId = "";
         }
@@ -725,10 +823,15 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      */
     async #clearAmmoLinksTo(actor, itemId) {
         const linkedWeapons = actor.items.filter((i) => {
-            return i.type === "weapon" && i.system?.ammo?.linkedConsumableId === itemId;
+            if (i.type !== "weapon") return false;
+            const a = i.system?.ammo ?? {};
+            return a.reloadFromId === itemId || a.linkedConsumableId === itemId;
         });
         for (const weapon of linkedWeapons) {
-            await weapon.update({ "system.ammo.linkedConsumableId": "" });
+            await weapon.update({
+                "system.ammo.reloadFromId": "",
+                "system.ammo.linkedConsumableId": "",
+            });
         }
     }
 
@@ -1052,6 +1155,24 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
+     * Spend one from a preset action currency (header strip).
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onDecrementApFromSheet(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.actor.canUserModify(game.user, "update")) return;
+        const btn = target?.closest?.("[data-ap-id]") ?? target;
+        const id = String(btn?.dataset?.apId ?? "");
+        if (!ACTION_CURRENCY_KEYS.includes(id)) return;
+        const cur = Math.trunc(Number(this.actor.system?.resources?.actionCurrency?.[id]?.value ?? 0)) || 0;
+        const next = Math.max(0, cur - 1);
+        await this.actor.update({ [`system.resources.actionCurrency.${id}.value`]: next });
+        const inp = this.element.querySelector(`input[data-ap-path="system.resources.actionCurrency.${id}.value"]`);
+        if (inp instanceof HTMLInputElement) inp.value = String(next);
+    }
+
+    /**
      * Image button or equivalent: open file picker for actor portrait.
      * @this {FarkPGCharacterSheet}
      */
@@ -1074,186 +1195,6 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         }
         await promptCharacterImport(this.actor);
         this.render(true);
-    }
-
-    /**
-     * @this {FarkPGCharacterSheet}
-     */
-    static async #onAddCustomApType(event, target) {
-        event.preventDefault();
-        const id = foundry.utils.randomID();
-        await this.actor.update({
-            [`system.resources.customActionPoints.${id}`]: {
-                id,
-                name: game.i18n.localize("FARKPG.ApDrawer.customApDefaultName"),
-                value: 0,
-                img: "",
-            },
-        });
-    }
-
-    /**
-     * Prompt for label, icon path, and starting amount, then add a custom AP pool.
-     * @this {FarkPGCharacterSheet}
-     */
-    static async #onPromptAddCustomAp(event) {
-        event.preventDefault();
-        if (!this.actor.canUserModify(game.user, "update")) return;
-
-        const DialogV2 = foundry.applications.api.DialogV2;
-        const esc = foundry.utils.escapeHTML ?? ((s) => String(s));
-        const title = game.i18n.localize("FARKPG.ApDrawer.addPoolDialogTitle");
-        const lblName = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolName"));
-        const lblImg = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolImg"));
-        const lblAmt = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolAmount"));
-        const phImg = esc(game.i18n.localize("FARKPG.Config.customApImgPlaceholder"));
-        const lblBrowse = esc(game.i18n.localize("FARKPG.ApDrawer.addPoolImgBrowse"));
-
-        const content = `
-            <div class="farkpg-ap-add-dialog">
-                <div class="form-group">
-                    <label for="farkpg-ap-add-name">${lblName}</label>
-                    <input type="text" id="farkpg-ap-add-name" name="poolName" required />
-                </div>
-                <div class="form-group">
-                    <label for="farkpg-ap-add-img">${lblImg}</label>
-                    <div class="farkpg-ap-add-img-row">
-                        <input type="text" id="farkpg-ap-add-img" name="poolImg" placeholder="${phImg}" />
-                        <button type="button" class="farkpg-ap-add-img-pick" id="farkpg-ap-add-img-pick"
-                                data-tooltip="${lblBrowse}" aria-label="${lblBrowse}">
-                            <i class="fa-solid fa-image" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="farkpg-ap-add-amt">${lblAmt}</label>
-                    <input type="number" id="farkpg-ap-add-amt" name="poolAmount" value="0" min="0" step="1" />
-                </div>
-            </div>
-        `;
-
-        // `modal: true` leaves a full-screen overlay above other apps; the image
-        // FilePicker then renders underneath it and cannot receive clicks. Keep
-        // this dialog non-modal so the picker stays usable while it is open.
-        const result = await DialogV2.wait({
-            window: { title },
-            content,
-            modal: false,
-            rejectClose: false,
-            render: (_event, dialog) => {
-                const root = dialog.element;
-                if (!root) return;
-                const pick = root.querySelector("#farkpg-ap-add-img-pick");
-                const inp = root.querySelector("#farkpg-ap-add-img");
-                if (!pick || !inp) return;
-                pick.addEventListener("click", (ev) => {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    openImagePathPicker(String(inp.value ?? "").trim(), (path) => {
-                        inp.value = path;
-                    });
-                });
-            },
-            buttons: [
-                {
-                    action: "cancel",
-                    type: "button",
-                    label: game.i18n.localize("Cancel"),
-                },
-                {
-                    action: "confirm",
-                    type: "submit",
-                    default: true,
-                    label: game.i18n.localize("FARKPG.ApDrawer.addPoolConfirm"),
-                    callback: (_event, _button, dialog) => {
-                        const root = dialog.element;
-                        const name = String(root.querySelector("#farkpg-ap-add-name")?.value ?? "").trim();
-                        const img = String(root.querySelector("#farkpg-ap-add-img")?.value ?? "").trim();
-                        const amount = Math.max(
-                            0,
-                            Math.floor(Number(root.querySelector("#farkpg-ap-add-amt")?.value ?? 0)),
-                        );
-                        return { name, img, amount };
-                    },
-                },
-            ],
-        });
-
-        if (result === false || result == null) return;
-        if (typeof result !== "object" || !("name" in result)) return;
-
-        if (!String(result.name ?? "").trim()) {
-            ui.notifications?.warn(game.i18n.localize("FARKPG.ApDrawer.addPoolNameRequired"));
-            return;
-        }
-
-        const id = foundry.utils.randomID();
-        const name = String(result.name ?? "").trim();
-        const img = String(result.img ?? "").trim();
-        await this.actor.update({
-            [`system.resources.customActionPoints.${id}`]: {
-                id,
-                name,
-                value: Number.isFinite(result.amount) ? result.amount : 0,
-                img,
-            },
-        });
-    }
-
-    /**
-     * @this {FarkPGCharacterSheet}
-     */
-    static async #onRemoveCustomApType(event, target) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!this.actor.canUserModify(game.user, "update")) {
-            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.noActorUpdatePermission"));
-            return;
-        }
-        const btn = target?.closest?.("[data-custom-ap-id]");
-        const id = String(btn?.dataset?.customApId ?? target?.dataset?.customApId ?? "");
-        if (!id) return;
-
-        const pools = this.actor.system?.resources?.customActionPoints;
-        const pool = pools && typeof pools === "object" ? pools[id] : null;
-        const poolLabel =
-            (pool && typeof pool === "object" && String(pool.name ?? "").trim()) ||
-            game.i18n.localize("FARKPG.ApDrawer.customApDefaultName");
-        const esc = foundry.utils.escapeHTML ?? ((s) => String(s));
-        const DialogV2 = foundry.applications.api.DialogV2;
-        const title = game.i18n.localize("FARKPG.Header.removeCustomApConfirmTitle");
-        const body = game.i18n.format("FARKPG.Header.removeCustomApConfirmBody", {
-            name: esc(poolLabel),
-        });
-
-        const agreed = await DialogV2.wait({
-            window: { title },
-            content: `<p class="farkpg-dialog-confirm">${body}</p>`,
-            modal: true,
-            rejectClose: false,
-            buttons: [
-                {
-                    action: "cancel",
-                    type: "button",
-                    default: true,
-                    label: game.i18n.localize("Cancel"),
-                },
-                {
-                    action: "confirm",
-                    type: "submit",
-                    label: game.i18n.localize("FARKPG.Header.removeCustomApConfirmDelete"),
-                    callback: () => true,
-                },
-            ],
-        });
-
-        const confirmed =
-            agreed === true ||
-            agreed === "confirm" ||
-            (agreed && typeof agreed === "object" && agreed.action === "confirm");
-        if (!confirmed) return;
-
-        await deleteSystemKeyedEntry(this.actor, "system.resources.customActionPoints", id);
     }
 
     static async #onAddCustomSkill(event, target) {
@@ -1345,9 +1286,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Open a prompt to attach a consumable as the weapon's ammo. Filters the
-     * candidate list by the weapon's `system.ammo.requiredNames` CSV when set,
-     * so only matching consumables can be selected.
+     * Open a prompt to pick a consumable as the weapon's reload source. The
+     * candidate list is filtered by the weapon's `system.ammo.requiredNames`
+     * CSV when set. Writes to `system.ammo.reloadFromId`.
      * @this {FarkPGCharacterSheet}
      */
     static async #onSelectAmmo(event, target) {
@@ -1392,27 +1333,131 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             .join("");
 
         const content = `
-            <p>${escape(game.i18n.format("FARKPG.Items.selectAmmoPrompt", { name: item.name }))}</p>
+            <p>${escape(game.i18n.format("FARKPG.Items.selectReloadPrompt", { name: item.name }))}</p>
             <div class="form-group">
-                <label for="farkpg-ammo-pick">${escape(game.i18n.localize("FARKPG.Items.ammoItem"))}</label>
+                <label for="farkpg-ammo-pick">${escape(game.i18n.localize("FARKPG.Items.reloadFrom"))}</label>
                 <select id="farkpg-ammo-pick" name="ammoId">${optionsHtml}</select>
             </div>
         `;
 
         const DialogV2 = foundry.applications.api.DialogV2;
         const chosenId = await DialogV2.prompt({
-            window: { title: game.i18n.localize("FARKPG.Items.selectAmmoTitle") },
+            window: { title: game.i18n.localize("FARKPG.Items.selectReloadTitle") },
             content,
             modal: true,
             rejectClose: false,
             ok: {
-                label: game.i18n.localize("FARKPG.Items.selectAmmoConfirm"),
+                label: game.i18n.localize("FARKPG.Items.selectReloadConfirm"),
                 callback: (_event, button) => button.form?.elements?.ammoId?.value ?? null,
             },
         });
 
         if (!chosenId) return;
-        await item.update({ "system.ammo.linkedConsumableId": chosenId });
+        await item.update({
+            "system.ammo.reloadFromId": chosenId,
+            // Clear the legacy field so the two never disagree.
+            "system.ammo.linkedConsumableId": "",
+        });
+    }
+
+    /**
+     * Refill this weapon's loaded ammo up to its max, drawing the difference
+     * from the consumable named in `system.ammo.reloadFromId`. Partial reloads
+     * are allowed: when the source has fewer rounds than the deficit, transfer
+     * everything the source has.
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onReloadAmmo(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Resolve the item id defensively. `target` is normally the element
+        // that owns `data-action`, but if Foundry's signature drifts in a
+        // future minor we still want a click on the inner <i> to work.
+        const root =
+            target?.closest?.("[data-item-id]") ??
+            event.currentTarget?.closest?.("[data-item-id]") ??
+            event.target?.closest?.("[data-item-id]");
+        const id = root?.dataset?.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type !== "weapon") {
+            console.warn("FarkPG | reloadAmmo: could not resolve weapon item", { id, target });
+            return;
+        }
+
+        const sys = item.system ?? {};
+        if (sys.ammo?.enabled !== true) return;
+
+        const dpu = Number(sys.durabilityPerUse ?? 0);
+        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
+            );
+            return;
+        }
+
+        const ammoMax = Number(sys.ammo?.max ?? 0);
+        if (ammoMax <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
+            );
+            return;
+        }
+        const ammoValue = Number(sys.ammo?.value ?? 0);
+        if (ammoValue >= ammoMax) {
+            ui.notifications?.info(
+                game.i18n.format("FARKPG.Notify.reloadFull", {
+                    name: item.name,
+                    value: ammoValue,
+                    max: ammoMax,
+                }),
+            );
+            return;
+        }
+
+        // Honour the legacy `linkedConsumableId` field as a fallback so existing
+        // data keeps reloading without forcing the user to re-pick the source.
+        const sourceId = String(sys.ammo?.reloadFromId ?? sys.ammo?.linkedConsumableId ?? "");
+        if (!sourceId) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadNoSource", { name: item.name }),
+            );
+            return;
+        }
+        const source = this.actor.items.get(sourceId);
+        if (!source) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadSourceMissing", { name: item.name }),
+            );
+            return;
+        }
+        const haveInSource = Number(source.system?.quantity?.value ?? 0);
+        if (haveInSource <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.reloadSourceEmpty", {
+                    name: item.name,
+                    source: source.name,
+                }),
+            );
+            return;
+        }
+
+        const need = ammoMax - ammoValue;
+        const transfer = Math.min(need, haveInSource);
+        const newAmmoValue = ammoValue + transfer;
+        const newSourceQty = haveInSource - transfer;
+
+        await item.update({ "system.ammo.value": newAmmoValue });
+        await source.update({ "system.quantity.value": newSourceQty });
+
+        ui.notifications?.info(
+            game.i18n.format("FARKPG.Notify.reloaded", {
+                name: item.name,
+                amount: transfer,
+                source: source.name,
+                value: newAmmoValue,
+                max: ammoMax,
+            }),
+        );
     }
 
     /**
@@ -1449,6 +1494,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             return;
         }
 
+        // Items that wear out (durabilityPerUse > 0) refuse to be used at 0
+        // durability. Done before the dice-table shortcut so a broken weapon
+        // can't even open the table for a manual roll.
+        const dpu = Number(sys.durabilityPerUse ?? 0);
+        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
+            );
+            return;
+        }
+
         // Roll-enabled item with no formula configured: just open the dice
         // table for manual rolling. Nothing is consumed and no chat message
         // is posted -- this is purely a shortcut to bring up the table.
@@ -1464,44 +1520,18 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const consumed = [];
 
         if (item.type === "weapon" && sys.ammo?.enabled) {
-            const linkedId = String(sys.ammo.linkedConsumableId ?? "");
-            if (!linkedId) {
+            const ammoMax = Number(sys.ammo?.max ?? 0);
+            if (ammoMax <= 0) {
                 ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoNotSelected", { name: item.name }),
+                    game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
                 );
                 return;
-            }
-            const ammo = this.actor.items.get(linkedId);
-            if (!ammo) {
-                ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoMissing", { name: item.name }),
-                );
-                return;
-            }
-            const requiredCSV = String(sys.ammo.requiredNames ?? "").trim();
-            if (requiredCSV) {
-                const allowed = requiredCSV
-                    .split(",")
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                    .map((s) => s.toLowerCase());
-                if (!allowed.includes(String(ammo.name).toLowerCase())) {
-                    ui.notifications?.warn(
-                        game.i18n.format("FARKPG.Notify.ammoNotAllowed", {
-                            ammo: ammo.name,
-                            name: item.name,
-                            required: requiredCSV,
-                        }),
-                    );
-                    return;
-                }
             }
             const perUse = Math.max(1, Number(sys.ammo.perUse ?? 1));
-            const have = Number(ammo.system?.quantity?.value ?? 0);
+            const have = Number(sys.ammo?.value ?? 0);
             if (have < perUse) {
                 ui.notifications?.warn(
                     game.i18n.format("FARKPG.Notify.ammoOut", {
-                        ammo: ammo.name,
                         name: item.name,
                         need: perUse,
                         have,
@@ -1509,11 +1539,13 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 );
                 return;
             }
-            updates.push({ doc: ammo, data: { "system.quantity.value": have - perUse } });
+            const after = have - perUse;
+            updates.push({ doc: item, data: { "system.ammo.value": after } });
             consumed.push(
                 game.i18n.format("FARKPG.Rolls.consumedAmmo", {
                     amount: perUse,
-                    name: ammo.name,
+                    value: after,
+                    max: ammoMax,
                 }),
             );
         }

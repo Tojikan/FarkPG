@@ -28,8 +28,13 @@
       "customSkills": {},
       "resources": {
         "health": { "value": 10000, "max": 10000 },
-        "actionPoints": { "value": 18, "max": 18 },
-        "customActionPoints": {},
+        "actionCurrency": {
+          "white": { "value": 0 },
+          "red": { "value": 0 },
+          "blue": { "value": 0 },
+          "orange": { "value": 0 },
+          "black": { "value": 0 }
+        },
         "exp": { "value": 0, "max": 100 },
         "movement": 20
       },
@@ -47,7 +52,14 @@
       "durabilityPerUse": 0,
       "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
       "weaponStyle": "melee",
-      "ammo": { "enabled": false, "perUse": 1, "linkedConsumableId": "", "requiredNames": "" },
+      "ammo": {
+        "enabled": false,
+        "value": 0,
+        "max": 0,
+        "perUse": 1,
+        "reloadFromId": "",
+        "requiredNames": ""
+      },
       "isEquipped": false
     },
     "consumable": {
@@ -67,7 +79,7 @@
     },
     "ability": {
       "description": "",
-      "cost": 0,
+      "cost": "",
       "rank": 1,
       "maxRank": 1
     }
