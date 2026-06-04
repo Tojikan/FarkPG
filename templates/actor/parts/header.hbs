@@ -131,15 +131,35 @@
             </div>
         </div>
 
-        <div class="farkpg-header-row farkpg-header-ap farkpg-ap-bar">
-            <div class="farkpg-ap-bar-brand" aria-hidden="true">
-                <i class="fa-solid fa-coins"></i>
-                <span class="farkpg-ap-bar-brand-text">{{localize 'FARKPG.ApDrawer.headerStripTitle'}}</span>
-            </div>
-            <div class="farkpg-ap-bar-pills">
-                {{#each apTypes as |row|}}
-                    <div class="farkpg-ap-drawer-cell farkpg-ap-sheet-cell farkpg-ac-cell farkpg-ac-cell--{{row.id}}">
-                        <div class="farkpg-ap-drawer-label farkpg-ac-label farkpg-ac-label--{{row.id}}">{{row.label}}</div>
+        <div class="farkpg-header-row farkpg-header-ap-row">
+            {{#each apTypes as |row|}}
+                <div class="farkpg-ap-panel farkpg-ap-bar">
+                    <span class="farkpg-resource-label farkpg-ap-panel-label">{{localize 'FARKPG.Header.ap'}}</span>
+                    <div class="farkpg-ap-panel-body">
+                        <div class="farkpg-ap-controls farkpg-resource-fields farkpg-header-resource-inner">
+                            <span class="farkpg-resource-delta-anchor">
+                                {{#if editable}}
+                                    <button type="button"
+                                            class="farkpg-header-icon-hit farkpg-header-ap-delta farkpg-header-icon-hit--ap"
+                                            data-tooltip="{{localize 'FARKPG.ResourceDelta.apTooltip'}}"
+                                            aria-label="{{localize 'FARKPG.ResourceDelta.apAria'}}">
+                                        <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                                    </button>
+                                {{else}}
+                                    <span class="farkpg-header-icon-hit farkpg-header-icon-readonly farkpg-header-icon-hit--ap" aria-hidden="true">
+                                        <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                                    </span>
+                                {{/if}}
+                            </span>
+                            <input type="number"
+                                   class="farkpg-ap-drawer-inp farkpg-ap-drawer-inp-val farkpg-ap-sheet-inp farkpg-header-ghost-inp"
+                                   data-ap-path="{{row.valuePath}}"
+                                   value="{{row.value}}"
+                                   min="0"
+                                   step="1" />
+                        </div>
+                        <div class="farkpg-ap-chips-wrap farkpg-ap-white-pool farkpg-ap-drawer-cell farkpg-ap-sheet-cell farkpg-ac-cell farkpg-ac-cell--{{row.id}}"
+                             data-ap-id="{{row.id}}">
                         <div class="farkpg-ac-chip-mid">
                             {{#if editable}}
                                 <button type="button"
@@ -148,23 +168,30 @@
                                         data-ap-id="{{row.id}}"
                                         data-tooltip="{{localize 'FARKPG.ApDrawer.decrementTooltip'}}"
                                         aria-label="{{localize 'FARKPG.ApDrawer.decrementAria'}}">
-                                    {{> "farkpg.chip-stack" row chipStackSize="farkpg-chip-stack--sm"}}
+                                    {{> "farkpg.chip-stack"
+                                           chipClass=row.chipClass
+                                           chipCount=row.chipCount
+                                           chipColCount=row.chipColCount
+                                           chipCountClass=row.chipCountClass
+                                           chipColsClass=row.chipColsClass
+                                           chipOver=row.chipOver
+                                           chipStackSize="farkpg-chip-stack--sheet"}}
                                 </button>
                             {{else}}
-                                {{> "farkpg.chip-stack" row chipStackSize="farkpg-chip-stack--sm"}}
+                                {{> "farkpg.chip-stack"
+                                       chipClass=row.chipClass
+                                       chipCount=row.chipCount
+                                       chipColCount=row.chipColCount
+                                       chipCountClass=row.chipCountClass
+                                       chipColsClass=row.chipColsClass
+                                       chipOver=row.chipOver
+                                       chipStackSize="farkpg-chip-stack--sheet"}}
                             {{/if}}
                         </div>
-                        <div class="farkpg-ap-drawer-frac">
-                            <input type="number"
-                                   class="farkpg-ap-drawer-inp farkpg-ap-drawer-inp-val"
-                                   data-ap-path="{{row.valuePath}}"
-                                   value="{{row.value}}"
-                                   min="0"
-                                   step="1" />
                         </div>
                     </div>
-                {{/each}}
-            </div>
+                </div>
+            {{/each}}
             <button type="button"
                     class="farkpg-ap-bar-btn farkpg-ap-bar-popout"
                     data-action="openApDrawer"

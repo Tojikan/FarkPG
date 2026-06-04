@@ -1,28 +1,62 @@
-{{!-- Poker chips: parent class farkpg-chips-{count} controls visibility via CSS. chipOver when raw value > 20. --}}
-<span class="farkpg-chips farkpg-chip-stack {{chipClass}} {{chipCountClass}}{{#if chipOver}} farkpg-chips-over{{/if}}{{#if chipDual}} farkpg-chips-dual{{/if}} {{chipStackSize}}"
+{{!-- Up to 40 white chips: 8 columns × 5. Visibility applied via data-chip-count + applyChipStackVisibility(). --}}
+<span class="farkpg-chips farkpg-chip-stack {{chipClass}} {{chipCountClass}} {{chipColsClass}}{{#if chipOver}} farkpg-chips-over{{/if}} {{chipStackSize}}"
+      data-chip-count="{{chipCount}}"
+      data-chip-cols="{{chipColCount}}"
       aria-hidden="true">
-    <span class="farkpg-chip-column farkpg-chip-column--a">
+    <span class="farkpg-chip-column farkpg-chip-column--1">
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--1"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--2"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--3"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--4"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--5"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--2">
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--6"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--7"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--8"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--9"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--10"></span>
     </span>
-    <span class="farkpg-chip-column farkpg-chip-column--b">
+    <span class="farkpg-chip-column farkpg-chip-column--3">
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--11"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--12"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--13"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--14"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--15"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--4">
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--16"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--17"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--18"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--19"></span>
         <span class="farkpg-chip farkpg-chip--disc farkpg-chip--20"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--5">
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--21"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--22"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--23"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--24"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--25"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--6">
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--26"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--27"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--28"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--29"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--30"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--7">
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--31"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--32"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--33"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--34"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--35"></span>
+    </span>
+    <span class="farkpg-chip-column farkpg-chip-column--8">
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--36"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--37"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--38"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--39"></span>
+        <span class="farkpg-chip farkpg-chip--disc farkpg-chip--40"></span>
     </span>
 </span>

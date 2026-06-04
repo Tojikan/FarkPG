@@ -54,13 +54,16 @@
       "hpAria": "Adjust hit points",
       "expLabel": "Change EXP (negative subtracts)",
       "expTooltip": "Click to add or subtract experience",
-      "expAria": "Adjust experience"
+      "expAria": "Adjust experience",
+      "apLabel": "Change AP (negative subtracts)",
+      "apTooltip": "Click to add or subtract action tokens",
+      "apAria": "Adjust action tokens"
     },
 
     "ApDrawer": {
       "title": "Action currency",
       "headerStripTitle": "Action",
-      "openTooltip": "Open the action currency window (same pools; click chip stack to spend one).",
+      "openTooltip": "Open action window (equipped gear + white chips; click stack to spend one).",
       "openAria": "Open action currency window",
       "decrementTooltip": "Click the chip stack to spend 1 from this pool",
       "decrementAria": "Spend one from this pool (click stack)",
