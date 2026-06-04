@@ -9,7 +9,7 @@
     "verified": "13"
   },
   "esmodules": ["scripts/farkpg.mjs"],
-  "styles": ["styles/farkpg.css"],
+  "styles": ["styles/farkpg.css", "styles/chip-visibility.css"],
   "languages": [
     { "lang": "en", "name": "English", "path": "lang/en.json" }
   ],

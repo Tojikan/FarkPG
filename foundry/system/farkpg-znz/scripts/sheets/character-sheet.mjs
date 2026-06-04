@@ -1,11 +1,14 @@
 import {
+    ACTION_CURRENCY_DISPLAY_KEYS,
     ACTION_CURRENCY_KEYS,
     FarkPGApDrawer,
+    applyChipStackVisibility,
     buildApTypeRowsForActor,
     ensureActorActionCurrency,
 } from "../ap-drawer.mjs";
 import { promptCharacterImport } from "../character-import.mjs";
 import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
+import { buildItemCardContext } from "../item-card-context.mjs";
 import { bindDeltaPopover } from "../resource-delta-popover.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -192,217 +195,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const isEquipped = (i) => !isAbility(i) && i.system?.isEquipped === true;
         const inInventory = (i) => !isAbility(i) && !isEquipped(i);
 
-        const decorate = (item) => {
-            const sys = item.system ?? {};
-            const mult = Number(sys.rollable?.multiplier ?? 0);
-            const maxv = Number(sys.rollable?.max ?? 0);
-            const isWeapon = item.type === "weapon";
-            const isConsumable = item.type === "consumable";
-            const isEquipment = item.type === "equipment";
-            const hasDurability = isWeapon || isEquipment;
-            // "Uses durability" = the item spends durability on every use. Cards
-            // only show the durability row for items that actually wear out
-            // (otherwise the field is just decoration). `isBroken` flips true
-            // when such an item has hit 0 durability -- rolls and actions are
-            // disabled in that state.
-            const durabilityPerUse = hasDurability ? Number(sys.durabilityPerUse ?? 0) : 0;
-            const usesDurability = durabilityPerUse > 0;
-            const durabilityValue = hasDurability ? Number(sys.durability?.value ?? 0) : 0;
-            const isBroken = usesDurability && durabilityValue <= 0;
-            const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
-            // The weapon now holds its own loaded ammo (value/max). The
-            // "reload source" is a separate consumable that refills `value`
-            // up to `max` when the Reload button is pressed. `linkedConsumableId`
-            // is the pre-rework name we still honour when reading old data.
-            const ammoValue = ammoEnabled ? Number(sys.ammo?.value ?? 0) : 0;
-            const ammoMax = ammoEnabled ? Number(sys.ammo?.max ?? 0) : 0;
-            const reloadFromId = ammoEnabled
-                ? String(sys.ammo?.reloadFromId ?? sys.ammo?.linkedConsumableId ?? "")
-                : "";
-            const reloadSourceItem = reloadFromId
-                ? this.actor.items.get(reloadFromId)
-                : null;
-
-            // Resolve attached-skill rolling: when an attached skill is set,
-            // the item rolls (attribute + skill) dice with `faces = rollMax`
-            // (defaulting to d6 if no max is configured). Otherwise the static
-            // (multiplier × max) baseline is used. Applies to every type that
-            // exposes the `rollable.enabled` toggle on its sheet.
-            const usesRollEnabled = isWeapon || isEquipment || isConsumable;
-            const attachedSkill = usesRollEnabled
-                ? String(sys.rollable?.attachedSkill ?? "")
-                : "";
-            let rollCount = mult;
-            let rollFaces = maxv;
-            let attachedSkillLabel = "";
-            if (attachedSkill) {
-                const [attrKey, skillKey] = attachedSkill.split(".");
-                const aVal = Number(this.actor.system?.attributes?.[attrKey] ?? 0);
-                const sVal = Number(this.actor.system?.skills?.[skillKey] ?? 0);
-                rollCount = Math.max(1, aVal + sVal);
-                rollFaces = maxv > 0 ? maxv : 6;
-                const aLabel = game.i18n.localize(`FARKPG.Attributes.${attrKey}`);
-                const sLabel = game.i18n.localize(`FARKPG.Skills.${skillKey}`);
-                attachedSkillLabel = `${aLabel} — ${sLabel}`;
-            }
-
-            const rollEnabledFlag = sys.rollable?.enabled === true;
-            // A roll *formula* exists when either an attached skill is set or
-            // the multiplier × max baseline is filled in. When `rollable.enabled`
-            // is true but nothing is configured, we still render a button --
-            // it just opens the dice table without starting a roll.
-            const hasRollFormula = attachedSkill !== "" || (mult > 0 && maxv > 0);
-            const isRollable = usesRollEnabled ? rollEnabledFlag : hasRollFormula;
-            const iconOnlyRoll = isRollable && !hasRollFormula;
-
-            // Per-use consumption rendered as a small icon + signed amount
-             // beneath the "Roll" label on the card. Order mirrors the order
-             // costs are actually paid in `#onUseItem` so it doubles as a
-             // legend.
-            const consumptionBadges = [];
-            if (isRollable && !iconOnlyRoll) {
-                if (isWeapon && ammoEnabled) {
-                    const perUse = Math.max(1, Number(sys.ammo?.perUse ?? 1));
-                    consumptionBadges.push({
-                        kind: "ammo",
-                        icon: "fa-solid fa-crosshairs",
-                        amount: perUse,
-                        tooltip: game.i18n.format("FARKPG.Items.badgeAmmoTooltip", {
-                            amount: perUse,
-                        }),
-                    });
-                }
-                if (isWeapon) {
-                    const dpu = Number(sys.durabilityPerUse ?? 0);
-                    if (dpu > 0) {
-                        consumptionBadges.push({
-                            kind: "durability",
-                            icon: "fa-solid fa-screwdriver-wrench",
-                            amount: dpu,
-                            tooltip: game.i18n.format(
-                                "FARKPG.Items.badgeDurabilityTooltip",
-                                { amount: dpu },
-                            ),
-                        });
-                    }
-                }
-                if (isConsumable) {
-                    consumptionBadges.push({
-                        kind: "quantity",
-                        icon: "fa-solid fa-cubes-stacked",
-                        amount: 1,
-                        tooltip: game.i18n.localize("FARKPG.Items.badgeQuantityTooltip"),
-                    });
-                }
-            }
-
-            // Equipment can grant extra slots while equipped; surface those
-             // values on the card so it's visible without opening the sheet.
-            const equipmentSlotsBonus = isEquipment
-                ? Number(sys.equipmentSlots ?? 0)
-                : 0;
-            const inventorySlotsBonus = isEquipment
-                ? Number(sys.inventorySlots ?? 0)
-                : 0;
-
-            const rawDesc = String(sys.description ?? "");
-            const descText = rawDesc
-                .replace(/<style[\s\S]*?<\/style>/gi, "")
-                .replace(/<script[\s\S]*?<\/script>/gi, "")
-                .replace(/<[^>]+>/g, " ")
-                .replace(/&nbsp;/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-            const descShort = descText.length > 140 ? `${descText.slice(0, 137)}…` : descText;
-
-            return {
-                id: item.id,
-                uuid: item.uuid,
-                name: item.name,
-                img: item.img,
-                type: item.type,
-                typeLabel: game.i18n.localize(`TYPES.Item.${item.type}`),
-                system: sys,
-                isWeapon,
-                isConsumable,
-                isEquipment,
-                hasDurability,
-                usesDurability,
-                isBroken,
-                brokenTooltip: isBroken
-                    ? game.i18n.format("FARKPG.Items.brokenTooltip", { name: item.name })
-                    : "",
-                descShort,
-                isRollable,
-                rollMultiplier: mult,
-                rollMax: maxv,
-                // Card splits the roll description across two labels:
-                //   left  → dice formula being rolled (e.g. "5d")
-                //   right → static multiplier × max cap (e.g. "4×6000"), shown
-                //           only when both fields are configured.
-                rollDiceLabel: isRollable && !iconOnlyRoll ? `${rollCount}d` : "",
-                rollMultLabel:
-                    isRollable && !iconOnlyRoll && mult > 0 && maxv > 0
-                        ? `${mult}\u00d7${maxv}`
-                        : "",
-                iconOnlyRoll,
-                useTooltip: iconOnlyRoll
-                    ? game.i18n.localize("FARKPG.Items.useTooltipOpenTable")
-                    : mult > 0 && maxv > 0
-                      ? game.i18n.format("FARKPG.Items.useTooltip", {
-                            multiplier: mult,
-                            max: maxv,
-                        })
-                      : game.i18n.localize("FARKPG.Items.useTooltipSimple"),
-                consumptionBadges,
-                equipmentSlotsBonus,
-                inventorySlotsBonus,
-                hasSlotBonus: equipmentSlotsBonus > 0 || inventorySlotsBonus > 0,
-                attachedSkill,
-                attachedSkillLabel,
-                ammoEnabled,
-                ammoPerUse: ammoEnabled ? Math.max(1, Number(sys.ammo?.perUse ?? 1)) : 0,
-                ammoValue,
-                ammoMax,
-                reloadSource: reloadSourceItem
-                    ? {
-                          id: reloadSourceItem.id,
-                          name: reloadSourceItem.name,
-                          img: reloadSourceItem.img,
-                          qty: Number(reloadSourceItem.system?.quantity?.value ?? 0),
-                      }
-                    : null,
-                // Button is only hard-disabled for states the player can't
-                // act on at all (broken / no capacity / already full). Missing
-                // or empty source still leaves it enabled so the handler can
-                // fire and explain via `ui.notifications`.
-                canReload: ammoEnabled
-                    && !isBroken
-                    && ammoMax > 0
-                    && ammoValue < ammoMax,
-                reloadTooltip: ammoEnabled
-                    ? (() => {
-                          if (isBroken)
-                              return game.i18n.format("FARKPG.Items.brokenTooltip", {
-                                  name: item.name,
-                              });
-                          if (ammoMax <= 0)
-                              return game.i18n.localize("FARKPG.Items.reloadTooltipUnconfigured");
-                          if (ammoValue >= ammoMax)
-                              return game.i18n.format("FARKPG.Items.reloadTooltipFull", {
-                                  name: item.name,
-                                  value: ammoValue,
-                                  max: ammoMax,
-                              });
-                          return game.i18n.format("FARKPG.Items.reloadTooltip", {
-                              name: item.name,
-                              source: reloadSourceItem?.name ?? "—",
-                              need: ammoMax - ammoValue,
-                          });
-                      })()
-                    : "",
-            };
-        };
+        const decorate = (item) => buildItemCardContext(this.actor, item);
 
         const equippedRaw = items.filter(isEquipped).sort((a, b) => a.sort - b.sort);
         const inventoryRaw = items.filter(inInventory).sort((a, b) => a.sort - b.sort);
@@ -636,6 +429,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     _onRender(context, options) {
         super._onRender?.(context, options);
 
+        applyChipStackVisibility(this.element);
+        requestAnimationFrame(() => applyChipStackVisibility(this.element));
+
         this._renderListeners?.abort();
         this._renderListeners = new AbortController();
         const { signal } = this._renderListeners;
@@ -667,7 +463,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 }
                 const raw = Math.floor(Number(inp.value ?? 0));
                 const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
-                void this.actor.update({ [path]: n });
+                void this.actor.update({ [path]: n }).then(() => {
+                    applyChipStackVisibility(this.element);
+                });
             },
             { signal },
         );
@@ -712,6 +510,37 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     signal,
                     {
                         inputLabel: game.i18n.localize("FARKPG.ResourceDelta.expLabel"),
+                        applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
+                    },
+                );
+            }
+
+            const apBtn = this.element.querySelector(".farkpg-header-ap-delta");
+            const apAnchor = apBtn?.closest?.(".farkpg-resource-delta-anchor");
+            if (apBtn instanceof HTMLElement && apAnchor instanceof HTMLElement) {
+                bindDeltaPopover(
+                    apAnchor,
+                    apBtn,
+                    async (delta) => {
+                        const id = ACTION_CURRENCY_DISPLAY_KEYS[0];
+                        const cur =
+                            Math.trunc(
+                                Number(this.actor.system?.resources?.actionCurrency?.[id]?.value ?? 0),
+                            ) || 0;
+                        const next = Math.max(0, cur + delta);
+                        await this.actor.update({
+                            [`system.resources.actionCurrency.${id}.value`]: next,
+                        });
+                        const inp = this.element.querySelector(
+                            `input[data-ap-path="system.resources.actionCurrency.${id}.value"]`,
+                        );
+                        if (inp instanceof HTMLInputElement) inp.value = String(next);
+                        applyChipStackVisibility(this.element);
+                        FarkPGApDrawer.refreshIfOpen(this.actor.id);
+                    },
+                    signal,
+                    {
+                        inputLabel: game.i18n.localize("FARKPG.ResourceDelta.apLabel"),
                         applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
                     },
                 );
@@ -1164,12 +993,13 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         if (!this.actor.canUserModify(game.user, "update")) return;
         const btn = target?.closest?.("[data-ap-id]") ?? target;
         const id = String(btn?.dataset?.apId ?? "");
-        if (!ACTION_CURRENCY_KEYS.includes(id)) return;
+        if (!ACTION_CURRENCY_DISPLAY_KEYS.includes(id)) return;
         const cur = Math.trunc(Number(this.actor.system?.resources?.actionCurrency?.[id]?.value ?? 0)) || 0;
         const next = Math.max(0, cur - 1);
         await this.actor.update({ [`system.resources.actionCurrency.${id}.value`]: next });
         const inp = this.element.querySelector(`input[data-ap-path="system.resources.actionCurrency.${id}.value"]`);
         if (inp instanceof HTMLInputElement) inp.value = String(next);
+        applyChipStackVisibility(this.element);
     }
 
     /**
@@ -1468,6 +1298,14 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      * Any failure short-circuits with a notification and no resources are spent.
      * @this {FarkPGCharacterSheet}
      */
+    /**
+     * Use an item from a card button (character sheet or AP drawer).
+     * @param {HTMLElement} target
+     */
+    async useItemFromTarget(target) {
+        await FarkPGCharacterSheet.#onUseItem.call(this, { preventDefault() {} }, target);
+    }
+
     static async #onUseItem(event, target) {
         event.preventDefault();
         const id = target.closest("[data-item-id]")?.dataset.itemId;

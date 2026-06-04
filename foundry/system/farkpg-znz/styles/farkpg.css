@@ -283,8 +283,88 @@
     font-weight: 700;
 }
 
-.farkpg-header-ap {
+.farkpg-header-ap-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
     min-width: 0;
+}
+
+.farkpg-ap-panel.farkpg-ap-bar {
+    flex: 0 0 50%;
+    max-width: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.15rem;
+    min-height: 0;
+    padding: 0.22rem 0.35rem 0.26rem;
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    background: var(--farkpg-panel-bg-2);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.farkpg-ap-panel-label {
+    flex: 0 0 auto;
+    line-height: 1.1;
+}
+
+.farkpg-ap-panel-body {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: calc(25px + var(--farkpg-chip-h, 0.42rem));
+    box-sizing: border-box;
+}
+
+.farkpg-ap-panel .farkpg-ap-controls {
+    flex: 0 0 auto;
+    align-self: flex-end;
+}
+
+.farkpg-ap-panel .farkpg-ap-chips-wrap,
+.farkpg-ap-panel .farkpg-ap-chips-wrap.farkpg-ap-drawer-cell {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    padding: 0;
+    border: none;
+    background: transparent;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-sizing: border-box;
+}
+
+.farkpg-ap-panel .farkpg-ac-chip-mid,
+.farkpg-ap-panel .farkpg-ap-chips-wrap .farkpg-ac-chip-mid {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    min-height: calc(25px + var(--farkpg-chip-h, 0.42rem));
+}
+
+.farkpg-ap-panel .farkpg-ap-chips-wrap .farkpg-ac-icon-hit {
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.farkpg-header-icon-hit--ap {
+    color: var(--farkpg-accent);
 }
 
 .farkpg-ap-bar {
@@ -298,6 +378,7 @@
     border-radius: var(--farkpg-radius);
     background: var(--farkpg-panel-bg-2);
 }
+
 
 .farkpg-ap-bar-brand {
     display: flex;
@@ -408,6 +489,28 @@
     box-sizing: border-box;
 }
 
+.farkpg-header-ap-row > .farkpg-ap-bar-btn {
+    flex: 0 0 auto;
+    margin-left: auto;
+}
+
+.farkpg-ap-white-pool {
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: none;
+}
+
+.farkpg-ap-white-pool .farkpg-ap-drawer-label {
+    display: none;
+}
+
+.farkpg-ap-chips-wrap .farkpg-ac-chip-mid {
+    width: 100%;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
 .farkpg-ap-bar-btn {
     flex: 0 0 auto;
     display: flex;
@@ -495,6 +598,7 @@
 }
 
 .application.farkpg.ap-drawer .window-content {
+    overflow: hidden;
     --farkpg-text: #e6decd;
     --farkpg-muted: #9aa4b2;
     --farkpg-border: #3a4150;
@@ -515,6 +619,80 @@
     flex-direction: column;
     gap: 0.55rem;
     padding: 0.35rem 0.45rem;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.farkpg-ap-drawer-currency {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+    padding: 0.35rem 0.55rem 0.4rem;
+    border: 1px solid var(--farkpg-border);
+    border-radius: var(--farkpg-radius);
+    background: var(--farkpg-panel-bg);
+    overflow: hidden;
+    min-width: 0;
+}
+
+.farkpg-resource-ap--drawer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.farkpg-resource-ap--drawer .farkpg-resource-label {
+    width: 100%;
+    text-align: center;
+}
+
+.farkpg-resource-ap--drawer .farkpg-resource-fields {
+    justify-content: center;
+}
+
+.application.farkpg.ap-drawer .farkpg-ap-drawer-currency {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+
+.farkpg-ap-drawer-currency .farkpg-ap-chips-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: calc(25px + var(--farkpg-chip-h, 0.46rem));
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.farkpg-ap-drawer-currency .farkpg-ac-chip-mid {
+    width: 100%;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+.application.farkpg.ap-drawer .farkpg-drawer-equipment {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+}
+
+.application.farkpg.ap-drawer .farkpg-drawer-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.45rem;
+}
+
+.application.farkpg.ap-drawer .farkpg-drawer-equipment .farkpg-card-controls,
+.application.farkpg.ap-drawer .farkpg-drawer-equipment .farkpg-card-reload-row,
+.application.farkpg.ap-drawer .farkpg-drawer-equipment .farkpg-card-ammo-empty {
+    display: none;
 }
 
 /* Health editor sits above the AP cells. Two cells side-by-side: the current
@@ -949,11 +1127,16 @@
     min-width: 4.75rem;
 }
 
+.farkpg.sheet .farkpg-header-ap-row .farkpg-ap-sheet-cell {
+    position: relative;
+    overflow: visible;
+}
+
 .farkpg-ac-chip-mid {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    min-height: 3.15rem;
+    min-height: calc(25px + var(--farkpg-chip-h, 0.46rem));
     overflow: visible;
 }
 
@@ -974,323 +1157,132 @@
     filter: brightness(1.12);
 }
 
-.farkpg-ac-icon-hit--sheet .farkpg-chip-stack--sm {
-    transform: scale(0.82);
-    transform-origin: center bottom;
-}
-
 .farkpg-chip-stack {
+    --farkpg-chip-w: 1.65rem;
+    --farkpg-chip-h: 0.46rem;
+    --farkpg-chip-stack-offset: 5px;
+    --farkpg-chip-col-gap: 5px;
     position: relative;
     display: inline-flex;
     flex-direction: row;
     align-items: flex-end;
-    justify-content: center;
-    gap: 2px;
+    justify-content: flex-start;
+    gap: var(--farkpg-chip-col-gap);
     width: auto;
-    /* Room for 10 stacked disc layers (layer 0–9 offsets + disc height). */
-    min-height: calc(0.28rem * 9 + 0.5rem);
+    min-height: calc(25px + var(--farkpg-chip-h));
     overflow: visible;
     pointer-events: auto;
 }
 
-.farkpg-chip-stack--sm {
-    min-height: calc(0.24rem * 9 + 0.45rem);
-    gap: 1px;
+.farkpg-chip-stack--sheet {
+    --farkpg-chip-w: 1.35rem;
+    --farkpg-chip-h: 0.42rem;
+    --farkpg-chip-col-gap: 4px;
 }
 
 .farkpg-chip-column {
     position: relative;
-    display: block;
+    display: none;
     flex: 0 0 auto;
-    width: 1.85rem;
-    height: calc(0.28rem * 9 + 0.5rem);
+    width: var(--farkpg-chip-w);
+    height: calc(25px + var(--farkpg-chip-h));
     overflow: visible;
-}
-
-.farkpg-chip-stack--sm .farkpg-chip-column {
-    width: 1.55rem;
-    height: calc(0.24rem * 9 + 0.45rem);
-}
-
-.farkpg-chip-stack--dual .farkpg-chip-column--b {
-    margin-left: 1px;
 }
 
 .farkpg-chip--disc {
     position: absolute;
     left: 50%;
-    bottom: calc(var(--chip-layer, 0) * 0.28rem);
-    width: 1.85rem;
-    height: 0.42rem;
-    margin-left: -0.925rem;
+    bottom: calc((var(--chip-layer, 0) + 1) * var(--farkpg-chip-stack-offset, 5px));
+    width: var(--farkpg-chip-w);
+    height: var(--farkpg-chip-h);
+    margin-left: calc(var(--farkpg-chip-w) / -2);
     border-radius: 999px;
+    box-sizing: border-box;
     box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, 0.22),
-        inset 0 -2px 0 rgba(0, 0, 0, 0.35),
-        0 2px 4px rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(0, 0, 0, 0.35);
+        inset 0 2px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -3px 0 rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(0, 0, 0, 0.55),
+        0 2px 5px rgba(0, 0, 0, 0.45);
+    border: 2px solid rgba(0, 0, 0, 0.55);
     z-index: calc(var(--chip-layer, 0) + 1);
 }
 
-.farkpg-chip-stack--sm .farkpg-chip--disc {
-    width: 1.55rem;
-    margin-left: -0.775rem;
-    height: 0.36rem;
-    bottom: calc(var(--chip-layer, 0) * 0.24rem);
-}
+/* Chip stack layers (also in chip-visibility.css). */
+.farkpg-chip-column--1 .farkpg-chip--1 { --chip-layer: 0; }
+.farkpg-chip-column--1 .farkpg-chip--2 { --chip-layer: 1; }
+.farkpg-chip-column--1 .farkpg-chip--3 { --chip-layer: 2; }
+.farkpg-chip-column--1 .farkpg-chip--4 { --chip-layer: 3; }
+.farkpg-chip-column--1 .farkpg-chip--5 { --chip-layer: 4; }
+.farkpg-chip-column--2 .farkpg-chip--6 { --chip-layer: 0; }
+.farkpg-chip-column--2 .farkpg-chip--7 { --chip-layer: 1; }
+.farkpg-chip-column--2 .farkpg-chip--8 { --chip-layer: 2; }
+.farkpg-chip-column--2 .farkpg-chip--9 { --chip-layer: 3; }
+.farkpg-chip-column--2 .farkpg-chip--10 { --chip-layer: 4; }
+.farkpg-chip-column--3 .farkpg-chip--11 { --chip-layer: 0; }
+.farkpg-chip-column--3 .farkpg-chip--12 { --chip-layer: 1; }
+.farkpg-chip-column--3 .farkpg-chip--13 { --chip-layer: 2; }
+.farkpg-chip-column--3 .farkpg-chip--14 { --chip-layer: 3; }
+.farkpg-chip-column--3 .farkpg-chip--15 { --chip-layer: 4; }
+.farkpg-chip-column--4 .farkpg-chip--16 { --chip-layer: 0; }
+.farkpg-chip-column--4 .farkpg-chip--17 { --chip-layer: 1; }
+.farkpg-chip-column--4 .farkpg-chip--18 { --chip-layer: 2; }
+.farkpg-chip-column--4 .farkpg-chip--19 { --chip-layer: 3; }
+.farkpg-chip-column--4 .farkpg-chip--20 { --chip-layer: 4; }
+.farkpg-chip-column--5 .farkpg-chip--21 { --chip-layer: 0; }
+.farkpg-chip-column--5 .farkpg-chip--22 { --chip-layer: 1; }
+.farkpg-chip-column--5 .farkpg-chip--23 { --chip-layer: 2; }
+.farkpg-chip-column--5 .farkpg-chip--24 { --chip-layer: 3; }
+.farkpg-chip-column--5 .farkpg-chip--25 { --chip-layer: 4; }
+.farkpg-chip-column--6 .farkpg-chip--26 { --chip-layer: 0; }
+.farkpg-chip-column--6 .farkpg-chip--27 { --chip-layer: 1; }
+.farkpg-chip-column--6 .farkpg-chip--28 { --chip-layer: 2; }
+.farkpg-chip-column--6 .farkpg-chip--29 { --chip-layer: 3; }
+.farkpg-chip-column--6 .farkpg-chip--30 { --chip-layer: 4; }
+.farkpg-chip-column--7 .farkpg-chip--31 { --chip-layer: 0; }
+.farkpg-chip-column--7 .farkpg-chip--32 { --chip-layer: 1; }
+.farkpg-chip-column--7 .farkpg-chip--33 { --chip-layer: 2; }
+.farkpg-chip-column--7 .farkpg-chip--34 { --chip-layer: 3; }
+.farkpg-chip-column--7 .farkpg-chip--35 { --chip-layer: 4; }
+.farkpg-chip-column--8 .farkpg-chip--36 { --chip-layer: 0; }
+.farkpg-chip-column--8 .farkpg-chip--37 { --chip-layer: 1; }
+.farkpg-chip-column--8 .farkpg-chip--38 { --chip-layer: 2; }
+.farkpg-chip-column--8 .farkpg-chip--39 { --chip-layer: 3; }
+.farkpg-chip-column--8 .farkpg-chip--40 { --chip-layer: 4; }
 
-/* Chip visibility: parent `farkpg-chips-N` shows chips 1..N; `farkpg-chips-0` hides stack. */
-.farkpg-chips .farkpg-chip {
+/* Default hidden until applyChipStackVisibility() or chip-visibility.css shows them. */
+.farkpg-chip-stack:not([data-chip-count]) .farkpg-chip,
+.farkpg-chip-stack[data-chip-count="0"] .farkpg-chip {
     display: none;
 }
 
-.farkpg-chips-0 {
+.farkpg-chips-0:not([data-chip-count]) {
     display: none !important;
 }
 
-.farkpg-chips:not(.farkpg-chips-dual) .farkpg-chip-column--b {
-    display: none;
+.farkpg-chip-stack[data-chip-count="0"] {
+    display: none !important;
 }
 
-.farkpg-chips-1 .farkpg-chip--1 { display: block; }
-.farkpg-chips-2 .farkpg-chip--1,
-.farkpg-chips-2 .farkpg-chip--2 { display: block; }
-.farkpg-chips-3 .farkpg-chip--1,
-.farkpg-chips-3 .farkpg-chip--2,
-.farkpg-chips-3 .farkpg-chip--3 { display: block; }
-.farkpg-chips-4 .farkpg-chip--1,
-.farkpg-chips-4 .farkpg-chip--2,
-.farkpg-chips-4 .farkpg-chip--3,
-.farkpg-chips-4 .farkpg-chip--4 { display: block; }
-.farkpg-chips-5 .farkpg-chip--1,
-.farkpg-chips-5 .farkpg-chip--2,
-.farkpg-chips-5 .farkpg-chip--3,
-.farkpg-chips-5 .farkpg-chip--4,
-.farkpg-chips-5 .farkpg-chip--5 { display: block; }
-.farkpg-chips-6 .farkpg-chip--1,
-.farkpg-chips-6 .farkpg-chip--2,
-.farkpg-chips-6 .farkpg-chip--3,
-.farkpg-chips-6 .farkpg-chip--4,
-.farkpg-chips-6 .farkpg-chip--5,
-.farkpg-chips-6 .farkpg-chip--6 { display: block; }
-.farkpg-chips-7 .farkpg-chip--1,
-.farkpg-chips-7 .farkpg-chip--2,
-.farkpg-chips-7 .farkpg-chip--3,
-.farkpg-chips-7 .farkpg-chip--4,
-.farkpg-chips-7 .farkpg-chip--5,
-.farkpg-chips-7 .farkpg-chip--6,
-.farkpg-chips-7 .farkpg-chip--7 { display: block; }
-.farkpg-chips-8 .farkpg-chip--1,
-.farkpg-chips-8 .farkpg-chip--2,
-.farkpg-chips-8 .farkpg-chip--3,
-.farkpg-chips-8 .farkpg-chip--4,
-.farkpg-chips-8 .farkpg-chip--5,
-.farkpg-chips-8 .farkpg-chip--6,
-.farkpg-chips-8 .farkpg-chip--7,
-.farkpg-chips-8 .farkpg-chip--8 { display: block; }
-.farkpg-chips-9 .farkpg-chip--1,
-.farkpg-chips-9 .farkpg-chip--2,
-.farkpg-chips-9 .farkpg-chip--3,
-.farkpg-chips-9 .farkpg-chip--4,
-.farkpg-chips-9 .farkpg-chip--5,
-.farkpg-chips-9 .farkpg-chip--6,
-.farkpg-chips-9 .farkpg-chip--7,
-.farkpg-chips-9 .farkpg-chip--8,
-.farkpg-chips-9 .farkpg-chip--9 { display: block; }
-.farkpg-chips-10 .farkpg-chip--1,
-.farkpg-chips-10 .farkpg-chip--2,
-.farkpg-chips-10 .farkpg-chip--3,
-.farkpg-chips-10 .farkpg-chip--4,
-.farkpg-chips-10 .farkpg-chip--5,
-.farkpg-chips-10 .farkpg-chip--6,
-.farkpg-chips-10 .farkpg-chip--7,
-.farkpg-chips-10 .farkpg-chip--8,
-.farkpg-chips-10 .farkpg-chip--9,
-.farkpg-chips-10 .farkpg-chip--10 { display: block; }
-.farkpg-chips-11 .farkpg-chip--1,
-.farkpg-chips-11 .farkpg-chip--2,
-.farkpg-chips-11 .farkpg-chip--3,
-.farkpg-chips-11 .farkpg-chip--4,
-.farkpg-chips-11 .farkpg-chip--5,
-.farkpg-chips-11 .farkpg-chip--6,
-.farkpg-chips-11 .farkpg-chip--7,
-.farkpg-chips-11 .farkpg-chip--8,
-.farkpg-chips-11 .farkpg-chip--9,
-.farkpg-chips-11 .farkpg-chip--10,
-.farkpg-chips-11 .farkpg-chip--11 { display: block; }
-.farkpg-chips-12 .farkpg-chip--1,
-.farkpg-chips-12 .farkpg-chip--2,
-.farkpg-chips-12 .farkpg-chip--3,
-.farkpg-chips-12 .farkpg-chip--4,
-.farkpg-chips-12 .farkpg-chip--5,
-.farkpg-chips-12 .farkpg-chip--6,
-.farkpg-chips-12 .farkpg-chip--7,
-.farkpg-chips-12 .farkpg-chip--8,
-.farkpg-chips-12 .farkpg-chip--9,
-.farkpg-chips-12 .farkpg-chip--10,
-.farkpg-chips-12 .farkpg-chip--11,
-.farkpg-chips-12 .farkpg-chip--12 { display: block; }
-.farkpg-chips-13 .farkpg-chip--1,
-.farkpg-chips-13 .farkpg-chip--2,
-.farkpg-chips-13 .farkpg-chip--3,
-.farkpg-chips-13 .farkpg-chip--4,
-.farkpg-chips-13 .farkpg-chip--5,
-.farkpg-chips-13 .farkpg-chip--6,
-.farkpg-chips-13 .farkpg-chip--7,
-.farkpg-chips-13 .farkpg-chip--8,
-.farkpg-chips-13 .farkpg-chip--9,
-.farkpg-chips-13 .farkpg-chip--10,
-.farkpg-chips-13 .farkpg-chip--11,
-.farkpg-chips-13 .farkpg-chip--12,
-.farkpg-chips-13 .farkpg-chip--13 { display: block; }
-.farkpg-chips-14 .farkpg-chip--1,
-.farkpg-chips-14 .farkpg-chip--2,
-.farkpg-chips-14 .farkpg-chip--3,
-.farkpg-chips-14 .farkpg-chip--4,
-.farkpg-chips-14 .farkpg-chip--5,
-.farkpg-chips-14 .farkpg-chip--6,
-.farkpg-chips-14 .farkpg-chip--7,
-.farkpg-chips-14 .farkpg-chip--8,
-.farkpg-chips-14 .farkpg-chip--9,
-.farkpg-chips-14 .farkpg-chip--10,
-.farkpg-chips-14 .farkpg-chip--11,
-.farkpg-chips-14 .farkpg-chip--12,
-.farkpg-chips-14 .farkpg-chip--13,
-.farkpg-chips-14 .farkpg-chip--14 { display: block; }
-.farkpg-chips-15 .farkpg-chip--1,
-.farkpg-chips-15 .farkpg-chip--2,
-.farkpg-chips-15 .farkpg-chip--3,
-.farkpg-chips-15 .farkpg-chip--4,
-.farkpg-chips-15 .farkpg-chip--5,
-.farkpg-chips-15 .farkpg-chip--6,
-.farkpg-chips-15 .farkpg-chip--7,
-.farkpg-chips-15 .farkpg-chip--8,
-.farkpg-chips-15 .farkpg-chip--9,
-.farkpg-chips-15 .farkpg-chip--10,
-.farkpg-chips-15 .farkpg-chip--11,
-.farkpg-chips-15 .farkpg-chip--12,
-.farkpg-chips-15 .farkpg-chip--13,
-.farkpg-chips-15 .farkpg-chip--14,
-.farkpg-chips-15 .farkpg-chip--15 { display: block; }
-.farkpg-chips-16 .farkpg-chip--1,
-.farkpg-chips-16 .farkpg-chip--2,
-.farkpg-chips-16 .farkpg-chip--3,
-.farkpg-chips-16 .farkpg-chip--4,
-.farkpg-chips-16 .farkpg-chip--5,
-.farkpg-chips-16 .farkpg-chip--6,
-.farkpg-chips-16 .farkpg-chip--7,
-.farkpg-chips-16 .farkpg-chip--8,
-.farkpg-chips-16 .farkpg-chip--9,
-.farkpg-chips-16 .farkpg-chip--10,
-.farkpg-chips-16 .farkpg-chip--11,
-.farkpg-chips-16 .farkpg-chip--12,
-.farkpg-chips-16 .farkpg-chip--13,
-.farkpg-chips-16 .farkpg-chip--14,
-.farkpg-chips-16 .farkpg-chip--15,
-.farkpg-chips-16 .farkpg-chip--16 { display: block; }
-.farkpg-chips-17 .farkpg-chip--1,
-.farkpg-chips-17 .farkpg-chip--2,
-.farkpg-chips-17 .farkpg-chip--3,
-.farkpg-chips-17 .farkpg-chip--4,
-.farkpg-chips-17 .farkpg-chip--5,
-.farkpg-chips-17 .farkpg-chip--6,
-.farkpg-chips-17 .farkpg-chip--7,
-.farkpg-chips-17 .farkpg-chip--8,
-.farkpg-chips-17 .farkpg-chip--9,
-.farkpg-chips-17 .farkpg-chip--10,
-.farkpg-chips-17 .farkpg-chip--11,
-.farkpg-chips-17 .farkpg-chip--12,
-.farkpg-chips-17 .farkpg-chip--13,
-.farkpg-chips-17 .farkpg-chip--14,
-.farkpg-chips-17 .farkpg-chip--15,
-.farkpg-chips-17 .farkpg-chip--16,
-.farkpg-chips-17 .farkpg-chip--17 { display: block; }
-.farkpg-chips-18 .farkpg-chip--1,
-.farkpg-chips-18 .farkpg-chip--2,
-.farkpg-chips-18 .farkpg-chip--3,
-.farkpg-chips-18 .farkpg-chip--4,
-.farkpg-chips-18 .farkpg-chip--5,
-.farkpg-chips-18 .farkpg-chip--6,
-.farkpg-chips-18 .farkpg-chip--7,
-.farkpg-chips-18 .farkpg-chip--8,
-.farkpg-chips-18 .farkpg-chip--9,
-.farkpg-chips-18 .farkpg-chip--10,
-.farkpg-chips-18 .farkpg-chip--11,
-.farkpg-chips-18 .farkpg-chip--12,
-.farkpg-chips-18 .farkpg-chip--13,
-.farkpg-chips-18 .farkpg-chip--14,
-.farkpg-chips-18 .farkpg-chip--15,
-.farkpg-chips-18 .farkpg-chip--16,
-.farkpg-chips-18 .farkpg-chip--17,
-.farkpg-chips-18 .farkpg-chip--18 { display: block; }
-.farkpg-chips-19 .farkpg-chip--1,
-.farkpg-chips-19 .farkpg-chip--2,
-.farkpg-chips-19 .farkpg-chip--3,
-.farkpg-chips-19 .farkpg-chip--4,
-.farkpg-chips-19 .farkpg-chip--5,
-.farkpg-chips-19 .farkpg-chip--6,
-.farkpg-chips-19 .farkpg-chip--7,
-.farkpg-chips-19 .farkpg-chip--8,
-.farkpg-chips-19 .farkpg-chip--9,
-.farkpg-chips-19 .farkpg-chip--10,
-.farkpg-chips-19 .farkpg-chip--11,
-.farkpg-chips-19 .farkpg-chip--12,
-.farkpg-chips-19 .farkpg-chip--13,
-.farkpg-chips-19 .farkpg-chip--14,
-.farkpg-chips-19 .farkpg-chip--15,
-.farkpg-chips-19 .farkpg-chip--16,
-.farkpg-chips-19 .farkpg-chip--17,
-.farkpg-chips-19 .farkpg-chip--18,
-.farkpg-chips-19 .farkpg-chip--19 { display: block; }
-.farkpg-chips-20 .farkpg-chip--1,
-.farkpg-chips-20 .farkpg-chip--2,
-.farkpg-chips-20 .farkpg-chip--3,
-.farkpg-chips-20 .farkpg-chip--4,
-.farkpg-chips-20 .farkpg-chip--5,
-.farkpg-chips-20 .farkpg-chip--6,
-.farkpg-chips-20 .farkpg-chip--7,
-.farkpg-chips-20 .farkpg-chip--8,
-.farkpg-chips-20 .farkpg-chip--9,
-.farkpg-chips-20 .farkpg-chip--10,
-.farkpg-chips-20 .farkpg-chip--11,
-.farkpg-chips-20 .farkpg-chip--12,
-.farkpg-chips-20 .farkpg-chip--13,
-.farkpg-chips-20 .farkpg-chip--14,
-.farkpg-chips-20 .farkpg-chip--15,
-.farkpg-chips-20 .farkpg-chip--16,
-.farkpg-chips-20 .farkpg-chip--17,
-.farkpg-chips-20 .farkpg-chip--18,
-.farkpg-chips-20 .farkpg-chip--19,
-.farkpg-chips-20 .farkpg-chip--20 { display: block; }
+/* Chip count/column visibility (1..40): chip-visibility.css */
 
-/* Raw pool above 20: full stack + subtle cap indicator. */
-.farkpg-chips-over.farkpg-chips-20 {
+.farkpg-chips-over.farkpg-chips-40 {
     filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.45));
 }
 
-.farkpg-chip-column--a .farkpg-chip--1 { --chip-layer: 0; }
-.farkpg-chip-column--a .farkpg-chip--2 { --chip-layer: 1; }
-.farkpg-chip-column--a .farkpg-chip--3 { --chip-layer: 2; }
-.farkpg-chip-column--a .farkpg-chip--4 { --chip-layer: 3; }
-.farkpg-chip-column--a .farkpg-chip--5 { --chip-layer: 4; }
-.farkpg-chip-column--a .farkpg-chip--6 { --chip-layer: 5; }
-.farkpg-chip-column--a .farkpg-chip--7 { --chip-layer: 6; }
-.farkpg-chip-column--a .farkpg-chip--8 { --chip-layer: 7; }
-.farkpg-chip-column--a .farkpg-chip--9 { --chip-layer: 8; }
-.farkpg-chip-column--a .farkpg-chip--10 { --chip-layer: 9; }
-.farkpg-chip-column--b .farkpg-chip--11 { --chip-layer: 0; }
-.farkpg-chip-column--b .farkpg-chip--12 { --chip-layer: 1; }
-.farkpg-chip-column--b .farkpg-chip--13 { --chip-layer: 2; }
-.farkpg-chip-column--b .farkpg-chip--14 { --chip-layer: 3; }
-.farkpg-chip-column--b .farkpg-chip--15 { --chip-layer: 4; }
-.farkpg-chip-column--b .farkpg-chip--16 { --chip-layer: 5; }
-.farkpg-chip-column--b .farkpg-chip--17 { --chip-layer: 6; }
-.farkpg-chip-column--b .farkpg-chip--18 { --chip-layer: 7; }
-.farkpg-chip-column--b .farkpg-chip--19 { --chip-layer: 8; }
-.farkpg-chip-column--b .farkpg-chip--20 { --chip-layer: 9; }
-
 .farkpg-chip-tone--white .farkpg-chip--disc {
-    background: linear-gradient(180deg, #f4f4f4 0%, #c8c8c8 100%);
+    background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #f0f0f4 38%,
+        #d4d4dc 72%,
+        #a8a8b4 100%
+    );
+    border-color: rgba(20, 20, 28, 0.5);
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.65),
+        inset 0 -3px 0 rgba(60, 60, 72, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.15),
+        0 3px 6px rgba(0, 0, 0, 0.55);
 }
 .farkpg-chip-tone--red .farkpg-chip--disc {
     background: linear-gradient(180deg, #e85a5a 0%, #9a1e1e 100%);
