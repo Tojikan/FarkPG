@@ -42,6 +42,8 @@ On **`ready`**, this module also runs **`Hooks.callAll("virtualDiceTableReady", 
 
 `rollNew`, `startRoll`, `endRoll`, `rerollDieIds`, `moveDice`, `resetScore`, plus `syncFullState` / `requestFullSync` for GM full push.
 
+Each board tracks `sessionRollCount` (roll + re-roll actions since **Start roll**); reset on `startRoll` / `endRoll`. Shown in the toolbar and on overview cards.
+
 `moveDice`: `to` is `"table"` or `"zone"`; for zone use `zoneNewRow` and/or `zoneRowId`. New rows must send `newZoneRowId` (generated once by the mutator) so all clients share the same row id.
 
 ## Sorting
@@ -51,8 +53,8 @@ New rolls and moves **sort** dice. **Rerolls do not** reorder dice (values updat
 ## UX notes
 
 - Marquee + Ctrl/Cmd click to select. **Reroll selected** sits under the rolling grid when something is selected; selection **stays** after reroll.
+- **Use Free Roll** (next to Reroll selected): shown when you have free rolls and selected dice count is at most the pool size. Re-rolls selected dice, spends one free roll per die, and does **not** increment `sessionRollCount`.
 - **Reroll all** (toolbar): rerolls everything still on the **rolling area** only (not score).
-- **Double-click**: if that die is **selected**, reroll **all selected**; otherwise reroll **that die** only. Plain clicks use a short delay only when **multiple** dice are selected so double-click still works.
 - **Reset board** runs with **no confirm**.
 - Brief **CSS roll animation** on new values; `queueRollAnimation` + `vdt-die-rolling` class.
 

@@ -1,7 +1,7 @@
 import { DEFAULT_FACES, GM_PRIVATE_BOARD_ID, MODULE_ID, SHARED_BOARD_ID } from "./constants.js";
 import { canMutateBoard } from "./permissions.js";
 
-/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[]; rollInProgress: boolean; freeRolls: number }} */
+/** @returns {{ faces: number; tableDice: object[]; zoneRows: { id: string; dice: object[] }[]; rollInProgress: boolean; freeRolls: number; sessionRollCount: number }} */
 export function emptyBoard() {
     return {
         faces: DEFAULT_FACES,
@@ -9,6 +9,7 @@ export function emptyBoard() {
         zoneRows: [],
         rollInProgress: false,
         freeRolls: 0,
+        sessionRollCount: 0,
     };
 }
 
@@ -39,6 +40,17 @@ export function migrateBoard(board) {
     } else if (board.freeRolls < 0) {
         board.freeRolls = 0;
     }
+    if (typeof board.sessionRollCount !== "number" || !Number.isFinite(board.sessionRollCount)) {
+        board.sessionRollCount = 0;
+    } else if (board.sessionRollCount < 0) {
+        board.sessionRollCount = 0;
+    }
+}
+
+/** @param {object} board */
+function bumpSessionRollCount(board) {
+    migrateBoard(board);
+    board.sessionRollCount = (board.sessionRollCount ?? 0) + 1;
 }
 
 /**
@@ -183,6 +195,7 @@ export function applySocketMessage(state, msg) {
             } else {
                 board.freeRolls = 0;
             }
+            board.sessionRollCount = 0;
             return next;
         }
         case "endRoll": {
@@ -193,6 +206,7 @@ export function applySocketMessage(state, msg) {
             board.zoneRows = [];
             board.faces = DEFAULT_FACES;
             board.freeRolls = 0;
+            board.sessionRollCount = 0;
             return next;
         }
         case "setFreeRolls": {
@@ -216,6 +230,7 @@ export function applySocketMessage(state, msg) {
                     id: String(d.id),
                     value: Number(d.value),
                 }));
+                if (board.tableDice.length) bumpSessionRollCount(board);
                 sortBoardDice(board);
                 return next;
             }
@@ -226,6 +241,7 @@ export function applySocketMessage(state, msg) {
                 : DEFAULT_FACES;
             board.faces = f;
             board.tableDice = Array.from({ length: n }, () => createDie(msg.targetBoardId, f));
+            if (n > 0) bumpSessionRollCount(board);
             sortBoardDice(board);
             return next;
         }
@@ -238,11 +254,13 @@ export function applySocketMessage(state, msg) {
                 for (const d of board.tableDice) {
                     if (map.has(d.id)) d.value = map.get(d.id);
                 }
+                bumpSessionRollCount(board);
                 sortBoardDice(board);
                 return next;
             }
             const faces = board.faces || DEFAULT_FACES;
             for (const d of board.tableDice) d.value = randomFace(faces);
+            if (board.tableDice.length) bumpSessionRollCount(board);
             sortBoardDice(board);
             return next;
         }
@@ -250,11 +268,8 @@ export function applySocketMessage(state, msg) {
             const board = ensureBoard(next, msg.targetBoardId);
             if (!board.rollInProgress) return null;
             const updates = msg.payload?.updates;
-            // Note: `freeRolls` is intentionally NOT decremented here. The
-            // free-rolls pool is only consumed by the double-click re-roll
-            // gesture, which commits a separate `setFreeRolls` mutation. Bulk
-            // operations like "Reroll Board" / "Reroll selected" go through
-            // this reducer too and must leave the pool alone.
+            // Note: `freeRolls` is not decremented here. **Use Free Roll** commits
+            // a separate `setFreeRolls` mutation after a `freeRoll` reroll.
             if (Array.isArray(updates)) {
                 const map = new Map(updates.map((u) => [String(u.id), Number(u.value)]));
                 for (const d of board.tableDice) {
@@ -265,6 +280,7 @@ export function applySocketMessage(state, msg) {
                         if (map.has(d.id)) d.value = map.get(d.id);
                     }
                 }
+                if (map.size && !msg.payload?.freeRoll) bumpSessionRollCount(board);
                 return next;
             }
             const ids = new Set(msg.payload?.ids ?? []);
@@ -277,6 +293,7 @@ export function applySocketMessage(state, msg) {
                     if (ids.has(d.id)) d.value = randomFace(faces);
                 }
             }
+            if (ids.size && !msg.payload?.freeRoll) bumpSessionRollCount(board);
             return next;
         }
         case "moveDice": {

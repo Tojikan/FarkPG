@@ -113,6 +113,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                 boardId: u.id,
                 label: u.name,
                 faces: b.faces,
+                sessionRollCount: Number(b.sessionRollCount ?? 0),
                 tableDice: b.tableDice.map((d) => ({ ...d })),
                 zoneRows: b.zoneRows.map((r) => ({
                     id: r.id,
@@ -127,6 +128,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     boardId: SHARED_BOARD_ID,
                     label: game.i18n.localize(`${MODULE_ID}.sharedBoard`),
                     faces: b.faces,
+                    sessionRollCount: Number(b.sessionRollCount ?? 0),
                     tableDice: b.tableDice.map((d) => ({ ...d })),
                     zoneRows: b.zoneRows.map((r) => ({
                         id: r.id,
@@ -142,6 +144,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     boardId: GM_PRIVATE_BOARD_ID,
                     label: game.i18n.localize(`${MODULE_ID}.gmPrivateBoard`),
                     faces: b.faces,
+                    sessionRollCount: Number(b.sessionRollCount ?? 0),
                     tableDice: b.tableDice.map((d) => ({ ...d })),
                     zoneRows: b.zoneRows.map((r) => ({
                         id: r.id,
@@ -296,7 +299,14 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
             }
         }
         data.freeRolls = Number(board.freeRolls ?? 0);
+        data.sessionRollCount = Number(board.sessionRollCount ?? 0);
         data.showRerollSelected = rollInProgress && data.canMutate && selectedArr.length > 0;
+        data.showUseFreeRoll =
+            rollInProgress &&
+            data.canMutate &&
+            selectedArr.length > 0 &&
+            data.freeRolls > 0 &&
+            selectedArr.length <= data.freeRolls;
         data.canRerollAllRolling = rollInProgress && data.canMutate && board.tableDice.length > 0;
 
         return data;
@@ -336,6 +346,11 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         root.querySelector("[data-action='reroll-selected']")?.addEventListener(
             "click",
             () => void this._rerollSelected(),
+            { signal },
+        );
+        root.querySelector("[data-action='use-free-roll']")?.addEventListener(
+            "click",
+            () => void this._useFreeRollSelected(),
             { signal },
         );
         root.querySelector("[data-action='vdt-return-overview']")?.addEventListener(
@@ -475,11 +490,8 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     const id = dieEl.dataset.dieId;
                     if (!id) return;
                     if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
-                    if (ev.detail > 1) return;
 
                     const ctrl = !!(ev.ctrlKey || ev.metaKey);
-                    if (this._dieSelectDelayTimer) clearTimeout(this._dieSelectDelayTimer);
-
                     const applyPlainSelect = () => {
                         this.selectedDieIds.clear();
                         this.selectedDieIds.add(id);
@@ -493,36 +505,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                         return;
                     }
 
-                    if (this.selectedDieIds.size > 1) {
-                        this._dieSelectDelayTimer = setTimeout(() => {
-                            this._dieSelectDelayTimer = null;
-                            applyPlainSelect();
-                        }, 260);
-                    } else {
-                        applyPlainSelect();
-                    }
-                },
-                { signal },
-            );
-
-            dieEl.addEventListener(
-                "dblclick",
-                (ev) => {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    if (this._dieSelectDelayTimer) {
-                        clearTimeout(this._dieSelectDelayTimer);
-                        this._dieSelectDelayTimer = null;
-                    }
-                    const id = dieEl.dataset.dieId;
-                    if (!id) return;
-                    if (!canMutateBoard(game.user.id, this._targetBoardIdForMutation() ?? "", game.user.isGM)) return;
-                    if (this.selectedDieIds.has(id)) void this._rerollSelected();
-                    else void this._rerollDieIdsFromIds([id]);
-                    // Free rolls are *only* spent by this gesture -- bulk
-                    // operations like "Reroll Board" go through the same
-                    // `rerollDieIds` mutation but don't decrement the pool.
-                    this._consumeFreeRoll();
+                    applyPlainSelect();
                 },
                 { signal },
             );
@@ -761,22 +744,21 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     /**
-     * Spend one free roll from the active board's pool. No-op when the pool
-     * is already empty or the user can't mutate the target board. Called
-     * once per double-click re-roll gesture (regardless of how many dice
-     * the gesture ends up re-rolling).
+     * Spend free rolls from the active board's pool.
+     * @param {number} [count=1]
      */
-    _consumeFreeRoll() {
+    _consumeFreeRolls(count = 1) {
         const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return;
         const board = readBoard(getSharedState(), boardId);
         const current = Number(board?.freeRolls ?? 0);
-        if (current <= 0) return;
+        const n = Math.max(0, Math.floor(Number(count) || 0));
+        if (n <= 0 || current <= 0) return;
         commitMutation({
             type: "setFreeRolls",
             actorUserId: game.user.id,
             targetBoardId: boardId,
-            payload: { value: Math.max(0, current - 1) },
+            payload: { value: Math.max(0, current - n) },
         });
     }
 
@@ -940,9 +922,10 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     /**
      * @param {string[]} ids
+     * @param {{ freeRoll?: boolean }} [opts]
      * @returns {Promise<boolean>}
      */
-    async _rerollDieIdsFromIds(ids) {
+    async _rerollDieIdsFromIds(ids, opts = {}) {
         const boardId = this._targetBoardIdForMutation();
         if (!boardId || !canMutateBoard(game.user.id, boardId, game.user.isGM)) return false;
         const board = readBoard(getSharedState(), boardId);
@@ -972,7 +955,7 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
                     type: "rerollDieIds",
                     actorUserId: game.user.id,
                     targetBoardId: boardId,
-                    payload: { updates },
+                    payload: { updates, freeRoll: !!opts.freeRoll },
                 })
             ) {
                 this._pendingRollAnimIds = null;
@@ -999,6 +982,23 @@ export class VirtualTableApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const filtered = ids.filter((id) => poolIds.has(id));
         if (!filtered.length) return;
         await this._rerollDieIdsFromIds(filtered);
+    }
+
+    async _useFreeRollSelected() {
+        const ids = [...this.selectedDieIds];
+        if (!ids.length) return;
+        const bid = this._targetBoardIdForMutation();
+        if (!bid || !canMutateBoard(game.user.id, bid, game.user.isGM)) return;
+        const board = readBoard(getSharedState(), bid);
+        const freeRolls = Number(board.freeRolls ?? 0);
+        const poolIds = new Set([
+            ...board.tableDice.map((d) => d.id),
+            ...board.zoneRows.flatMap((r) => r.dice.map((d) => d.id)),
+        ]);
+        const filtered = ids.filter((id) => poolIds.has(id));
+        if (!filtered.length || freeRolls <= 0 || filtered.length > freeRolls) return;
+        const ok = await this._rerollDieIdsFromIds(filtered, { freeRoll: true });
+        if (ok) this._consumeFreeRolls(filtered.length);
     }
 
     /**
