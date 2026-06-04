@@ -205,20 +205,30 @@ export function parseCharacterExportJson(text) {
 
     const resIn = raw.resources && typeof raw.resources === "object" ? raw.resources : {};
     const hp = resIn.health && typeof resIn.health === "object" ? resIn.health : {};
-    const ap = resIn.actionPoints && typeof resIn.actionPoints === "object" ? resIn.actionPoints : {};
     const hMax = clampInt(hp.max, 0, 99999999, 0);
     const hVal = clampInt(hp.value, 0, 99999999, 0);
+    const ap = resIn.actionPoints && typeof resIn.actionPoints === "object" ? resIn.actionPoints : {};
     const apMax = clampInt(ap.max, 0, 99999, 0);
     const apVal = clampInt(ap.value, 0, 99999, 0);
+    const acIn = resIn.actionCurrency && typeof resIn.actionCurrency === "object" ? resIn.actionCurrency : {};
+    const actionCurrency = {
+        white: { value: clampInt(acIn.white?.value, 0, 999999, 0) },
+        red: { value: clampInt(acIn.red?.value, 0, 999999, 0) },
+        blue: { value: clampInt(acIn.blue?.value, 0, 999999, 0) },
+        orange: { value: clampInt(acIn.orange?.value, 0, 999999, 0) },
+        black: { value: clampInt(acIn.black?.value, 0, 999999, 0) },
+    };
+    const anyAc = Object.values(actionCurrency).some((e) => e.value > 0);
+    if (!anyAc && apVal > 0) {
+        actionCurrency.white = { value: Math.min(apVal, apMax || apVal) };
+    }
+
     const resources = {
         health: {
             max: hMax,
             value: Math.min(hVal, hMax || hVal),
         },
-        actionPoints: {
-            max: apMax,
-            value: Math.min(apVal, apMax || apVal),
-        },
+        actionCurrency,
         movement: clampInt(resIn.movement, 0, 9999, 0),
     };
 
@@ -271,8 +281,7 @@ export async function applyCharacterImport(actor, data) {
         "system.customSkills": data.customSkills,
         "system.resources.health.value": data.resources.health.value,
         "system.resources.health.max": data.resources.health.max,
-        "system.resources.actionPoints.value": data.resources.actionPoints.value,
-        "system.resources.actionPoints.max": data.resources.actionPoints.max,
+        "system.resources.actionCurrency": data.resources.actionCurrency,
         "system.resources.movement": data.resources.movement,
         "system.resources.exp.value": data.xp,
     };

@@ -13,7 +13,7 @@
       "buttonTooltip": "Import character JSON from the FarkPG web ZnZ builder",
       "buttonAria": "Import character from JSON",
       "dialogTitle": "Import character JSON",
-      "dialogHint": "Paste the JSON copied from the FarkPG site (ZnZ builder → Export to clipboard). This replaces attributes, core skills, custom skills, biography, resources, experience, and ability items on this actor.",
+      "dialogHint": "Paste the JSON copied from the FarkPG site (ZnZ builder → Export to clipboard). This replaces attributes, core skills, custom skills, biography, resources (including action currency), experience, and ability items on this actor.",
       "placeholder": "{ \"formatId\": \"farkpg-znz-character-export\", ... }",
       "jsonLabel": "Character JSON",
       "confirm": "Import",
@@ -36,37 +36,36 @@
       "exp": "EXP",
       "move": "Move",
       "portraitEditHint": "Click the portrait or the image button to choose a new picture.",
-      "portraitEditBtn": "Change portrait",
-      "removeCustomAp": "Remove this custom AP pool",
-      "removeCustomApConfirmTitle": "Remove custom AP pool?",
-      "removeCustomApConfirmBody": "Remove the pool \"{name}\"? This cannot be undone.",
-      "removeCustomApConfirmDelete": "Remove"
+      "portraitEditBtn": "Change portrait"
+    },
+
+    "ActionCurrency": {
+      "white": "White",
+      "red": "Red",
+      "blue": "Blue",
+      "orange": "Orange",
+      "black": "Black"
+    },
+
+    "ResourceDelta": {
+      "apply": "Apply",
+      "hpLabel": "Change HP (negative subtracts)",
+      "hpTooltip": "Click to add or subtract hit points",
+      "hpAria": "Adjust hit points",
+      "expLabel": "Change EXP (negative subtracts)",
+      "expTooltip": "Click to add or subtract experience",
+      "expAria": "Adjust experience"
     },
 
     "ApDrawer": {
-      "title": "Action Points",
-      "headerStripTitle": "AP",
-      "openTooltip": "Open the compact AP window (same pools; quick spend with minus).",
-      "openAria": "Open action points window",
-      "decrementTooltip": "Click the icon to spend 1 from this pool",
-      "decrementAria": "Spend one from this pool (click icon)",
-      "customApDefaultName": "Custom AP",
-      "addPoolTooltip": "Add a custom AP pool",
-      "addPoolAria": "Add custom action points pool",
-      "addPoolDialogTitle": "Add custom AP pool",
-      "addPoolName": "Label",
-      "addPoolImg": "Icon image path",
-      "addPoolImgBrowse": "Browse for image",
-      "addPoolAmount": "Starting amount",
-      "addPoolConfirm": "Add",
-      "addPoolNameRequired": "Enter a label for the new pool.",
+      "title": "Action currency",
+      "headerStripTitle": "Action",
+      "openTooltip": "Open the action currency window (same pools; click chip stack to spend one).",
+      "openAria": "Open action currency window",
+      "decrementTooltip": "Click the chip stack to spend 1 from this pool",
+      "decrementAria": "Spend one from this pool (click stack)",
       "healthLabel": "Health",
-      "healthCurrentTooltip": "Current HP. Clamped to the configured Max HP.",
-      "healthDeltaLabel": "Adjust",
-      "healthDeltaTooltip": "Amount applied by the + and \u2212 buttons.",
-      "healthIncrease": "Heal by the amount shown",
-      "healthDecrease": "Take damage equal to the amount shown",
-      "healthAdjustAria": "Adjust health"
+      "healthCurrentTooltip": "Current HP. Clamped to Max HP when set."
     },
 
     "Attributes": {
@@ -76,7 +75,7 @@
       "adroit": "Adroit",
       "adroitHint": "Expertise and dexterity. Determines Movement Speed; ",
       "mind": "Mind",
-      "mindHint": "Mental and social skills. Determines Max AP; "
+      "mindHint": "Mental and social skills. "
     },
 
     "Skills": {
@@ -239,20 +238,13 @@
 
     "Config": {
       "title": "Configuration",
+      "currentHealth": "Current HP",
       "maxHealth": "Max HP",
-      "currentActionPoints": "Current AP",
-      "maxActionPoints": "Max AP",
+      "currentExp": "Current EXP",
+      "maxExp": "Max EXP",
+      "movement": "Movement",
       "equipmentSlots": "Base Equipment Slot",
-      "inventorySlots": "Base Inventory Slot",
-      "customApTitle": "Custom action points",
-      "customApHint": "Extra AP pools (no cap). Set current amounts here, or spend from the AP pop-out on the character header.",
-      "addCustomAp": "Add custom AP type",
-      "customApName": "Name",
-      "customApValue": "Current",
-      "customApImg": "Icon path",
-      "customApImgPlaceholder": "icons/svg/aura.svg",
-      "removeCustomAp": "Remove pool",
-      "customApEmpty": "No custom AP types yet."
+      "inventorySlots": "Base Inventory Slot"
     },
 
     "Rolls": {

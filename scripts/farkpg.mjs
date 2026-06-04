@@ -41,6 +41,7 @@ Hooks.once("init", async () => {
         "farkpg.tab-inventory": `systems/${SYSTEM_ID}/templates/actor/parts/tab-inventory.hbs`,
         "farkpg.tab-config": `systems/${SYSTEM_ID}/templates/actor/parts/tab-config.hbs`,
         "farkpg.item-card": `systems/${SYSTEM_ID}/templates/actor/parts/item-card.hbs`,
+        "farkpg.chip-stack": `systems/${SYSTEM_ID}/templates/actor/parts/chip-stack.hbs`,
         "farkpg.ap-drawer": `systems/${SYSTEM_ID}/templates/ap-drawer.hbs`,
     });
 });

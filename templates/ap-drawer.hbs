@@ -1,76 +1,87 @@
 <div class="farkpg-ap-drawer-window">
-    <div class="farkpg-drawer-health-row">
-        <div class="farkpg-drawer-health-cell">
+    <div class="farkpg-drawer-resources-row">
+        <div class="farkpg-drawer-health-cell farkpg-drawer-res-cell">
             <div class="farkpg-ap-drawer-label">{{localize 'FARKPG.ApDrawer.healthLabel'}}</div>
-            <div class="farkpg-drawer-health-value">
-                <span class="farkpg-drawer-health-icon" aria-hidden="true">
-                    <i class="fa-solid fa-heart"></i>
+            <div class="farkpg-drawer-health-value farkpg-header-resource-inner">
+                <span class="farkpg-resource-delta-anchor">
+                    {{#if editable}}
+                        <button type="button"
+                                class="farkpg-header-icon-hit farkpg-header-hp-delta farkpg-drawer-hp-delta-trigger"
+                                data-tooltip="{{localize 'FARKPG.ResourceDelta.hpTooltip'}}"
+                                aria-label="{{localize 'FARKPG.ResourceDelta.hpAria'}}">
+                            <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                        </button>
+                    {{else}}
+                        <span class="farkpg-header-icon-hit farkpg-header-icon-readonly farkpg-header-hp-delta" aria-hidden="true">
+                            <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                        </span>
+                    {{/if}}
                 </span>
                 {{#if editable}}
                     <input type="number"
                            class="farkpg-ap-drawer-inp farkpg-drawer-health-inp"
                            data-farkpg-health-value="1"
                            value="{{health.value}}"
-                           min="0"
                            step="1"
                            data-tooltip="{{localize 'FARKPG.ApDrawer.healthCurrentTooltip'}}" />
                 {{else}}
                     <span class="farkpg-ap-drawer-read-val">{{health.valueDisplay}}</span>
                 {{/if}}
                 <span class="farkpg-ap-drawer-slash">/</span>
-                <span class="farkpg-ap-drawer-read-max">{{health.maxDisplay}}</span>
+                <span class="farkpg-ap-drawer-read-max farkpg-read-max-muted">{{health.maxDisplay}}</span>
             </div>
         </div>
-        {{#if editable}}
-            <div class="farkpg-drawer-health-adjust">
-                <div class="farkpg-ap-drawer-label">{{localize 'FARKPG.ApDrawer.healthDeltaLabel'}}</div>
-                <div class="farkpg-drawer-health-adjust-row">
-                    <button type="button"
-                            class="farkpg-drawer-health-btn farkpg-drawer-health-btn-minus"
-                            data-action="adjustHealth"
-                            data-direction="-1"
-                            data-tooltip="{{localize 'FARKPG.ApDrawer.healthDecrease'}}"
-                            aria-label="{{localize 'FARKPG.ApDrawer.healthDecrease'}}">
-                        <i class="fa-solid fa-minus" aria-hidden="true"></i>
-                    </button>
-                    <input type="number"
-                           class="farkpg-ap-drawer-inp farkpg-drawer-health-delta"
-                           value="1"
-                           min="1"
-                           step="1"
-                           data-tooltip="{{localize 'FARKPG.ApDrawer.healthDeltaTooltip'}}" />
-                    <button type="button"
-                            class="farkpg-drawer-health-btn farkpg-drawer-health-btn-plus"
-                            data-action="adjustHealth"
-                            data-direction="1"
-                            data-tooltip="{{localize 'FARKPG.ApDrawer.healthIncrease'}}"
-                            aria-label="{{localize 'FARKPG.ApDrawer.healthIncrease'}}">
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-        {{/if}}
-    </div>
 
-    <div class="farkpg-ap-drawer-row">
-        {{#each apTypes as |row|}}
-            <div class="farkpg-ap-drawer-cell" data-ap-kind="{{row.kind}}" data-ap-id="{{row.id}}">
-                <div class="farkpg-ap-drawer-label">{{row.label}}</div>
-                <div class="farkpg-ap-drawer-mid">
-                    {{#if @root.editable}}
+        <div class="farkpg-drawer-health-cell farkpg-drawer-res-cell">
+            <div class="farkpg-ap-drawer-label">{{localize 'FARKPG.Header.exp'}}</div>
+            <div class="farkpg-drawer-health-value farkpg-header-resource-inner">
+                <span class="farkpg-resource-delta-anchor">
+                    {{#if editable}}
                         <button type="button"
-                                class="farkpg-ap-drawer-icon-btn"
-                                data-action="decrementApFromDrawer"
-                                data-ap-kind="{{row.kind}}"
-                                {{#if (eq row.kind "custom")}}data-ap-id="{{row.id}}"{{/if}}
-                                data-tooltip="{{localize 'FARKPG.ApDrawer.decrementTooltip'}}"
-                                aria-label="{{localize 'FARKPG.ApDrawer.decrementAria'}}">
-                            <img src="{{row.img}}" alt="" />
+                                class="farkpg-header-icon-hit farkpg-header-exp-delta farkpg-drawer-exp-delta-trigger"
+                                data-tooltip="{{localize 'FARKPG.ResourceDelta.expTooltip'}}"
+                                aria-label="{{localize 'FARKPG.ResourceDelta.expAria'}}">
+                            <i class="fa-solid fa-star" aria-hidden="true"></i>
                         </button>
                     {{else}}
-                        <span class="farkpg-ap-drawer-icon-readonly">
-                            <img src="{{row.img}}" alt="" />
+                        <span class="farkpg-header-icon-hit farkpg-header-icon-readonly farkpg-header-icon-hit--exp farkpg-header-exp-delta" aria-hidden="true">
+                            <i class="fa-solid fa-star" aria-hidden="true"></i>
                         </span>
+                    {{/if}}
+                </span>
+                {{#if editable}}
+                    <input type="number"
+                           class="farkpg-ap-drawer-inp farkpg-drawer-exp-inp"
+                           data-farkpg-exp-value="1"
+                           value="{{exp.value}}"
+                           min="0"
+                           step="1" />
+                {{else}}
+                    <span class="farkpg-ap-drawer-read-val">{{exp.valueDisplay}}</span>
+                {{/if}}
+                <span class="farkpg-ap-drawer-slash">/</span>
+                <span class="farkpg-ap-drawer-read-max farkpg-read-max-muted">{{exp.maxDisplay}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="farkpg-ap-drawer-row farkpg-ap-drawer-row--currency">
+        {{#each apTypes as |row|}}
+            <div class="farkpg-ap-drawer-cell farkpg-ac-cell" data-ap-kind="{{row.kind}}" data-ap-id="{{row.id}}">
+                <div class="farkpg-ap-drawer-label farkpg-ac-label farkpg-ac-label--{{row.id}}">{{row.label}}</div>
+                <div class="farkpg-ac-chip-mid">
+                    {{#if @root.editable}}
+                        <button type="button"
+                                class="farkpg-ac-icon-hit"
+                                data-action="decrementApFromDrawer"
+                                data-ap-kind="{{row.kind}}"
+                                data-ap-id="{{row.id}}"
+                                data-tooltip="{{localize 'FARKPG.ApDrawer.decrementTooltip'}}"
+                                aria-label="{{localize 'FARKPG.ApDrawer.decrementAria'}}">
+                            {{> "farkpg.chip-stack" row}}
+                        </button>
+                    {{else}}
+                        {{> "farkpg.chip-stack" row}}
                     {{/if}}
                 </div>
                 <div class="farkpg-ap-drawer-frac">
@@ -83,10 +94,6 @@
                                step="1" />
                     {{else}}
                         <span class="farkpg-ap-drawer-read-val">{{row.valueDisplay}}</span>
-                    {{/if}}
-                    {{#if row.hasMax}}
-                        <span class="farkpg-ap-drawer-slash">/</span>
-                        <span class="farkpg-ap-drawer-read-max">{{row.maxDisplay}}</span>
                     {{/if}}
                 </div>
             </div>

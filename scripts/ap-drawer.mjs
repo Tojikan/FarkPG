@@ -1,76 +1,117 @@
 import { SYSTEM_ID } from "./config.mjs";
+import { bindDeltaPopover } from "./resource-delta-popover.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
-const BASE_AP_IMG = "icons/svg/lightning.svg";
-const CUSTOM_AP_IMG_DEFAULT = "icons/svg/aura.svg";
+/** Preset action currency keys (order = display left → right). */
+export const ACTION_CURRENCY_KEYS = ["white", "red", "blue", "orange", "black"];
 
 /**
  * @param {number} n
- * @returns {string}
+ * @returns {string} Plain integer string (no thousands separators).
  */
-function formatApNumber(n) {
-    const v = Number(n);
+function formatPlainInt(n) {
+    const v = Math.trunc(Number(n));
     if (!Number.isFinite(v)) return "0";
-    try {
-        return v.toLocaleString(game.i18n?.lang ?? "en");
-    } catch {
-        return String(v);
+    return String(v);
+}
+
+/**
+ * Ensure the actor has `system.resources.actionCurrency` with all five keys.
+ * Migrates legacy `actionPoints` / `customActionPoints` once.
+ *
+ * @param {Actor} actor
+ */
+export async function ensureActorActionCurrency(actor) {
+    if (!actor?.canUserModify?.(game.user, "update")) return;
+    const r = actor.system?.resources;
+    const ac = r?.actionCurrency;
+    const complete =
+        ac &&
+        typeof ac === "object" &&
+        ACTION_CURRENCY_KEYS.every((k) => {
+            const e = ac[k];
+            return e && typeof e === "object" && Number.isFinite(Number(e.value));
+        });
+    if (complete) return;
+
+    const next = {};
+    for (const k of ACTION_CURRENCY_KEYS) {
+        const existing = ac?.[k];
+        const v = Math.max(0, Math.trunc(Number(existing?.value ?? 0)) || 0);
+        next[k] = { value: v };
+    }
+
+    const legacyAp = Math.max(0, Math.trunc(Number(r?.actionPoints?.value ?? 0)) || 0);
+    const hasAnyStored =
+        ac &&
+        ACTION_CURRENCY_KEYS.some((k) => (Math.trunc(Number(ac[k]?.value ?? 0)) || 0) > 0);
+    if (legacyAp > 0 && !hasAnyStored) {
+        next.white = { value: legacyAp };
+    }
+
+    await actor.update({ "system.resources.actionCurrency": next });
+
+    const res = actor.system?.resources ?? {};
+    const delOpts = { performDeletions: true };
+    if ("actionPoints" in res) {
+        await actor.update({ "system.resources.-=actionPoints": null }, delOpts);
+    }
+    if ("customActionPoints" in res) {
+        await actor.update({ "system.resources.-=customActionPoints": null }, delOpts);
     }
 }
 
 /**
- * Rows for base + custom AP, shared by the actor sheet header and the drawer app.
+ * Chip display metadata for CSS-driven stacks (`farkpg-chips-{count}` on parent).
+ * @param {number} value  Raw currency pool size.
+ */
+export function buildChipDisplayMeta(value) {
+    const raw = Math.max(0, Math.trunc(Number(value)) || 0);
+    const chipCount = Math.min(20, raw);
+    return {
+        chipCount,
+        chipCountClass: `farkpg-chips-${chipCount}`,
+        chipOver: raw > 20,
+        chipDual: chipCount > 10,
+    };
+}
+
+/**
+ * Rows for the five preset currencies (header + drawer).
  * @param {Actor} actor
  */
 export function buildApTypeRowsForActor(actor) {
-    const system = actor.system ?? {};
-    const ap = system.resources?.actionPoints ?? {};
-    const rows = [
-        {
-            kind: "base",
-            id: "base",
-            label: game.i18n.localize("FARKPG.Header.ap"),
-            value: Number(ap.value ?? 0),
-            valueDisplay: formatApNumber(ap.value ?? 0),
-            max: Number(ap.max ?? 0),
-            maxDisplay: formatApNumber(ap.max ?? 0),
-            hasMax: true,
-            img: BASE_AP_IMG,
-            valuePath: "system.resources.actionPoints.value",
-            valueInputName: "system.resources.actionPoints.value",
-        },
-    ];
-
-    const customMap = system.resources?.customActionPoints ?? {};
-    for (const [id, entry] of Object.entries(customMap)) {
-        if (!entry || typeof entry !== "object") continue;
-        const name =
-            String(entry.name ?? "").trim() || game.i18n.localize("FARKPG.ApDrawer.customApDefaultName");
-        const img = String(entry.img ?? "").trim() || CUSTOM_AP_IMG_DEFAULT;
-        rows.push({
-            kind: "custom",
+    const ac = actor.system?.resources?.actionCurrency ?? {};
+    return ACTION_CURRENCY_KEYS.map((id) => {
+        const entry = ac[id];
+        const value = Math.max(0, Math.trunc(Number(entry?.value ?? 0)) || 0);
+        const chip = buildChipDisplayMeta(value);
+        return {
+            kind: "currency",
             id,
-            label: name,
-            value: Number(entry.value ?? 0),
-            valueDisplay: formatApNumber(entry.value ?? 0),
-            max: 0,
-            maxDisplay: "",
+            label: game.i18n.localize(`FARKPG.ActionCurrency.${id}`),
+            chipClass: `farkpg-chip-tone--${id}`,
+            chipStackSize: "",
+            chipCount: chip.chipCount,
+            chipCountClass: chip.chipCountClass,
+            chipOver: chip.chipOver,
+            chipDual: chip.chipDual,
+            value,
+            valueDisplay: formatPlainInt(value),
+            valuePath: `system.resources.actionCurrency.${id}.value`,
+            valueInputName: `system.resources.actionCurrency.${id}.value`,
             hasMax: false,
-            img,
-            valuePath: `system.resources.customActionPoints.${id}.value`,
-            valueInputName: `system.resources.customActionPoints.${id}.value`,
-        });
-    }
-    return rows;
+            maxDisplay: "",
+        };
+    });
 }
 
 /** @type {Map<string, FarkPGApDrawer>} */
 const _openByActorId = new Map();
 
 /**
- * Pop-out window for AP: quick spend on icon, or edit values inline.
- * Base AP is clamped to max; custom pools only clamp at zero.
+ * Pop-out window: health + five action currencies (quick spend on icon).
  */
 export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
     /** @type {AbortController|null} */
@@ -96,11 +137,10 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
     static DEFAULT_OPTIONS = {
         classes: ["farkpg", "ap-drawer"],
         tag: "section",
-        position: { width: 620, height: 240 },
+        position: { width: 720, height: 320 },
         window: { resizable: true, icon: "fa-solid fa-coins" },
         actions: {
             decrementApFromDrawer: FarkPGApDrawer.#onDecrement,
-            adjustHealth: FarkPGApDrawer.#onAdjustHealth,
         },
     };
 
@@ -115,18 +155,30 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
     /** @inheritDoc */
     async _prepareContext(options) {
         const context = await super._prepareContext(options);
+        await ensureActorActionCurrency(this.actor);
         context.apTypes = buildApTypeRowsForActor(this.actor);
         context.editable = this.actor.canUserModify(game.user, "update");
 
         const health = this.actor.system?.resources?.health ?? {};
-        const hpValue = Math.max(0, Math.floor(Number(health.value ?? 0)) || 0);
-        const hpMax = Math.max(0, Math.floor(Number(health.max ?? 0)) || 0);
+        const hpValue = Math.max(0, Math.trunc(Number(health.value ?? 0)) || 0);
+        const hpMax = Math.max(0, Math.trunc(Number(health.max ?? 0)) || 0);
         context.health = {
             value: hpValue,
             max: hpMax,
-            valueDisplay: formatApNumber(hpValue),
-            maxDisplay: formatApNumber(hpMax),
+            valueDisplay: formatPlainInt(hpValue),
+            maxDisplay: formatPlainInt(hpMax),
         };
+
+        const exp = this.actor.system?.resources?.exp ?? {};
+        const expValue = Math.max(0, Math.trunc(Number(exp.value ?? 0)) || 0);
+        const expMax = Math.max(0, Math.trunc(Number(exp.max ?? 0)) || 0);
+        context.exp = {
+            value: expValue,
+            max: expMax,
+            valueDisplay: formatPlainInt(expValue),
+            maxDisplay: formatPlainInt(expMax),
+        };
+
         return context;
     }
 
@@ -146,7 +198,7 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
                     if (!this.actor.canUserModify(game.user, "update")) return;
                     const path = String(apInp.dataset.apPath ?? "");
                     if (!path) return;
-                    const raw = Math.floor(Number(apInp.value ?? 0));
+                    const raw = Math.trunc(Number(apInp.value ?? 0));
                     const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
                     void this.#applyValueFromPath(path, n);
                     return;
@@ -154,28 +206,94 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
                 const hpInp = ev.target?.closest?.("input[data-farkpg-health-value]");
                 if (hpInp) {
                     if (!this.actor.canUserModify(game.user, "update")) return;
-                    const raw = Math.floor(Number(hpInp.value ?? 0));
+                    const raw = Math.trunc(Number(hpInp.value ?? 0));
+                    const n = Number.isFinite(raw) ? raw : 0;
+                    void this.#applyHealthAbsolute(n);
+                }
+                const expInp = ev.target?.closest?.("input[data-farkpg-exp-value]");
+                if (expInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const raw = Math.trunc(Number(expInp.value ?? 0));
                     const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
-                    void this.#applyHealth(n);
+                    void this.#applyExpAbsolute(n);
                 }
             },
             { signal },
         );
+
+        if (this.actor.canUserModify(game.user, "update")) {
+            const hpBtn = this.element?.querySelector?.(".farkpg-drawer-hp-delta-trigger");
+            const hpAnchor = hpBtn?.closest?.(".farkpg-resource-delta-anchor");
+            if (hpBtn instanceof HTMLElement && hpAnchor instanceof HTMLElement) {
+                bindDeltaPopover(
+                    hpAnchor,
+                    hpBtn,
+                    async (delta) => {
+                        const actor = this.actor;
+                        const cur = Math.trunc(Number(actor.system?.resources?.health?.value ?? 0)) || 0;
+                        const max = Math.trunc(Number(actor.system?.resources?.health?.max ?? 0)) || 0;
+                        const next = cur + delta;
+                        const finiteMax = Number.isFinite(max) && max > 0;
+                        const clamped = finiteMax ? Math.min(max, Math.max(0, next)) : Math.max(0, next);
+                        await actor.update({ "system.resources.health.value": clamped });
+                        await this.render();
+                    },
+                    signal,
+                    {
+                        inputLabel: game.i18n.localize("FARKPG.ResourceDelta.hpLabel"),
+                        applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
+                    },
+                );
+            }
+
+            const expBtn = this.element?.querySelector?.(".farkpg-drawer-exp-delta-trigger");
+            const expAnchor = expBtn?.closest?.(".farkpg-resource-delta-anchor");
+            if (expBtn instanceof HTMLElement && expAnchor instanceof HTMLElement) {
+                bindDeltaPopover(
+                    expAnchor,
+                    expBtn,
+                    async (delta) => {
+                        const actor = this.actor;
+                        const cur = Math.trunc(Number(actor.system?.resources?.exp?.value ?? 0)) || 0;
+                        const max = Math.trunc(Number(actor.system?.resources?.exp?.max ?? 0)) || 0;
+                        const next = cur + delta;
+                        const finiteMax = Number.isFinite(max) && max > 0;
+                        const clamped = finiteMax ? Math.min(max, Math.max(0, next)) : Math.max(0, next);
+                        await actor.update({ "system.resources.exp.value": clamped });
+                        await this.render();
+                    },
+                    signal,
+                    {
+                        inputLabel: game.i18n.localize("FARKPG.ResourceDelta.expLabel"),
+                        applyLabel: game.i18n.localize("FARKPG.ResourceDelta.apply"),
+                    },
+                );
+            }
+        }
     }
 
     /**
-     * Clamp an absolute HP value to `[0, max]` and persist it on the actor.
-     * The drawer re-renders so the field reflects the clamped value.
-     * @param {number} n  Desired HP value (already non-negative integer).
+     * Clamp absolute HP to `[0, max]` when max &gt; 0; otherwise floor at 0.
+     * @param {number} n
      */
-    async #applyHealth(n) {
+    async #applyHealthAbsolute(n) {
         const actor = this.actor;
-        const max = Number(actor.system?.resources?.health?.max ?? 0);
-        const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
-        // If no max is configured (0), allow any non-negative value so the
-        // field stays usable; otherwise clamp.
-        const clamped = finiteMax > 0 ? Math.min(finiteMax, n) : n;
+        const max = Math.trunc(Number(actor.system?.resources?.health?.max ?? 0)) || 0;
+        const finiteMax = Number.isFinite(max) && max > 0;
+        const clamped = finiteMax ? Math.min(max, Math.max(0, n)) : Math.max(0, n);
         await actor.update({ "system.resources.health.value": clamped });
+        await this.render();
+    }
+
+    /**
+     * @param {number} n
+     */
+    async #applyExpAbsolute(n) {
+        const actor = this.actor;
+        const max = Math.trunc(Number(actor.system?.resources?.exp?.max ?? 0)) || 0;
+        const finiteMax = Number.isFinite(max) && max > 0;
+        const clamped = finiteMax ? Math.min(max, Math.max(0, n)) : Math.max(0, n);
+        await actor.update({ "system.resources.exp.value": clamped });
         await this.render();
     }
 
@@ -193,15 +311,10 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
      */
     async #applyValueFromPath(path, n) {
         const actor = this.actor;
-        if (path === "system.resources.actionPoints.value") {
-            const max = Number(actor.system?.resources?.actionPoints?.max ?? 0);
-            const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
-            const v = Math.min(finiteMax, n);
-            await actor.update({ [path]: v });
-        } else if (path.includes("customActionPoints") && path.endsWith(".value")) {
+        if (path.startsWith("system.resources.actionCurrency.") && path.endsWith(".value")) {
             await actor.update({ [path]: n });
+            await this.render();
         }
-        await this.render();
     }
 
     /**
@@ -217,43 +330,12 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         const kind = String(target.dataset.apKind ?? "");
         const id = String(target.dataset.apId ?? "");
 
-        if (kind === "base") {
-            const ap = actor.system?.resources?.actionPoints ?? {};
-            const max = Number(ap.max ?? 0);
-            const cur = Number(ap.value ?? 0);
-            const finiteMax = Number.isFinite(max) ? Math.max(0, max) : 0;
-            const v = Math.max(0, Math.min(finiteMax, cur - 1));
-            await actor.update({ "system.resources.actionPoints.value": v });
-        } else if (kind === "custom" && id) {
-            const cur = Number(actor.system?.resources?.customActionPoints?.[id]?.value ?? 0);
+        if (kind === "currency" && id && ACTION_CURRENCY_KEYS.includes(id)) {
+            const cur = Math.trunc(Number(actor.system?.resources?.actionCurrency?.[id]?.value ?? 0)) || 0;
             const next = Math.max(0, cur - 1);
-            await actor.update({ [`system.resources.customActionPoints.${id}.value`]: next });
+            await actor.update({ [`system.resources.actionCurrency.${id}.value`]: next });
         }
         await self.render();
-    }
-
-    /**
-     * Add or subtract the value entered in the adjacent delta input from the
-     * actor's current HP, clamped to the configured Max HP.
-     * @this {FarkPGApDrawer}
-     */
-    static async #onAdjustHealth(event, target) {
-        event.preventDefault();
-        /** @type {FarkPGApDrawer} */
-        const self = this;
-        const actor = self.actor;
-        if (!actor.canUserModify(game.user, "update")) return;
-
-        const dir = Number(target.dataset.direction ?? 0);
-        if (!Number.isFinite(dir) || dir === 0) return;
-
-        const deltaInput = self.element?.querySelector?.(".farkpg-drawer-health-delta");
-        const rawDelta = Math.floor(Number(deltaInput?.value ?? 1));
-        const delta = Number.isFinite(rawDelta) ? Math.max(1, rawDelta) : 1;
-
-        const cur = Math.floor(Number(actor.system?.resources?.health?.value ?? 0)) || 0;
-        const next = cur + dir * delta;
-        await self.#applyHealth(Math.max(0, next));
     }
 
     /** @param {Actor} actor */

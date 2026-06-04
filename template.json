@@ -28,8 +28,13 @@
       "customSkills": {},
       "resources": {
         "health": { "value": 10000, "max": 10000 },
-        "actionPoints": { "value": 18, "max": 18 },
-        "customActionPoints": {},
+        "actionCurrency": {
+          "white": { "value": 0 },
+          "red": { "value": 0 },
+          "blue": { "value": 0 },
+          "orange": { "value": 0 },
+          "black": { "value": 0 }
+        },
         "exp": { "value": 0, "max": 100 },
         "movement": 20
       },
