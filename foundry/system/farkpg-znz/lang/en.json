@@ -186,6 +186,7 @@
       "styleUnarmed": "Unarmed",
       "durability": "Durability",
       "durabilityEnabled": "Durability Enabled",
+      "durabilityEnabledHint": "When enabled, this item tracks durability and can gamble durability on rolls.",
       "durabilityPerUse": "Durability Per Use",
       "brokenTooltip": "{name} is broken (0 durability) — restore it before using.",
       "ammoEnabled": "Ammo Enabled",
@@ -196,6 +197,8 @@
       "restore": "Restore",
       "restoreFrom": "Restore From",
       "restoreFromNone": "— None —",
+      "restoreRequiredNames": "Required Restore Items",
+      "restoreRequiredNamesHint": "Comma separated list of allowed consumable names. When set, only matching items can be selected as a restore source.",
       "restoreTooltip": "Restore {name} from {source} (transfers up to {need}).",
       "restoreTooltipFull": "{name} is already at full durability ({value}/{max}).",
       "restoreTooltipUnconfigured": "Set maximum durability on this weapon to enable restoring.",
@@ -292,14 +295,17 @@
       "consumedAmmo": "Spent {amount} ammo ({value}/{max} remaining)",
       "consumedDurability": "Spent {amount} durability ({value}/{max} remaining)",
       "consumedQuantity": "Quantity \u22121",
+      "consumedQuantitySpend": "Spent {amount} quantity ({value}/{max} remaining)",
       "spendAmmoTitle": "Spend ammo",
+      "spendQuantityTitle": "Spend quantity",
       "spendDurabilityTitle": "Spend durability",
       "spendResourcePrompt": "How much {resource} do you want to spend on {name}? (1\u2013{max})",
       "spendResourceLabel": "Amount to spend",
       "spendResourceConfirm": "Use",
       "rollScoreLabel": "Roll total",
       "resourceAmmo": "ammo",
-      "resourceDurability": "durability"
+      "resourceDurability": "durability",
+      "resourceQuantity": "quantity"
     },
 
     "Notify": {

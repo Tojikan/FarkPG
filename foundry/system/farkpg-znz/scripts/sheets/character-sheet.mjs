@@ -16,8 +16,9 @@ import { bindDeltaPopover } from "../resource-delta-popover.mjs";
 import {
     computeDamageMultiplier,
     formatTotalMultiplierLabel,
-    getWeaponResourcePool,
-    getWeaponSpendResource,
+    getItemDamageFields,
+    getItemResourcePool,
+    getItemSpendResource,
 } from "../weapon-damage.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
@@ -1364,18 +1365,29 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         event.stopPropagation();
         const id = target.closest("[data-item-id]")?.dataset.itemId;
         const item = this.actor.items.get(id);
-        if (!item || item.type !== "weapon") return;
+        if (!item || (item.type !== "weapon" && item.type !== "equipment")) return;
         if (item.system?.durabilityEnabled !== true) return;
         if (item.system?.restoreEnabled !== true) return;
 
-        const candidates = this.actor.items.filter(
-            (i) => i.type === "consumable" && i.id !== item.id,
-        );
+        const requiredCSV = String(item.system.restoreRequiredNames ?? "").trim();
+        const allowed = requiredCSV
+            ? requiredCSV
+                  .split(",")
+                  .map((s) => s.trim().toLowerCase())
+                  .filter(Boolean)
+            : null;
+
+        const candidates = this.actor.items.filter((i) => {
+            if (i.type !== "consumable") return false;
+            if (i.id === item.id) return false;
+            if (allowed && !allowed.includes(String(i.name).toLowerCase())) return false;
+            return true;
+        });
         if (!candidates.length) {
             ui.notifications?.warn(
                 game.i18n.format("FARKPG.Notify.noAmmoCandidates", {
                     name: item.name,
-                    required: game.i18n.localize("FARKPG.Items.requiredAmmoAny"),
+                    required: requiredCSV || game.i18n.localize("FARKPG.Items.requiredAmmoAny"),
                 }),
             );
             return;
@@ -1426,7 +1438,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             event.target?.closest?.("[data-item-id]");
         const id = root?.dataset?.itemId;
         const item = this.actor.items.get(id);
-        if (!item || item.type !== "weapon") return;
+        if (!item || (item.type !== "weapon" && item.type !== "equipment")) return;
 
         const sys = item.system ?? {};
         if (sys.durabilityEnabled !== true) return;
@@ -1502,14 +1514,16 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      * @param {"ammo"|"durability"} resource
      * @returns {Promise<number|null>}
      */
-    async #promptWeaponSpend(item, resource) {
-        const pool = getWeaponResourcePool(item.system ?? {}, resource);
+    async #promptItemSpend(item, resource) {
+        const pool = getItemResourcePool(item.system ?? {}, resource);
         const maxSpend = Math.floor(pool.value);
         if (maxSpend < 1) {
             const resourceLabel = game.i18n.localize(
                 resource === "ammo"
                     ? "FARKPG.Rolls.resourceAmmo"
-                    : "FARKPG.Rolls.resourceDurability",
+                    : resource === "quantity"
+                      ? "FARKPG.Rolls.resourceQuantity"
+                      : "FARKPG.Rolls.resourceDurability",
             );
             ui.notifications?.warn(
                 game.i18n.format("FARKPG.Notify.spendResourceEmpty", {
@@ -1524,12 +1538,16 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const resourceLabel = game.i18n.localize(
             resource === "ammo"
                 ? "FARKPG.Rolls.resourceAmmo"
-                : "FARKPG.Rolls.resourceDurability",
+                : resource === "quantity"
+                  ? "FARKPG.Rolls.resourceQuantity"
+                  : "FARKPG.Rolls.resourceDurability",
         );
         const title = game.i18n.localize(
             resource === "ammo"
                 ? "FARKPG.Rolls.spendAmmoTitle"
-                : "FARKPG.Rolls.spendDurabilityTitle",
+                : resource === "quantity"
+                  ? "FARKPG.Rolls.spendQuantityTitle"
+                  : "FARKPG.Rolls.spendDurabilityTitle",
         );
         const content = `
             <p>${escape(
@@ -1575,11 +1593,11 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Weapon use: gamble ammo/durability for a damage multiplier, then roll.
+     * Gamble ammo/durability/quantity for a damage multiplier, then roll.
      * @this {FarkPGCharacterSheet}
      * @param {Item} item
      */
-    async #useWeaponItem(item) {
+    async #useGambleItem(item) {
         const sys = item.system ?? {};
         const rollEnabledFlag = sys.rollable?.enabled === true;
         if (!rollEnabledFlag) {
@@ -1587,8 +1605,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             return;
         }
 
-        const damageBase = Number(sys.damage?.base ?? sys.rollable?.multiplier ?? 0);
-        const damageAdditional = Number(sys.damage?.additional ?? 0);
+        const { base: damageBase, additional: damageAdditional } = getItemDamageFields(sys);
         const attachedSkill = String(sys.rollable?.attachedSkill ?? "");
         const hasFormula =
             attachedSkill !== "" || damageBase > 0 || damageAdditional > 0;
@@ -1597,14 +1614,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             return;
         }
 
-        if (sys.durabilityEnabled === true && Number(sys.durability?.value ?? 0) <= 0) {
+        const usesDurability =
+            (item.type === "weapon" || item.type === "equipment") &&
+            sys.durabilityEnabled === true;
+        if (usesDurability && Number(sys.durability?.value ?? 0) <= 0) {
             ui.notifications?.warn(
                 game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
             );
             return;
         }
 
-        const spendResource = getWeaponSpendResource(sys);
+        const spendResource = getItemSpendResource(item);
         let spent = 1;
         const updates = [];
         const consumed = [];
@@ -1618,7 +1638,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     );
                     return;
                 }
-            } else {
+            } else if (spendResource === "durability") {
                 const durMax = Number(sys.durability?.max ?? 0);
                 if (durMax <= 0) {
                     ui.notifications?.warn(
@@ -1628,13 +1648,21 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                     );
                     return;
                 }
+            } else if (spendResource === "quantity") {
+                const qty = Number(sys.quantity?.value ?? 0);
+                if (qty < 1) {
+                    ui.notifications?.warn(
+                        game.i18n.format("FARKPG.Notify.consumableEmpty", { name: item.name }),
+                    );
+                    return;
+                }
             }
 
-            const chosen = await this.#promptWeaponSpend(item, spendResource);
+            const chosen = await this.#promptItemSpend(item, spendResource);
             if (chosen === null) return;
             spent = chosen;
 
-            const pool = getWeaponResourcePool(sys, spendResource);
+            const pool = getItemResourcePool(sys, spendResource);
             if (spent > pool.value) {
                 ui.notifications?.warn(
                     game.i18n.format("FARKPG.Notify.spendResourceInvalid", { max: pool.value }),
@@ -1652,10 +1680,19 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                         max: pool.max,
                     }),
                 );
-            } else {
+            } else if (spendResource === "durability") {
                 updates.push({ doc: item, data: { "system.durability.value": after } });
                 consumed.push(
                     game.i18n.format("FARKPG.Rolls.consumedDurability", {
+                        amount: spent,
+                        value: after,
+                        max: pool.max,
+                    }),
+                );
+            } else {
+                updates.push({ doc: item, data: { "system.quantity.value": after } });
+                consumed.push(
+                    game.i18n.format("FARKPG.Rolls.consumedQuantitySpend", {
                         amount: spent,
                         value: after,
                         max: pool.max,
@@ -1732,20 +1769,50 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      * @param {HTMLElement} target
      */
     static async useItemForActor(actor, event, target) {
+        await FarkPGCharacterSheet.#runCardActionForActor(actor, event, target, FarkPGCharacterSheet.#onUseItem);
+    }
+
+    /** @param {Actor} actor @param {Event} event @param {HTMLElement} target */
+    static async reloadAmmoForActor(actor, event, target) {
+        await FarkPGCharacterSheet.#runCardActionForActor(actor, event, target, FarkPGCharacterSheet.#onReloadAmmo);
+    }
+
+    /** @param {Actor} actor @param {Event} event @param {HTMLElement} target */
+    static async selectAmmoForActor(actor, event, target) {
+        await FarkPGCharacterSheet.#runCardActionForActor(actor, event, target, FarkPGCharacterSheet.#onSelectAmmo);
+    }
+
+    /** @param {Actor} actor @param {Event} event @param {HTMLElement} target */
+    static async selectRestoreForActor(actor, event, target) {
+        await FarkPGCharacterSheet.#runCardActionForActor(actor, event, target, FarkPGCharacterSheet.#onSelectRestore);
+    }
+
+    /** @param {Actor} actor @param {Event} event @param {HTMLElement} target */
+    static async restoreDurabilityForActor(actor, event, target) {
+        await FarkPGCharacterSheet.#runCardActionForActor(
+            actor,
+            event,
+            target,
+            FarkPGCharacterSheet.#onRestoreDurability,
+        );
+    }
+
+    /**
+     * @param {Actor} actor
+     * @param {Event} event
+     * @param {HTMLElement} target
+     * @param {(event: Event, target: HTMLElement) => Promise<void>} handler
+     */
+    static async #runCardActionForActor(actor, event, target, handler) {
         const liveActor = game.actors.get(actor?.id) ?? actor;
         if (!liveActor) return;
-
-        const actionEl =
-            target?.closest?.("[data-action='useItem']") ??
-            target?.closest?.(".farkpg-card-use") ??
-            target;
 
         let sheet = FarkPGCharacterSheet.findForActor(liveActor);
         if (!sheet) {
             sheet = new FarkPGCharacterSheet({ document: liveActor });
         }
 
-        await FarkPGCharacterSheet.#onUseItem.call(sheet, event, actionEl);
+        await handler.call(sheet, event, target);
     }
 
     /**
@@ -1765,74 +1832,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const item = id ? this.actor.items.get(id) : undefined;
         if (!item) return;
 
-        if (item.type === "weapon") {
-            await this.#useWeaponItem(item);
-            return;
+        if (item.type === "weapon" || item.type === "equipment" || item.type === "consumable") {
+            await this.#useGambleItem(item);
         }
-
-        const sys = item.system ?? {};
-        const multiplier = Number(sys.rollable?.multiplier ?? 0);
-        const max = Number(sys.rollable?.max ?? 0);
-        const usesRollEnabled = item.type === "equipment" || item.type === "consumable";
-        const attachedSkill = usesRollEnabled
-            ? String(sys.rollable?.attachedSkill ?? "")
-            : "";
-        const rollEnabledFlag = sys.rollable?.enabled === true;
-
-        const baselineRollable = multiplier > 0 && max > 0;
-        const hasFormula = attachedSkill !== "" || baselineRollable;
-        const rollable = usesRollEnabled ? rollEnabledFlag : hasFormula;
-        if (!rollable) {
-            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.notRollable"));
-            return;
-        }
-
-        if (usesRollEnabled && rollEnabledFlag && !hasFormula) {
-            await this.#openDiceTable();
-            return;
-        }
-
-        const updates = [];
-        const consumed = [];
-
-        if (item.type === "consumable") {
-            const qty = Number(sys.quantity?.value ?? 0);
-            if (qty < 1) {
-                ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.consumableEmpty", { name: item.name }),
-                );
-                return;
-            }
-            updates.push({ doc: item, data: { "system.quantity.value": qty - 1 } });
-            consumed.push(game.i18n.localize("FARKPG.Rolls.consumedQuantity"));
-        }
-
-        for (const { doc, data } of updates) {
-            await doc.update(data);
-        }
-
-        let count = multiplier;
-        let faces = max;
-        let resolved = { attrLabel: "", atrValue: 0, skillLabel: "", sklValue: 0 };
-        if (attachedSkill) {
-            const [attrKey, sKey] = attachedSkill.split(".");
-            resolved = this.#resolveAttrSkill({ attrKey, skillKey: sKey });
-            count = Math.max(1, resolved.atrValue + resolved.sklValue);
-            faces = max > 0 ? max : 6;
-        }
-
-        await this.#postFarkrollMessage({
-            attrLabel: resolved.attrLabel,
-            attrValue: resolved.atrValue,
-            skillLabel: resolved.skillLabel,
-            skillValue: resolved.sklValue,
-            count,
-            faces,
-            item,
-            consumed,
-        });
-
-        await this.#dispatchDiceTable({ count, faces });
     }
 
     /**

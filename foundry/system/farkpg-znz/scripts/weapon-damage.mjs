@@ -1,5 +1,5 @@
 /**
- * Weapon damage gambling: spend ammo or durability to scale roll multiplier.
+ * Item damage gambling: spend ammo, durability, or quantity to scale roll multiplier.
  */
 
 /** @param {object} sys Item system data */
@@ -13,8 +13,24 @@ export function getWeaponSpendResource(sys) {
     return null;
 }
 
-/** @param {object} sys @param {"ammo"|"durability"|null} resource */
-export function getWeaponResourcePool(sys, resource) {
+/**
+ * @param {Item|string} itemOrType
+ * @param {object} [sys]
+ * @returns {"ammo"|"durability"|"quantity"|null}
+ */
+export function getItemSpendResource(itemOrType, sys) {
+    const type = typeof itemOrType === "string" ? itemOrType : itemOrType?.type;
+    const data = sys ?? (typeof itemOrType === "object" ? itemOrType?.system : null) ?? {};
+    if (type === "weapon") return getWeaponSpendResource(data);
+    if (type === "consumable" && data.rollable?.enabled === true) return "quantity";
+    if (type === "equipment" && data.rollable?.enabled === true && data.durabilityEnabled === true) {
+        return "durability";
+    }
+    return null;
+}
+
+/** @param {object} sys @param {"ammo"|"durability"|"quantity"|null} resource */
+export function getItemResourcePool(sys, resource) {
     if (resource === "ammo") {
         return {
             value: Number(sys?.ammo?.value ?? 0),
@@ -27,13 +43,32 @@ export function getWeaponResourcePool(sys, resource) {
             max: Number(sys?.durability?.max ?? 0),
         };
     }
+    if (resource === "quantity") {
+        return {
+            value: Number(sys?.quantity?.value ?? 0),
+            max: Number(sys?.quantity?.max ?? 0),
+        };
+    }
     return { value: 0, max: 0 };
+}
+
+/** @deprecated Use getItemResourcePool */
+export function getWeaponResourcePool(sys, resource) {
+    return getItemResourcePool(sys, resource);
+}
+
+/** @param {object} sys */
+export function getItemDamageFields(sys) {
+    return {
+        base: Number(sys?.damage?.base ?? sys?.rollable?.multiplier ?? 0),
+        additional: Number(sys?.damage?.additional ?? 0),
+    };
 }
 
 /**
  * @param {number} base
  * @param {number} additional
- * @param {number} spent Units of ammo/durability committed (≥ 1 when gambling).
+ * @param {number} spent Units committed (≥ 1 when gambling).
  */
 export function computeDamageMultiplier(base, additional, spent) {
     const b = Number(base) || 0;

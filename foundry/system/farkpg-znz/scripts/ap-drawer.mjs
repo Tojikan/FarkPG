@@ -10,8 +10,8 @@ export const ACTION_CURRENCY_KEYS = ["white", "red", "blue", "orange", "black"];
 /** Single pool shown in the UI (white chips). */
 export const ACTION_CURRENCY_DISPLAY_KEYS = ["white"];
 
-/** Max chips rendered in the stack (8 columns × 5). */
-export const CHIP_DISPLAY_MAX = 40;
+/** Max chips rendered in the stack (4 columns × 5). */
+export const CHIP_DISPLAY_MAX = 20;
 
 /** Vertical offset per chip layer in a column (chip 1 = 5px, chip 2 = 10px, …). */
 export const CHIP_STACK_OFFSET_PX = 5;
@@ -120,7 +120,7 @@ export async function ensureActorActionCurrency(actor) {
 export function buildChipDisplayMeta(value) {
     const raw = Math.max(0, Math.trunc(Number(value)) || 0);
     const chipCount = Math.min(CHIP_DISPLAY_MAX, raw);
-    const colCount = chipCount <= 0 ? 0 : Math.min(8, Math.ceil(chipCount / 5));
+    const colCount = chipCount <= 0 ? 0 : Math.min(4, Math.ceil(chipCount / 5));
     return {
         chipCount,
         chipColCount: colCount,
@@ -151,10 +151,10 @@ export function applyChipStackVisibility(root) {
         }
         raw = Math.max(0, raw);
         const count = Math.min(CHIP_DISPLAY_MAX, raw);
-        const cols = count <= 0 ? 0 : Math.min(8, Math.ceil(count / 5));
+        const cols = count <= 0 ? 0 : Math.min(4, Math.ceil(count / 5));
 
         for (let i = 0; i <= CHIP_DISPLAY_MAX; i++) stack.classList.remove(`farkpg-chips-${i}`);
-        for (let i = 0; i <= 8; i++) stack.classList.remove(`farkpg-chips-cols-${i}`);
+        for (let i = 0; i <= 4; i++) stack.classList.remove(`farkpg-chips-cols-${i}`);
         stack.classList.toggle("farkpg-chips-over", raw > CHIP_DISPLAY_MAX);
 
         if (count <= 0) {
@@ -281,6 +281,10 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         actions: {
             decrementApFromDrawer: FarkPGApDrawer.#onDecrement,
             useItem: FarkPGApDrawer.#onUseItem,
+            reloadAmmo: FarkPGApDrawer.#onReloadAmmo,
+            selectAmmo: FarkPGApDrawer.#onSelectAmmo,
+            selectRestore: FarkPGApDrawer.#onSelectRestore,
+            restoreDurability: FarkPGApDrawer.#onRestoreDurability,
         },
     };
 
@@ -320,6 +324,12 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
             maxDisplay: formatPlainInt(expMax),
         };
 
+        const move = Math.max(0, Math.trunc(Number(this.actor.system?.resources?.movement ?? 0)) || 0);
+        context.movement = {
+            value: move,
+            valueDisplay: formatPlainInt(move),
+        };
+
         return context;
     }
 
@@ -353,6 +363,15 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
                     const raw = Math.trunc(Number(hpInp.value ?? 0));
                     const n = Number.isFinite(raw) ? raw : 0;
                     void this.#applyHealthAbsolute(n);
+                    return;
+                }
+                const hpMaxInp = ev.target?.closest?.("input[data-farkpg-health-max]");
+                if (hpMaxInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const raw = Math.trunc(Number(hpMaxInp.value ?? 0));
+                    const max = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                    void this.#applyHealthMax(max);
+                    return;
                 }
                 const expInp = ev.target?.closest?.("input[data-farkpg-exp-value]");
                 if (expInp) {
@@ -360,6 +379,22 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
                     const raw = Math.trunc(Number(expInp.value ?? 0));
                     const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
                     void this.#applyExpAbsolute(n);
+                    return;
+                }
+                const expMaxInp = ev.target?.closest?.("input[data-farkpg-exp-max]");
+                if (expMaxInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const raw = Math.trunc(Number(expMaxInp.value ?? 0));
+                    const max = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                    void this.#applyExpMax(max);
+                    return;
+                }
+                const moveInp = ev.target?.closest?.("input[data-farkpg-movement-value]");
+                if (moveInp) {
+                    if (!this.actor.canUserModify(game.user, "update")) return;
+                    const raw = Math.trunc(Number(moveInp.value ?? 0));
+                    const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+                    void this.#applyMovement(n);
                 }
             },
             { signal },
@@ -459,15 +494,46 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         await this.render();
     }
 
-    /**
-     * @param {number} n
-     */
+    /** @param {number} max */
+    async #applyHealthMax(max) {
+        const actor = this.actor;
+        const cur = Math.trunc(Number(actor.system?.resources?.health?.value ?? 0)) || 0;
+        const finiteMax = Math.max(0, max);
+        const value = finiteMax > 0 ? Math.min(finiteMax, Math.max(0, cur)) : Math.max(0, cur);
+        /** @type {Record<string, number>} */
+        const update = { "system.resources.health.max": finiteMax };
+        if (value !== cur) update["system.resources.health.value"] = value;
+        await actor.update(update);
+        await this.render();
+    }
+
+    /** @param {number} n */
     async #applyExpAbsolute(n) {
         const actor = this.actor;
         const max = Math.trunc(Number(actor.system?.resources?.exp?.max ?? 0)) || 0;
         const finiteMax = Number.isFinite(max) && max > 0;
         const clamped = finiteMax ? Math.min(max, Math.max(0, n)) : Math.max(0, n);
         await actor.update({ "system.resources.exp.value": clamped });
+        await this.render();
+    }
+
+    /** @param {number} max */
+    async #applyExpMax(max) {
+        const actor = this.actor;
+        const cur = Math.trunc(Number(actor.system?.resources?.exp?.value ?? 0)) || 0;
+        const finiteMax = Math.max(0, max);
+        const value = finiteMax > 0 ? Math.min(finiteMax, Math.max(0, cur)) : Math.max(0, cur);
+        /** @type {Record<string, number>} */
+        const update = { "system.resources.exp.max": finiteMax };
+        if (value !== cur) update["system.resources.exp.value"] = value;
+        await actor.update(update);
+        await this.render();
+    }
+
+    /** @param {number} n */
+    async #applyMovement(n) {
+        const actor = this.actor;
+        await actor.update({ "system.resources.movement": Math.max(0, n) });
         await this.render();
     }
 
@@ -498,19 +564,46 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
      * @this {FarkPGApDrawer}
      */
     static async #onUseItem(event, target) {
+        await FarkPGApDrawer.#delegateCardAction(event, target, "useItemForActor");
+    }
+
+    static async #onReloadAmmo(event, target) {
+        await FarkPGApDrawer.#delegateCardAction(event, target, "reloadAmmoForActor");
+    }
+
+    static async #onSelectAmmo(event, target) {
+        await FarkPGApDrawer.#delegateCardAction(event, target, "selectAmmoForActor");
+    }
+
+    static async #onSelectRestore(event, target) {
+        await FarkPGApDrawer.#delegateCardAction(event, target, "selectRestoreForActor");
+    }
+
+    static async #onRestoreDurability(event, target) {
+        await FarkPGApDrawer.#delegateCardAction(event, target, "restoreDurabilityForActor");
+    }
+
+    /**
+     * @this {FarkPGApDrawer}
+     * @param {Event} event
+     * @param {HTMLElement} target
+     * @param {"useItemForActor"|"reloadAmmoForActor"|"selectAmmoForActor"|"selectRestoreForActor"|"restoreDurabilityForActor"} method
+     */
+    static async #delegateCardAction(event, target, method) {
         event.preventDefault();
         /** @type {FarkPGApDrawer} */
         const self = this;
         const { FarkPGCharacterSheet } = await import("./sheets/character-sheet.mjs");
         try {
-            await FarkPGCharacterSheet.useItemForActor(self.actor, event, target);
+            await FarkPGCharacterSheet[method](self.actor, event, target);
         } catch (err) {
-            console.error("FarkPG | AP drawer useItem failed", err);
+            console.error(`FarkPG | AP drawer ${method} failed`, err);
             ui.notifications?.error(game.i18n.localize("FARKPG.Notify.useItemFailed"));
             return;
         }
         await self.render();
         FarkPGApDrawer.refreshIfOpen(self.actor.id);
+        FarkPGCharacterSheet.findForActor(self.actor)?.render?.(false);
     }
 
     /**
