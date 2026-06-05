@@ -2,14 +2,23 @@ import {
     ACTION_CURRENCY_DISPLAY_KEYS,
     ACTION_CURRENCY_KEYS,
     FarkPGApDrawer,
+    applyActionCurrencyPathUpdate,
     applyChipStackVisibility,
     buildApTypeRowsForActor,
+    clampActionCurrencyValueWithMax,
     ensureActorActionCurrency,
+    getActionCurrencyMax,
 } from "../ap-drawer.mjs";
 import { promptCharacterImport } from "../character-import.mjs";
 import { ATTRIBUTE_KEYS, ATTRIBUTE_SKILLS, INVENTORY_ITEM_TYPES, SYSTEM_ID } from "../config.mjs";
 import { buildItemCardContext } from "../item-card-context.mjs";
 import { bindDeltaPopover } from "../resource-delta-popover.mjs";
+import {
+    computeDamageMultiplier,
+    formatTotalMultiplierLabel,
+    getWeaponResourcePool,
+    getWeaponSpendResource,
+} from "../weapon-damage.mjs";
 
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { ActorSheetV2 } = foundry.applications.sheets;
@@ -98,6 +107,8 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             useItem: FarkPGCharacterSheet.#onUseItem,
             selectAmmo: FarkPGCharacterSheet.#onSelectAmmo,
             reloadAmmo: FarkPGCharacterSheet.#onReloadAmmo,
+            selectRestore: FarkPGCharacterSheet.#onSelectRestore,
+            restoreDurability: FarkPGCharacterSheet.#onRestoreDurability,
             toggleBiographyEditor: FarkPGCharacterSheet.#onToggleBiographyEditor,
             toggleSkillsEdit: FarkPGCharacterSheet.#onToggleSkillsEdit,
             editPortrait: FarkPGCharacterSheet.#onEditPortrait,
@@ -407,13 +418,24 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             const merged = {};
             for (const id of ACTION_CURRENCY_KEYS) {
                 const incoming = ac[id];
-                const raw =
+                const curEntry = current[id] ?? {};
+                const rawMax =
+                    incoming && typeof incoming === "object" && "max" in incoming
+                        ? incoming.max
+                        : curEntry.max;
+                const max = Math.max(0, Math.trunc(Number(rawMax)) || 0);
+                const rawVal =
                     incoming && typeof incoming === "object" && "value" in incoming
                         ? incoming.value
-                        : current[id]?.value;
-                const v = Math.trunc(Number(raw));
+                        : curEntry.value;
                 merged[id] = {
-                    value: Number.isFinite(v) ? Math.max(0, Math.min(999999, v)) : 0,
+                    max,
+                    value: clampActionCurrencyValueWithMax(
+                        max,
+                        Number.isFinite(Math.trunc(Number(rawVal)))
+                            ? Math.trunc(Number(rawVal))
+                            : 0,
+                    ),
                 };
             }
             foundry.utils.setProperty(data, "system.resources.actionCurrency", merged);
@@ -458,13 +480,17 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                 if (!inp) return;
                 if (!this.isEditable || !this.actor.canUserModify(game.user, "update")) return;
                 const path = String(inp.dataset.apPath ?? "");
-                if (!path.startsWith("system.resources.actionCurrency.") || !path.endsWith(".value")) {
+                if (
+                    !path.startsWith("system.resources.actionCurrency.") ||
+                    (!path.endsWith(".value") && !path.endsWith(".max"))
+                ) {
                     return;
                 }
                 const raw = Math.floor(Number(inp.value ?? 0));
                 const n = Number.isFinite(raw) ? Math.max(0, raw) : 0;
-                void this.actor.update({ [path]: n }).then(() => {
+                void applyActionCurrencyPathUpdate(this.actor, path, n).then(() => {
                     applyChipStackVisibility(this.element);
+                    FarkPGApDrawer.refreshIfOpen(this.actor.id);
                 });
             },
             { signal },
@@ -527,7 +553,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
                             Math.trunc(
                                 Number(this.actor.system?.resources?.actionCurrency?.[id]?.value ?? 0),
                             ) || 0;
-                        const next = Math.max(0, cur + delta);
+                        const max = getActionCurrencyMax(this.actor, id);
+                        const nextRaw = Math.max(0, cur + delta);
+                        const next = max > 0 ? Math.min(max, nextRaw) : nextRaw;
                         await this.actor.update({
                             [`system.resources.actionCurrency.${id}.value`]: next,
                         });
@@ -636,10 +664,13 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         if (itemData.system?.ammo?.linkedConsumableId !== undefined) {
             itemData.system.ammo.linkedConsumableId = "";
         }
+        if (itemData.system?.restoreFromId !== undefined) {
+            itemData.system.restoreFromId = "";
+        }
 
         await this.actor.createEmbeddedDocuments("Item", [itemData]);
         if (sourceActor && sourceActor !== this.actor) {
-            await this.#clearAmmoLinksTo(sourceActor, item.id);
+            await this.#clearConsumableLinksTo(sourceActor, item.id);
             await sourceActor.deleteEmbeddedDocuments("Item", [item.id]);
         }
     }
@@ -650,16 +681,21 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      * @param {Actor} actor
      * @param {string} itemId
      */
-    async #clearAmmoLinksTo(actor, itemId) {
+    async #clearConsumableLinksTo(actor, itemId) {
         const linkedWeapons = actor.items.filter((i) => {
             if (i.type !== "weapon") return false;
             const a = i.system?.ammo ?? {};
-            return a.reloadFromId === itemId || a.linkedConsumableId === itemId;
+            return (
+                a.reloadFromId === itemId ||
+                a.linkedConsumableId === itemId ||
+                i.system?.restoreFromId === itemId
+            );
         });
         for (const weapon of linkedWeapons) {
             await weapon.update({
                 "system.ammo.reloadFromId": "",
                 "system.ammo.linkedConsumableId": "",
+                "system.restoreFromId": "",
             });
         }
     }
@@ -849,6 +885,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
      *   faces: number;
      *   item?: Item|null;
      *   consumed?: string[];
+     *   weaponDamageMultiplier?: number;
      * }} args
      */
     async #postFarkrollMessage({
@@ -860,6 +897,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         faces,
         item = null,
         consumed = [],
+        weaponDamageMultiplier = 0,
     }) {
         const esc = foundry.utils.escapeHTML ?? ((s) => String(s));
         const farkroll = game.i18n.localize("FARKPG.Rolls.farkrollLabel");
@@ -879,7 +917,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             const itemMult = Number(itemSys.rollable?.multiplier ?? 0);
             const itemMax = Number(itemSys.rollable?.max ?? 0);
             const usedLine =
-                itemMult > 0 && itemMax > 0
+                item.type !== "weapon" && itemMult > 0 && itemMax > 0
                     ? game.i18n.format("FARKPG.Rolls.usedItemWithRoll", {
                           name: item.name,
                           multiplier: itemMult,
@@ -897,20 +935,46 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             ? `<ul class="farkpg-table-roll-consume">${detailLines.join("")}</ul>`
             : "";
 
+        const multLabel = game.i18n.localize("FARKPG.Rolls.damageMultiplierLabel");
+        const multDisplay = formatTotalMultiplierLabel(weaponDamageMultiplier);
+        const damageMultBlock =
+            weaponDamageMultiplier > 0
+                ? `<div class="farkpg-weapon-damage-mult">
+                        <span class="farkpg-weapon-damage-mult-label">${esc(multLabel)}</span>
+                        <strong class="farkpg-weapon-damage-mult-value">${esc(multDisplay)}</strong>
+                   </div>`
+                : "";
+
+        const applyScoreLabel = game.i18n.localize("FARKPG.Rolls.applyRollScore");
+        const applyScoreBtn =
+            weaponDamageMultiplier > 0
+                ? `<button type="button"
+                            class="farkpg-apply-score-btn"
+                            data-farkpg-action="apply-weapon-score"
+                            data-farkpg-multiplier="${weaponDamageMultiplier}">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>${esc(applyScoreLabel)}</span>
+                   </button>`
+                : "";
+
         const content = `
-            <section class="farkpg-table-roll">
+            <section class="farkpg-table-roll${weaponDamageMultiplier > 0 ? " farkpg-table-roll--weapon" : ""}">
                 <header class="farkpg-table-roll-title">${esc(headerText)}</header>
                 <div class="farkpg-table-roll-body">
                     <i class="fa-solid fa-dice"></i>
                     <span>${esc(summary)}</span>
                 </div>
+                ${damageMultBlock}
                 ${detailBlock}
-                <button type="button"
-                        class="farkpg-open-table-btn"
-                        data-farkpg-action="open-virtual-table">
-                    <i class="fa-solid fa-table-cells"></i>
-                    <span>${esc(openLabel)}</span>
-                </button>
+                <div class="farkpg-table-roll-actions">
+                    ${applyScoreBtn}
+                    <button type="button"
+                            class="farkpg-open-table-btn"
+                            data-farkpg-action="open-virtual-table">
+                        <i class="fa-solid fa-table-cells"></i>
+                        <span>${esc(openLabel)}</span>
+                    </button>
+                </div>
             </section>
         `;
 
@@ -1128,6 +1192,7 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
         const item = this.actor.items.get(id);
         if (!item || item.type !== "weapon") return;
         if (item.system?.ammo?.enabled !== true) return;
+        if (item.system?.ammo?.reloadEnabled !== true) return;
 
         const requiredCSV = String(item.system.ammo.requiredNames ?? "").trim();
         const allowed = requiredCSV
@@ -1216,9 +1281,9 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
 
         const sys = item.system ?? {};
         if (sys.ammo?.enabled !== true) return;
+        if (sys.ammo?.reloadEnabled !== true) return;
 
-        const dpu = Number(sys.durabilityPerUse ?? 0);
-        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
+        if (sys.durabilityEnabled === true && Number(sys.durability?.value ?? 0) <= 0) {
             ui.notifications?.warn(
                 game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
             );
@@ -1291,34 +1356,424 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
     }
 
     /**
-     * Use an item: spend ammo / durability / quantity (in that order) then open
-     * the Virtual Dice Table. Weapons require `rollable.enabled`; if a skill is
-     * attached the roll becomes `(attribute + skill)` dice with `faces = max`
-     * (default 6 if unset), otherwise the static `multiplier × max` is used.
-     * Any failure short-circuits with a notification and no resources are spent.
+     * Pick a consumable as the weapon's durability restore source.
      * @this {FarkPGCharacterSheet}
      */
+    static async #onSelectRestore(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = target.closest("[data-item-id]")?.dataset.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type !== "weapon") return;
+        if (item.system?.durabilityEnabled !== true) return;
+        if (item.system?.restoreEnabled !== true) return;
+
+        const candidates = this.actor.items.filter(
+            (i) => i.type === "consumable" && i.id !== item.id,
+        );
+        if (!candidates.length) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.noAmmoCandidates", {
+                    name: item.name,
+                    required: game.i18n.localize("FARKPG.Items.requiredAmmoAny"),
+                }),
+            );
+            return;
+        }
+
+        const escape = foundry.utils.escapeHTML ?? ((s) => String(s));
+        const optionsHtml = candidates
+            .map((c) => {
+                const qty = Number(c.system?.quantity?.value ?? 0);
+                return `<option value="${escape(c.id)}">${escape(c.name)} (${qty})</option>`;
+            })
+            .join("");
+
+        const content = `
+            <p>${escape(game.i18n.format("FARKPG.Items.selectRestorePrompt", { name: item.name }))}</p>
+            <div class="form-group">
+                <label for="farkpg-restore-pick">${escape(game.i18n.localize("FARKPG.Items.restoreFrom"))}</label>
+                <select id="farkpg-restore-pick" name="restoreId">${optionsHtml}</select>
+            </div>
+        `;
+
+        const DialogV2 = foundry.applications.api.DialogV2;
+        const chosenId = await DialogV2.prompt({
+            window: { title: game.i18n.localize("FARKPG.Items.selectRestoreTitle") },
+            content,
+            modal: true,
+            rejectClose: false,
+            ok: {
+                label: game.i18n.localize("FARKPG.Items.selectRestoreConfirm"),
+                callback: (_event, button) => button.form?.elements?.restoreId?.value ?? null,
+            },
+        });
+
+        if (!chosenId) return;
+        await item.update({ "system.restoreFromId": chosenId });
+    }
+
+    /**
+     * Restore weapon durability from a linked consumable (mirrors reload ammo).
+     * @this {FarkPGCharacterSheet}
+     */
+    static async #onRestoreDurability(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        const root =
+            target?.closest?.("[data-item-id]") ??
+            event.currentTarget?.closest?.("[data-item-id]") ??
+            event.target?.closest?.("[data-item-id]");
+        const id = root?.dataset?.itemId;
+        const item = this.actor.items.get(id);
+        if (!item || item.type !== "weapon") return;
+
+        const sys = item.system ?? {};
+        if (sys.durabilityEnabled !== true) return;
+        if (sys.restoreEnabled !== true) return;
+
+        const durMax = Number(sys.durability?.max ?? 0);
+        if (durMax <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.durabilityMaxUnset", { name: item.name }),
+            );
+            return;
+        }
+        const durValue = Number(sys.durability?.value ?? 0);
+        if (durValue >= durMax) {
+            ui.notifications?.info(
+                game.i18n.format("FARKPG.Notify.restoreFull", {
+                    name: item.name,
+                    value: durValue,
+                    max: durMax,
+                }),
+            );
+            return;
+        }
+
+        const sourceId = String(sys.restoreFromId ?? "");
+        if (!sourceId) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.restoreNoSource", { name: item.name }),
+            );
+            return;
+        }
+        const source = this.actor.items.get(sourceId);
+        if (!source) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.restoreSourceMissing", { name: item.name }),
+            );
+            return;
+        }
+        const haveInSource = Number(source.system?.quantity?.value ?? 0);
+        if (haveInSource <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.restoreSourceEmpty", {
+                    name: item.name,
+                    source: source.name,
+                }),
+            );
+            return;
+        }
+
+        const need = durMax - durValue;
+        const transfer = Math.min(need, haveInSource);
+        const newDurValue = durValue + transfer;
+        const newSourceQty = haveInSource - transfer;
+
+        await item.update({ "system.durability.value": newDurValue });
+        await source.update({ "system.quantity.value": newSourceQty });
+
+        ui.notifications?.info(
+            game.i18n.format("FARKPG.Notify.restored", {
+                name: item.name,
+                amount: transfer,
+                source: source.name,
+                value: newDurValue,
+                max: durMax,
+            }),
+        );
+    }
+
+    /**
+     * Prompt how much ammo or durability to gamble on this attack.
+     * @this {FarkPGCharacterSheet}
+     * @param {Item} item
+     * @param {"ammo"|"durability"} resource
+     * @returns {Promise<number|null>}
+     */
+    async #promptWeaponSpend(item, resource) {
+        const pool = getWeaponResourcePool(item.system ?? {}, resource);
+        const maxSpend = Math.floor(pool.value);
+        if (maxSpend < 1) {
+            const resourceLabel = game.i18n.localize(
+                resource === "ammo"
+                    ? "FARKPG.Rolls.resourceAmmo"
+                    : "FARKPG.Rolls.resourceDurability",
+            );
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.spendResourceEmpty", {
+                    name: item.name,
+                    resource: resourceLabel,
+                }),
+            );
+            return null;
+        }
+
+        const escape = foundry.utils.escapeHTML ?? ((s) => String(s));
+        const resourceLabel = game.i18n.localize(
+            resource === "ammo"
+                ? "FARKPG.Rolls.resourceAmmo"
+                : "FARKPG.Rolls.resourceDurability",
+        );
+        const title = game.i18n.localize(
+            resource === "ammo"
+                ? "FARKPG.Rolls.spendAmmoTitle"
+                : "FARKPG.Rolls.spendDurabilityTitle",
+        );
+        const content = `
+            <p>${escape(
+                game.i18n.format("FARKPG.Rolls.spendResourcePrompt", {
+                    name: item.name,
+                    resource: resourceLabel,
+                    max: maxSpend,
+                }),
+            )}</p>
+            <div class="form-group">
+                <label for="farkpg-spend-amount">${escape(game.i18n.localize("FARKPG.Rolls.spendResourceLabel"))}</label>
+                <input id="farkpg-spend-amount"
+                       name="amount"
+                       type="number"
+                       min="1"
+                       max="${maxSpend}"
+                       value="1"
+                       step="1" />
+            </div>
+        `;
+
+        const DialogV2 = foundry.applications.api.DialogV2;
+        const raw = await DialogV2.prompt({
+            window: { title, modal: true, zIndex: 10000 },
+            content,
+            modal: true,
+            rejectClose: false,
+            ok: {
+                label: game.i18n.localize("FARKPG.Rolls.spendResourceConfirm"),
+                callback: (_event, button) => button.form?.elements?.amount?.value ?? null,
+            },
+        });
+        if (raw === null || raw === undefined) return null;
+
+        const spent = Math.floor(Number(raw));
+        if (!Number.isFinite(spent) || spent < 1 || spent > maxSpend) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.spendResourceInvalid", { max: maxSpend }),
+            );
+            return null;
+        }
+        return spent;
+    }
+
+    /**
+     * Weapon use: gamble ammo/durability for a damage multiplier, then roll.
+     * @this {FarkPGCharacterSheet}
+     * @param {Item} item
+     */
+    async #useWeaponItem(item) {
+        const sys = item.system ?? {};
+        const rollEnabledFlag = sys.rollable?.enabled === true;
+        if (!rollEnabledFlag) {
+            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.notRollable"));
+            return;
+        }
+
+        const damageBase = Number(sys.damage?.base ?? sys.rollable?.multiplier ?? 0);
+        const damageAdditional = Number(sys.damage?.additional ?? 0);
+        const attachedSkill = String(sys.rollable?.attachedSkill ?? "");
+        const hasFormula =
+            attachedSkill !== "" || damageBase > 0 || damageAdditional > 0;
+        if (!hasFormula) {
+            await this.#openDiceTable();
+            return;
+        }
+
+        if (sys.durabilityEnabled === true && Number(sys.durability?.value ?? 0) <= 0) {
+            ui.notifications?.warn(
+                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
+            );
+            return;
+        }
+
+        const spendResource = getWeaponSpendResource(sys);
+        let spent = 1;
+        const updates = [];
+        const consumed = [];
+
+        if (spendResource) {
+            if (spendResource === "ammo") {
+                const ammoMax = Number(sys.ammo?.max ?? 0);
+                if (ammoMax <= 0) {
+                    ui.notifications?.warn(
+                        game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
+                    );
+                    return;
+                }
+            } else {
+                const durMax = Number(sys.durability?.max ?? 0);
+                if (durMax <= 0) {
+                    ui.notifications?.warn(
+                        game.i18n.format("FARKPG.Notify.durabilityMaxUnset", {
+                            name: item.name,
+                        }),
+                    );
+                    return;
+                }
+            }
+
+            const chosen = await this.#promptWeaponSpend(item, spendResource);
+            if (chosen === null) return;
+            spent = chosen;
+
+            const pool = getWeaponResourcePool(sys, spendResource);
+            if (spent > pool.value) {
+                ui.notifications?.warn(
+                    game.i18n.format("FARKPG.Notify.spendResourceInvalid", { max: pool.value }),
+                );
+                return;
+            }
+
+            const after = pool.value - spent;
+            if (spendResource === "ammo") {
+                updates.push({ doc: item, data: { "system.ammo.value": after } });
+                consumed.push(
+                    game.i18n.format("FARKPG.Rolls.consumedAmmo", {
+                        amount: spent,
+                        value: after,
+                        max: pool.max,
+                    }),
+                );
+            } else {
+                updates.push({ doc: item, data: { "system.durability.value": after } });
+                consumed.push(
+                    game.i18n.format("FARKPG.Rolls.consumedDurability", {
+                        amount: spent,
+                        value: after,
+                        max: pool.max,
+                    }),
+                );
+            }
+        }
+
+        const weaponDamageMultiplier = computeDamageMultiplier(
+            damageBase,
+            damageAdditional,
+            spent,
+        );
+
+        for (const { doc, data } of updates) {
+            await doc.update(data);
+        }
+
+        let count = 1;
+        let faces = 6;
+        let resolved = { attrLabel: "", atrValue: 0, skillLabel: "", sklValue: 0 };
+        if (attachedSkill) {
+            const [attrKey, sKey] = attachedSkill.split(".");
+            resolved = this.#resolveAttrSkill({ attrKey, skillKey: sKey });
+            count = Math.max(1, resolved.atrValue + resolved.sklValue);
+        }
+
+        await this.#postFarkrollMessage({
+            attrLabel: resolved.attrLabel,
+            attrValue: resolved.atrValue,
+            skillLabel: resolved.skillLabel,
+            skillValue: resolved.sklValue,
+            count,
+            faces,
+            item,
+            consumed,
+            weaponDamageMultiplier,
+        });
+
+        await this.#dispatchDiceTable({ count, faces });
+    }
+
+    /**
+     * Find an open character sheet for this actor (Foundry v13 AppV2 registry).
+     * @param {Actor} actor
+     * @returns {FarkPGCharacterSheet|undefined}
+     */
+    static findForActor(actor) {
+        const actorId = actor?.id;
+        if (!actorId) return undefined;
+        const instances = foundry.applications?.instances;
+        if (instances?.values) {
+            for (const app of instances.values()) {
+                if (app instanceof FarkPGCharacterSheet && app.actor?.id === actorId) {
+                    return app;
+                }
+            }
+        }
+        // Legacy fallback (v12 / transitional builds).
+        if (ui?.applications) {
+            for (const app of Object.values(ui.applications)) {
+                if (app instanceof FarkPGCharacterSheet && app.actor?.id === actorId) {
+                    return app;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Run the Use-item flow for an actor without requiring the sheet to be open.
+     * @param {Actor} actor
+     * @param {Event} event
+     * @param {HTMLElement} target
+     */
+    static async useItemForActor(actor, event, target) {
+        const liveActor = game.actors.get(actor?.id) ?? actor;
+        if (!liveActor) return;
+
+        const actionEl =
+            target?.closest?.("[data-action='useItem']") ??
+            target?.closest?.(".farkpg-card-use") ??
+            target;
+
+        let sheet = FarkPGCharacterSheet.findForActor(liveActor);
+        if (!sheet) {
+            sheet = new FarkPGCharacterSheet({ document: liveActor });
+        }
+
+        await FarkPGCharacterSheet.#onUseItem.call(sheet, event, actionEl);
+    }
+
     /**
      * Use an item from a card button (character sheet or AP drawer).
      * @param {HTMLElement} target
      */
     async useItemFromTarget(target) {
-        await FarkPGCharacterSheet.#onUseItem.call(this, { preventDefault() {} }, target);
+        await FarkPGCharacterSheet.useItemForActor(this.actor, { preventDefault() {} }, target);
     }
 
     static async #onUseItem(event, target) {
         event.preventDefault();
-        const id = target.closest("[data-item-id]")?.dataset.itemId;
-        const item = this.actor.items.get(id);
+        const card =
+            target?.closest?.("[data-item-id]") ??
+            event?.target?.closest?.("[data-item-id]");
+        const id = card?.dataset?.itemId;
+        const item = id ? this.actor.items.get(id) : undefined;
         if (!item) return;
+
+        if (item.type === "weapon") {
+            await this.#useWeaponItem(item);
+            return;
+        }
 
         const sys = item.system ?? {};
         const multiplier = Number(sys.rollable?.multiplier ?? 0);
         const max = Number(sys.rollable?.max ?? 0);
-        const usesRollEnabled =
-            item.type === "weapon" ||
-            item.type === "equipment" ||
-            item.type === "consumable";
+        const usesRollEnabled = item.type === "equipment" || item.type === "consumable";
         const attachedSkill = usesRollEnabled
             ? String(sys.rollable?.attachedSkill ?? "")
             : "";
@@ -1332,82 +1787,13 @@ export class FarkPGCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV
             return;
         }
 
-        // Items that wear out (durabilityPerUse > 0) refuse to be used at 0
-        // durability. Done before the dice-table shortcut so a broken weapon
-        // can't even open the table for a manual roll.
-        const dpu = Number(sys.durabilityPerUse ?? 0);
-        if (dpu > 0 && Number(sys.durability?.value ?? 0) <= 0) {
-            ui.notifications?.warn(
-                game.i18n.format("FARKPG.Notify.broken", { name: item.name }),
-            );
-            return;
-        }
-
-        // Roll-enabled item with no formula configured: just open the dice
-        // table for manual rolling. Nothing is consumed and no chat message
-        // is posted -- this is purely a shortcut to bring up the table.
         if (usesRollEnabled && rollEnabledFlag && !hasFormula) {
             await this.#openDiceTable();
             return;
         }
 
-        // Pre-validate everything before mutating any document. Build a list of
-        // updates and a parallel list of human-readable consumption strings.
-        // Both lists are applied / posted only after every check passes.
         const updates = [];
         const consumed = [];
-
-        if (item.type === "weapon" && sys.ammo?.enabled) {
-            const ammoMax = Number(sys.ammo?.max ?? 0);
-            if (ammoMax <= 0) {
-                ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoMaxUnset", { name: item.name }),
-                );
-                return;
-            }
-            const perUse = Math.max(1, Number(sys.ammo.perUse ?? 1));
-            const have = Number(sys.ammo?.value ?? 0);
-            if (have < perUse) {
-                ui.notifications?.warn(
-                    game.i18n.format("FARKPG.Notify.ammoOut", {
-                        name: item.name,
-                        need: perUse,
-                        have,
-                    }),
-                );
-                return;
-            }
-            const after = have - perUse;
-            updates.push({ doc: item, data: { "system.ammo.value": after } });
-            consumed.push(
-                game.i18n.format("FARKPG.Rolls.consumedAmmo", {
-                    amount: perUse,
-                    value: after,
-                    max: ammoMax,
-                }),
-            );
-        }
-
-        if (item.type === "weapon") {
-            const dpu = Number(sys.durabilityPerUse ?? 0);
-            if (dpu > 0) {
-                const dur = Number(sys.durability?.value ?? 0);
-                if (dur < dpu) {
-                    ui.notifications?.warn(
-                        game.i18n.format("FARKPG.Notify.durabilityOut", {
-                            name: item.name,
-                            need: dpu,
-                            have: dur,
-                        }),
-                    );
-                    return;
-                }
-                updates.push({ doc: item, data: { "system.durability.value": dur - dpu } });
-                consumed.push(
-                    game.i18n.format("FARKPG.Rolls.consumedDurability", { amount: dpu }),
-                );
-            }
-        }
 
         if (item.type === "consumable") {
             const qty = Number(sys.quantity?.value ?? 0);

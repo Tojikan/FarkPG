@@ -29,11 +29,11 @@
       "resources": {
         "health": { "value": 10000, "max": 10000 },
         "actionCurrency": {
-          "white": { "value": 0 },
-          "red": { "value": 0 },
-          "blue": { "value": 0 },
-          "orange": { "value": 0 },
-          "black": { "value": 0 }
+          "white": { "value": 0, "max": 40 },
+          "red": { "value": 0, "max": 0 },
+          "blue": { "value": 0, "max": 0 },
+          "orange": { "value": 0, "max": 0 },
+          "black": { "value": 0, "max": 0 }
         },
         "exp": { "value": 0, "max": 100 },
         "movement": 20
@@ -49,14 +49,17 @@
     "weapon": {
       "description": "",
       "durability": { "value": 10, "max": 10 },
-      "durabilityPerUse": 0,
-      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "durabilityEnabled": false,
+      "restoreEnabled": false,
+      "restoreFromId": "",
+      "damage": { "base": 2, "additional": 0.4 },
+      "rollable": { "enabled": false, "attachedSkill": "" },
       "weaponStyle": "melee",
       "ammo": {
         "enabled": false,
+        "reloadEnabled": false,
         "value": 0,
         "max": 0,
-        "perUse": 1,
         "reloadFromId": "",
         "requiredNames": ""
       },

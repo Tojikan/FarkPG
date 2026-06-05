@@ -2453,6 +2453,61 @@ input.farkpg-skill-name:focus {
     opacity: 0.8;
 }
 
+.farkpg-table-roll-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.farkpg-weapon-damage-mult {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.88rem;
+    padding: 2px 0;
+}
+
+.farkpg-weapon-damage-mult-value {
+    font-size: 1rem;
+    color: #c89d4a;
+}
+
+.farkpg-apply-score-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: rgba(200, 157, 74, 0.15);
+    border: 1px solid rgba(200, 157, 74, 0.55);
+    border-radius: 4px;
+    color: inherit;
+}
+
+.farkpg-apply-score-btn:hover {
+    background: rgba(200, 157, 74, 0.28);
+}
+
+.farkpg-weapon-result {
+    padding: 2px 0;
+}
+
+.farkpg-weapon-result-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.farkpg-weapon-result-title > i {
+    color: #c89d4a;
+}
+
 .farkpg-card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -2849,6 +2904,18 @@ input.farkpg-skill-name:focus {
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+}
+
+.farkpg-card-stat-damage .farkpg-card-damage-value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.farkpg-card-use-label {
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
 }
 
 .farkpg-card-use {
