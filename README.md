@@ -3,5 +3,6 @@
 
 Monorepo for FarkPG tools.
 
-- Web: github pages homepage
-- Foundry: foundry modules and systems
+- **Web** ([`web/`](web/)): GitHub Pages — rules, docs, offline character builders
+- **App** ([`app/`](app/)): Cloudflare Pages — online character sheets with Supabase
+- **Foundry**: Foundry VTT modules and systems

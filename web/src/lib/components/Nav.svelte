@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { SHEETS_APP_URL } from '$lib/sheetsApp';
 
 	const navLinks = [
 		{ href: base + '/', label: 'Home' },
 		{ href: base + '/rules', label: 'Rules' },
-		{ href: base + '/builders', label: 'Character Builders' }
+		{ href: base + '/builders', label: 'Character Builders' },
+		...(SHEETS_APP_URL
+			? [{ href: SHEETS_APP_URL, label: 'Cloud Sheets', external: true as const }]
+			: [])
 	];
 
 	let open = $state(false);
@@ -42,7 +46,12 @@
 			<ul class="nav-list">
 				{#each navLinks as link}
 					<li>
-						<a href={link.href} class="nav-link" onclick={close}>{link.label}</a>
+						<a
+							href={link.href}
+							class="nav-link"
+							onclick={close}
+							{...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+						>{link.label}</a>
 					</li>
 				{/each}
 			</ul>
