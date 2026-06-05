@@ -96,6 +96,14 @@
                                 <input type="text" value="{{localize 'FARKPG.Items.ammoNoConsumables'}}" disabled />
                             {{/if}}
                         </label>
+                        <label>
+                            <span>{{localize 'FARKPG.Items.restoreRequiredNames'}}</span>
+                            <input type="text"
+                                   name="system.restoreRequiredNames"
+                                   value="{{system.restoreRequiredNames}}"
+                                   placeholder="Repair kit, duct tape, ..."
+                                   data-tooltip="{{localize 'FARKPG.Items.restoreRequiredNamesHint'}}" />
+                        </label>
                     {{/if}}
                 {{/if}}
 
@@ -185,13 +193,13 @@
                 </label>
 
                 {{#if system.rollable.enabled}}
-                    <label data-tooltip="{{localize 'FARKPG.Items.rollMultiplierHint'}}">
-                        <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
-                        <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
+                    <label data-tooltip="{{localize 'FARKPG.Items.damageBaseHint'}}">
+                        <span>{{localize 'FARKPG.Items.damageBase'}}</span>
+                        <input type="number" name="system.damage.base" value="{{system.damage.base}}" min="0" step="0.1" />
                     </label>
-                    <label data-tooltip="{{localize 'FARKPG.Items.rollMaxHint'}}">
-                        <span>{{localize 'FARKPG.Items.rollMax'}}</span>
-                        <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
+                    <label data-tooltip="{{localize 'FARKPG.Items.damageAdditionalHint'}}">
+                        <span>{{localize 'FARKPG.Items.damageAdditional'}}</span>
+                        <input type="number" name="system.damage.additional" value="{{system.damage.additional}}" min="0" step="0.1" />
                     </label>
                     <label data-tooltip="{{localize 'FARKPG.Items.attachedSkillHint'}}">
                         <span>{{localize 'FARKPG.Items.attachedSkill'}}</span>
@@ -221,23 +229,57 @@
                     </label>
                 </div>
 
-                <label>
-                    <span>{{localize 'FARKPG.Items.durability'}}</span>
-                    <span class="farkpg-pair">
-                        <input type="number" name="system.durability.value" value="{{system.durability.value}}" min="0" step="1" />
-                        <span class="farkpg-sep">/</span>
-                        <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0" step="1" />
-                    </span>
+                <label class="farkpg-toggle" data-tooltip="{{localize 'FARKPG.Items.durabilityEnabledHint'}}">
+                    <input type="checkbox" name="system.durabilityEnabled" {{#if system.durabilityEnabled}}checked{{/if}} />
+                    <span>{{localize 'FARKPG.Items.durabilityEnabled'}}</span>
                 </label>
 
-                {{#if system.rollable.enabled}}
-                    <label data-tooltip="{{localize 'FARKPG.Items.rollMultiplierHint'}}">
-                        <span>{{localize 'FARKPG.Items.rollMultiplier'}}</span>
-                        <input type="number" name="system.rollable.multiplier" value="{{system.rollable.multiplier}}" min="0" step="1" />
+                {{#if system.durabilityEnabled}}
+                    <label>
+                        <span>{{localize 'FARKPG.Items.durability'}}</span>
+                        <span class="farkpg-pair">
+                            <input type="number" name="system.durability.value" value="{{system.durability.value}}" min="0" step="1" />
+                            <span class="farkpg-sep">/</span>
+                            <input type="number" name="system.durability.max" value="{{system.durability.max}}" min="0" step="1" />
+                        </span>
                     </label>
-                    <label data-tooltip="{{localize 'FARKPG.Items.rollMaxHint'}}">
-                        <span>{{localize 'FARKPG.Items.rollMax'}}</span>
-                        <input type="number" name="system.rollable.max" value="{{system.rollable.max}}" min="0" step="1" />
+                    <label class="farkpg-toggle" data-tooltip="{{localize 'FARKPG.Items.restoreEnabledHint'}}">
+                        <input type="checkbox" name="system.restoreEnabled" {{#if system.restoreEnabled}}checked{{/if}} />
+                        <span>{{localize 'FARKPG.Items.restoreEnabled'}}</span>
+                    </label>
+                    {{#if system.restoreEnabled}}
+                        <label>
+                            <span>{{localize 'FARKPG.Items.restoreFrom'}}</span>
+                            {{#if hasActor}}
+                                <select name="system.restoreFromId">
+                                    <option value="">{{localize 'FARKPG.Items.restoreFromNone'}}</option>
+                                    {{#each actorConsumables as |c|}}
+                                        <option value="{{c.id}}" {{#if (eq c.id ../system.restoreFromId)}}selected{{/if}}>{{c.name}}</option>
+                                    {{/each}}
+                                </select>
+                            {{else}}
+                                <input type="text" value="{{localize 'FARKPG.Items.ammoNoConsumables'}}" disabled />
+                            {{/if}}
+                        </label>
+                        <label>
+                            <span>{{localize 'FARKPG.Items.restoreRequiredNames'}}</span>
+                            <input type="text"
+                                   name="system.restoreRequiredNames"
+                                   value="{{system.restoreRequiredNames}}"
+                                   placeholder="Repair kit, duct tape, ..."
+                                   data-tooltip="{{localize 'FARKPG.Items.restoreRequiredNamesHint'}}" />
+                        </label>
+                    {{/if}}
+                {{/if}}
+
+                {{#if system.rollable.enabled}}
+                    <label data-tooltip="{{localize 'FARKPG.Items.damageBaseHint'}}">
+                        <span>{{localize 'FARKPG.Items.damageBase'}}</span>
+                        <input type="number" name="system.damage.base" value="{{system.damage.base}}" min="0" step="0.1" />
+                    </label>
+                    <label data-tooltip="{{localize 'FARKPG.Items.damageAdditionalHint'}}">
+                        <span>{{localize 'FARKPG.Items.damageAdditional'}}</span>
+                        <input type="number" name="system.damage.additional" value="{{system.damage.additional}}" min="0" step="0.1" />
                     </label>
                     <label data-tooltip="{{localize 'FARKPG.Items.attachedSkillHint'}}">
                         <span>{{localize 'FARKPG.Items.attachedSkill'}}</span>

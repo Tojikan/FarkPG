@@ -1,4 +1,4 @@
-import { formatDamageLabel } from "./weapon-damage.mjs";
+import { formatDamageLabel, getItemDamageFields } from "./weapon-damage.mjs";
 
 /**
  * Decorated item payload for `farkpg.item-card` (character sheet + AP drawer).
@@ -8,17 +8,19 @@ import { formatDamageLabel } from "./weapon-damage.mjs";
  */
 export function buildItemCardContext(actor, item) {
     const sys = item.system ?? {};
-    const mult = Number(sys.rollable?.multiplier ?? 0);
-    const maxv = Number(sys.rollable?.max ?? 0);
     const isWeapon = item.type === "weapon";
     const isConsumable = item.type === "consumable";
     const isEquipment = item.type === "equipment";
-    const durabilityEnabled = isWeapon && sys.durabilityEnabled === true;
-    const hasDurability = isWeapon ? durabilityEnabled : isEquipment;
+    const rollEnabledFlag = sys.rollable?.enabled === true;
+
+    const durabilityEnabled =
+        (isWeapon || isEquipment) && sys.durabilityEnabled === true;
+    const hasDurability = durabilityEnabled;
     const durabilityValue = hasDurability ? Number(sys.durability?.value ?? 0) : 0;
     const durabilityMax = hasDurability ? Number(sys.durability?.max ?? 0) : 0;
     const usesDurability = durabilityEnabled;
     const isBroken = usesDurability && durabilityValue <= 0;
+
     const ammoEnabled = isWeapon && sys.ammo?.enabled === true;
     const reloadEnabled = ammoEnabled && sys.ammo?.reloadEnabled === true;
     const restoreEnabled = durabilityEnabled && sys.restoreEnabled === true;
@@ -31,47 +33,15 @@ export function buildItemCardContext(actor, item) {
     const restoreFromId = restoreEnabled ? String(sys.restoreFromId ?? "") : "";
     const restoreSourceItem = restoreFromId ? actor.items.get(restoreFromId) : null;
 
-    const damageBase = isWeapon ? Number(sys.damage?.base ?? sys.rollable?.multiplier ?? 0) : 0;
-    const damageAdditional = isWeapon
-        ? Number(sys.damage?.additional ?? 0)
-        : 0;
-    const showDamage = isWeapon && sys.rollable?.enabled === true;
+    const { base: damageBase, additional: damageAdditional } = getItemDamageFields(sys);
+    const showDamage = rollEnabledFlag && (damageBase > 0 || damageAdditional > 0);
 
-    const usesRollEnabled = isWeapon || isEquipment || isConsumable;
-    const attachedSkill = usesRollEnabled ? String(sys.rollable?.attachedSkill ?? "") : "";
-    let rollCount = mult;
-    let rollFaces = maxv;
-    let attachedSkillLabel = "";
-    if (attachedSkill) {
-        const [attrKey, skillKey] = attachedSkill.split(".");
-        const aVal = Number(actor.system?.attributes?.[attrKey] ?? 0);
-        const sVal = Number(actor.system?.skills?.[skillKey] ?? 0);
-        rollCount = Math.max(1, aVal + sVal);
-        rollFaces = isWeapon ? 6 : maxv > 0 ? maxv : 6;
-        const aLabel = game.i18n.localize(`FARKPG.Attributes.${attrKey}`);
-        const sLabel = game.i18n.localize(`FARKPG.Skills.${skillKey}`);
-        attachedSkillLabel = `${aLabel} — ${sLabel}`;
-    }
-
-    const rollEnabledFlag = sys.rollable?.enabled === true;
-    const weaponHasFormula =
-        isWeapon && (attachedSkill !== "" || damageBase > 0 || damageAdditional > 0);
-    const baselineRollable = mult > 0 && maxv > 0;
-    const hasRollFormula = isWeapon ? weaponHasFormula : attachedSkill !== "" || baselineRollable;
-    const isRollable = usesRollEnabled ? rollEnabledFlag : hasRollFormula;
+    const attachedSkill = rollEnabledFlag ? String(sys.rollable?.attachedSkill ?? "") : "";
+    const hasRollFormula =
+        rollEnabledFlag &&
+        (attachedSkill !== "" || damageBase > 0 || damageAdditional > 0);
+    const isRollable = rollEnabledFlag;
     const iconOnlyRoll = isRollable && !hasRollFormula;
-
-    const consumptionBadges = [];
-    if (isRollable && !iconOnlyRoll && !isWeapon) {
-        if (isConsumable) {
-            consumptionBadges.push({
-                kind: "quantity",
-                icon: "fa-solid fa-cubes-stacked",
-                amount: 1,
-                tooltip: game.i18n.localize("FARKPG.Items.badgeQuantityTooltip"),
-            });
-        }
-    }
 
     const equipmentSlotsBonus = isEquipment ? Number(sys.equipmentSlots ?? 0) : 0;
     const inventorySlotsBonus = isEquipment ? Number(sys.inventorySlots ?? 0) : 0;
@@ -112,30 +82,18 @@ export function buildItemCardContext(actor, item) {
         damageLabel: formatDamageLabel(damageBase, damageAdditional),
         damageBase,
         damageAdditional,
-        rollMultiplier: mult,
-        rollMax: maxv,
-        rollDiceLabel: isRollable && !iconOnlyRoll && !isWeapon ? `${rollCount}d` : "",
-        rollMultLabel:
-            isRollable && !iconOnlyRoll && !isWeapon && mult > 0 && maxv > 0
-                ? `${mult}\u00d7${maxv}`
-                : "",
         iconOnlyRoll,
         useTooltip: iconOnlyRoll
             ? game.i18n.localize("FARKPG.Items.useTooltipOpenTable")
-            : isWeapon
-              ? game.i18n.localize("FARKPG.Items.useTooltipWeapon")
-              : mult > 0 && maxv > 0
-                ? game.i18n.format("FARKPG.Items.useTooltip", { multiplier: mult, max: maxv })
-                : game.i18n.localize("FARKPG.Items.useTooltipSimple"),
-        consumptionBadges,
+            : game.i18n.localize("FARKPG.Items.useTooltipWeapon"),
         equipmentSlotsBonus,
         inventorySlotsBonus,
         hasSlotBonus: equipmentSlotsBonus > 0 || inventorySlotsBonus > 0,
         attachedSkill,
-        attachedSkillLabel,
         ammoEnabled,
         reloadEnabled,
         restoreEnabled,
+        hasSupplyRow: reloadEnabled || restoreEnabled,
         ammoValue,
         ammoMax,
         reloadSource: reloadSourceItem

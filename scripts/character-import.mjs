@@ -210,8 +210,9 @@ export function parseCharacterExportJson(text) {
     const ap = resIn.actionPoints && typeof resIn.actionPoints === "object" ? resIn.actionPoints : {};
     const apMax = clampInt(ap.max, 0, 99999, 0);
     const apVal = clampInt(ap.value, 0, 99999, 0);
+    const hasLegacyAp = resIn.actionPoints != null && typeof resIn.actionPoints === "object";
     const acIn = resIn.actionCurrency && typeof resIn.actionCurrency === "object" ? resIn.actionCurrency : {};
-    const whiteMax = clampInt(acIn.white?.max, 0, 999999, apMax > 0 ? apMax : 40);
+    const whiteMax = clampInt(acIn.white?.max, 0, 999999, apMax > 0 ? apMax : 20);
     const actionCurrency = {
         white: {
             value: clampInt(acIn.white?.value, 0, 999999, 0),
@@ -225,16 +226,17 @@ export function parseCharacterExportJson(text) {
         },
         black: { value: clampInt(acIn.black?.value, 0, 999999, 0), max: clampInt(acIn.black?.max, 0, 999999, 0) },
     };
-    if (whiteMax > 0) {
-        actionCurrency.white.value = Math.min(actionCurrency.white.value, whiteMax);
-    }
-    const anyAc = Object.values(actionCurrency).some((e) => e.value > 0);
-    if (!anyAc && apVal > 0) {
-        const max = apMax > 0 ? apMax : whiteMax;
+    if (hasLegacyAp) {
+        const max = apMax > 0 ? apMax : actionCurrency.white.max || 20;
         actionCurrency.white = {
             max,
-            value: max > 0 ? Math.min(apVal, max) : apVal,
+            value: max > 0 ? Math.min(apVal, max) : Math.max(0, apVal),
         };
+    } else if (actionCurrency.white.max > 0) {
+        actionCurrency.white.value = Math.min(
+            actionCurrency.white.value,
+            actionCurrency.white.max,
+        );
     }
 
     const resources = {

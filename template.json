@@ -29,7 +29,7 @@
       "resources": {
         "health": { "value": 10000, "max": 10000 },
         "actionCurrency": {
-          "white": { "value": 0, "max": 40 },
+          "white": { "value": 0, "max": 20 },
           "red": { "value": 0, "max": 0 },
           "blue": { "value": 0, "max": 0 },
           "orange": { "value": 0, "max": 0 },
@@ -52,6 +52,7 @@
       "durabilityEnabled": false,
       "restoreEnabled": false,
       "restoreFromId": "",
+      "restoreRequiredNames": "",
       "damage": { "base": 2, "additional": 0.4 },
       "rollable": { "enabled": false, "attachedSkill": "" },
       "weaponStyle": "melee",
@@ -68,14 +69,20 @@
     "consumable": {
       "description": "",
       "durability": { "value": 0, "max": 0 },
-      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "damage": { "base": 1, "additional": 0 },
+      "rollable": { "enabled": false, "attachedSkill": "" },
       "quantity": { "value": 1, "max": 99 },
       "isEquipped": false
     },
     "equipment": {
       "description": "",
       "durability": { "value": 10, "max": 10 },
-      "rollable": { "enabled": false, "multiplier": 0, "max": 0, "attachedSkill": "" },
+      "durabilityEnabled": false,
+      "restoreEnabled": false,
+      "restoreFromId": "",
+      "restoreRequiredNames": "",
+      "damage": { "base": 2, "additional": 0.4 },
+      "rollable": { "enabled": false, "attachedSkill": "" },
       "equipmentSlots": 0,
       "inventorySlots": 0,
       "isEquipped": false
