@@ -91,10 +91,13 @@
                                data-ap-path="{{row.valuePath}}"
                                value="{{row.value}}"
                                min="0"
+                               {{#if row.max}}max="{{row.max}}"{{/if}}
                                step="1" />
                     {{else}}
                         <span class="farkpg-ap-drawer-read-val">{{row.valueDisplay}}</span>
                     {{/if}}
+                    <span class="farkpg-ap-drawer-slash">/</span>
+                    <span class="farkpg-ap-drawer-read-max farkpg-read-max-muted">{{row.maxDisplay}}</span>
                 </div>
             </div>
             <div class="farkpg-ap-chips-wrap farkpg-ap-white-pool">

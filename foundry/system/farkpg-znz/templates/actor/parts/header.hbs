@@ -156,7 +156,20 @@
                                    data-ap-path="{{row.valuePath}}"
                                    value="{{row.value}}"
                                    min="0"
+                                   {{#if row.max}}max="{{row.max}}"{{/if}}
                                    step="1" />
+                            <span class="farkpg-ap-drawer-slash">/</span>
+                            {{#if editable}}
+                                <input type="number"
+                                       class="farkpg-header-ghost-inp farkpg-resource-max-input"
+                                       data-ap-path="{{row.maxPath}}"
+                                       value="{{row.max}}"
+                                       min="0"
+                                       step="1"
+                                       data-tooltip="{{localize 'FARKPG.Config.maxAp'}}" />
+                            {{else}}
+                                <span class="farkpg-header-read-max">{{row.maxDisplay}}</span>
+                            {{/if}}
                         </div>
                         <div class="farkpg-ap-chips-wrap farkpg-ap-white-pool farkpg-ap-drawer-cell farkpg-ap-sheet-cell farkpg-ac-cell farkpg-ac-cell--{{row.id}}"
                              data-ap-id="{{row.id}}">

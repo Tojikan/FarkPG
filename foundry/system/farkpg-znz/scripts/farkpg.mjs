@@ -2,6 +2,7 @@ import { SYSTEM_ID } from "./config.mjs";
 import { FarkPGApDrawer } from "./ap-drawer.mjs";
 import { FarkPGCharacterSheet } from "./sheets/character-sheet.mjs";
 import { FarkPGItemSheet } from "./sheets/item-sheet.mjs";
+import { formatMultiplierPlain, formatTotalMultiplierLabel } from "./weapon-damage.mjs";
 
 Hooks.once("init", async () => {
     CONFIG.Combat.initiative = { formula: "1d20", decimals: 0 };
@@ -81,30 +82,107 @@ const DEFAULT_ATTACHED_SKILL = {
  * having to attach handlers per message-render and works with both v12's
  * `renderChatMessage` and v13's `renderChatMessageHTML` hooks.
  */
+/**
+ * @param {number} score
+ * @param {number} multiplier
+ */
+function computeWeaponDamageFinal(score, multiplier) {
+    const product = Number(score) * Number(multiplier);
+    if (!Number.isFinite(product)) return 0;
+    return parseFloat(product.toFixed(2));
+}
+
+/** @param {HTMLElement} btn */
+async function promptApplyWeaponScore(btn) {
+    const multiplier = Number(btn.dataset.farkpgMultiplier ?? 0);
+    if (!(multiplier > 0)) return;
+
+    const escape = foundry.utils.escapeHTML ?? ((s) => String(s));
+    const content = `
+        <p>${escape(game.i18n.localize("FARKPG.Rolls.applyRollScorePrompt"))}</p>
+        <div class="form-group">
+            <label for="farkpg-roll-score">${escape(game.i18n.localize("FARKPG.Rolls.rollScoreLabel"))}</label>
+            <input id="farkpg-roll-score" name="score" type="number" min="0" step="1" value="0" />
+        </div>
+        <p class="farkpg-apply-score-hint">
+            ${escape(game.i18n.localize("FARKPG.Rolls.damageMultiplierLabel"))}:
+            <strong>${escape(formatTotalMultiplierLabel(multiplier))}</strong>
+        </p>
+    `;
+
+    const DialogV2 = foundry.applications.api.DialogV2;
+    const raw = await DialogV2.prompt({
+        window: { title: game.i18n.localize("FARKPG.Rolls.applyRollScoreTitle") },
+        content,
+        modal: true,
+        rejectClose: false,
+        ok: {
+            label: game.i18n.localize("FARKPG.Rolls.applyRollScore"),
+            callback: (_event, button) => button.form?.elements?.score?.value ?? null,
+        },
+    });
+    if (raw === null || raw === undefined) return;
+
+    const score = Number(raw);
+    if (!Number.isFinite(score) || score < 0) {
+        ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.rollScoreInvalid"));
+        return;
+    }
+
+    const final = computeWeaponDamageFinal(score, multiplier);
+    const esc = escape;
+    const line = game.i18n.format("FARKPG.Rolls.weaponDamageResult", {
+        score,
+        multiplier: formatMultiplierPlain(multiplier),
+        final,
+    });
+    const resultContent = `
+        <section class="farkpg-weapon-result">
+            <header class="farkpg-weapon-result-title">
+                <i class="fa-solid fa-burst"></i>
+                <span>${esc(line)}</span>
+            </header>
+        </section>
+    `;
+
+    const speaker = ChatMessage.getSpeaker();
+    await ChatMessage.create({ speaker, content: resultContent });
+}
+
 Hooks.once("ready", () => {
     document.addEventListener(
         "click",
         (event) => {
-            const btn = event.target?.closest?.(
+            const openBtn = event.target?.closest?.(
                 "[data-farkpg-action='open-virtual-table']",
             );
-            if (!btn) return;
-            event.preventDefault();
-            const api = game.modules.get("virtual-dice-table")?.api;
-            if (api?.openVirtualTable) {
-                api.openVirtualTable();
+            if (openBtn) {
+                event.preventDefault();
+                const api = game.modules.get("virtual-dice-table")?.api;
+                if (api?.openVirtualTable) {
+                    api.openVirtualTable();
+                    return;
+                }
+                const direct = globalThis.virtualDiceTable;
+                if (direct?.openVirtualTable) {
+                    direct.openVirtualTable();
+                    return;
+                }
+                if (direct?.open) {
+                    direct.open();
+                    return;
+                }
+                ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
                 return;
             }
-            const direct = globalThis.virtualDiceTable;
-            if (direct?.openVirtualTable) {
-                direct.openVirtualTable();
-                return;
+
+            const scoreBtn = event.target?.closest?.(
+                "[data-farkpg-action='apply-weapon-score']",
+            );
+            if (scoreBtn) {
+                event.preventDefault();
+                void promptApplyWeaponScore(scoreBtn);
             }
-            if (direct?.open) {
-                direct.open();
-                return;
-            }
-            ui.notifications?.warn(game.i18n.localize("FARKPG.Notify.dicetableMissing"));
         },
         { capture: false },
     );

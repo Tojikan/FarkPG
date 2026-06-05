@@ -211,16 +211,30 @@ export function parseCharacterExportJson(text) {
     const apMax = clampInt(ap.max, 0, 99999, 0);
     const apVal = clampInt(ap.value, 0, 99999, 0);
     const acIn = resIn.actionCurrency && typeof resIn.actionCurrency === "object" ? resIn.actionCurrency : {};
+    const whiteMax = clampInt(acIn.white?.max, 0, 999999, apMax > 0 ? apMax : 40);
     const actionCurrency = {
-        white: { value: clampInt(acIn.white?.value, 0, 999999, 0) },
-        red: { value: clampInt(acIn.red?.value, 0, 999999, 0) },
-        blue: { value: clampInt(acIn.blue?.value, 0, 999999, 0) },
-        orange: { value: clampInt(acIn.orange?.value, 0, 999999, 0) },
-        black: { value: clampInt(acIn.black?.value, 0, 999999, 0) },
+        white: {
+            value: clampInt(acIn.white?.value, 0, 999999, 0),
+            max: whiteMax,
+        },
+        red: { value: clampInt(acIn.red?.value, 0, 999999, 0), max: clampInt(acIn.red?.max, 0, 999999, 0) },
+        blue: { value: clampInt(acIn.blue?.value, 0, 999999, 0), max: clampInt(acIn.blue?.max, 0, 999999, 0) },
+        orange: {
+            value: clampInt(acIn.orange?.value, 0, 999999, 0),
+            max: clampInt(acIn.orange?.max, 0, 999999, 0),
+        },
+        black: { value: clampInt(acIn.black?.value, 0, 999999, 0), max: clampInt(acIn.black?.max, 0, 999999, 0) },
     };
+    if (whiteMax > 0) {
+        actionCurrency.white.value = Math.min(actionCurrency.white.value, whiteMax);
+    }
     const anyAc = Object.values(actionCurrency).some((e) => e.value > 0);
     if (!anyAc && apVal > 0) {
-        actionCurrency.white = { value: Math.min(apVal, apMax || apVal) };
+        const max = apMax > 0 ? apMax : whiteMax;
+        actionCurrency.white = {
+            max,
+            value: max > 0 ? Math.min(apVal, max) : apVal,
+        };
     }
 
     const resources = {

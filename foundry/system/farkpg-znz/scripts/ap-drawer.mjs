@@ -27,6 +27,32 @@ function formatPlainInt(n) {
 }
 
 /**
+ * @param {Actor|{ system?: object }} actorOrCtx
+ * @param {string} [id]
+ */
+export function getActionCurrencyMax(actorOrCtx, id = ACTION_CURRENCY_DISPLAY_KEYS[0]) {
+    return Math.max(
+        0,
+        Math.trunc(Number(actorOrCtx?.system?.resources?.actionCurrency?.[id]?.max ?? 0)) || 0,
+    );
+}
+
+/**
+ * @param {number} max
+ * @param {number} rawValue
+ */
+export function clampActionCurrencyValueWithMax(max, rawValue) {
+    const v = Math.max(0, Math.trunc(Number(rawValue)) || 0);
+    const finiteMax = Math.trunc(Number(max)) || 0;
+    return finiteMax > 0 ? Math.min(finiteMax, v) : v;
+}
+
+/** @param {Actor} actor @param {string} id @param {number} rawValue */
+export function clampActionCurrencyValue(actor, id, rawValue) {
+    return clampActionCurrencyValueWithMax(getActionCurrencyMax(actor, id), rawValue);
+}
+
+/**
  * Ensure the actor has `system.resources.actionCurrency` with all five keys.
  * Migrates legacy `actionPoints` / `customActionPoints` once.
  *
@@ -41,23 +67,38 @@ export async function ensureActorActionCurrency(actor) {
         typeof ac === "object" &&
         ACTION_CURRENCY_KEYS.every((k) => {
             const e = ac[k];
-            return e && typeof e === "object" && Number.isFinite(Number(e.value));
+            return (
+                e &&
+                typeof e === "object" &&
+                Number.isFinite(Number(e.value)) &&
+                Number.isFinite(Number(e.max))
+            );
         });
     if (complete) return;
 
     const next = {};
     for (const k of ACTION_CURRENCY_KEYS) {
         const existing = ac?.[k];
-        const v = Math.max(0, Math.trunc(Number(existing?.value ?? 0)) || 0);
-        next[k] = { value: v };
+        const defaultMax = k === "white" ? CHIP_DISPLAY_MAX : 0;
+        const max = Math.max(0, Math.trunc(Number(existing?.max ?? defaultMax)) || 0);
+        const rawVal = Math.max(0, Math.trunc(Number(existing?.value ?? 0)) || 0);
+        next[k] = {
+            max,
+            value: clampActionCurrencyValueWithMax(max, rawVal),
+        };
     }
 
     const legacyAp = Math.max(0, Math.trunc(Number(r?.actionPoints?.value ?? 0)) || 0);
+    const legacyApMax = Math.max(0, Math.trunc(Number(r?.actionPoints?.max ?? 0)) || 0);
     const hasAnyStored =
         ac &&
         ACTION_CURRENCY_KEYS.some((k) => (Math.trunc(Number(ac[k]?.value ?? 0)) || 0) > 0);
-    if (legacyAp > 0 && !hasAnyStored) {
-        next.white = { value: legacyAp };
+    if (!hasAnyStored && legacyAp > 0) {
+        const max = legacyApMax > 0 ? legacyApMax : next.white.max;
+        next.white = {
+            max,
+            value: clampActionCurrencyValueWithMax(max, legacyAp),
+        };
     }
 
     await actor.update({ "system.resources.actionCurrency": next });
@@ -147,6 +188,31 @@ export function applyChipStackVisibility(root) {
 }
 
 /**
+ * Apply a typed update to one action-currency pool, clamping value to max.
+ * @param {Actor} actor
+ * @param {string} path e.g. `system.resources.actionCurrency.white.value`
+ * @param {number} n
+ */
+export async function applyActionCurrencyPathUpdate(actor, path, n) {
+    const match = /^system\.resources\.actionCurrency\.([^.]+)\.(value|max)$/.exec(String(path ?? ""));
+    if (!match) return;
+    const id = match[1];
+    const field = match[2];
+    if (field === "max") {
+        const max = Math.max(0, Math.trunc(Number(n)) || 0);
+        const cur = Math.trunc(Number(actor.system?.resources?.actionCurrency?.[id]?.value ?? 0)) || 0;
+        const value = clampActionCurrencyValueWithMax(max, cur);
+        /** @type {Record<string, number>} */
+        const update = { [`system.resources.actionCurrency.${id}.max`]: max };
+        if (value !== cur) update[`system.resources.actionCurrency.${id}.value`] = value;
+        await actor.update(update);
+        return;
+    }
+    const value = clampActionCurrencyValue(actor, id, n);
+    await actor.update({ [`system.resources.actionCurrency.${id}.value`]: value });
+}
+
+/**
  * Rows for the five preset currencies (header + drawer).
  * @param {Actor} actor
  */
@@ -154,7 +220,8 @@ export function buildApTypeRowsForActor(actor) {
     const ac = actor.system?.resources?.actionCurrency ?? {};
     return ACTION_CURRENCY_DISPLAY_KEYS.map((id) => {
         const entry = ac[id];
-        const value = Math.max(0, Math.trunc(Number(entry?.value ?? 0)) || 0);
+        const max = getActionCurrencyMax(actor, id);
+        const value = clampActionCurrencyValue(actor, id, entry?.value ?? 0);
         const chip = buildChipDisplayMeta(value);
         return {
             kind: "currency",
@@ -168,11 +235,13 @@ export function buildApTypeRowsForActor(actor) {
             chipOver: chip.chipOver,
             chipColsClass: chip.chipColsClass,
             value,
+            max,
             valueDisplay: formatPlainInt(value),
+            maxDisplay: formatPlainInt(max),
             valuePath: `system.resources.actionCurrency.${id}.value`,
+            maxPath: `system.resources.actionCurrency.${id}.max`,
             valueInputName: `system.resources.actionCurrency.${id}.value`,
-            hasMax: false,
-            maxDisplay: "",
+            hasMax: true,
         };
     });
 }
@@ -358,7 +427,9 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
                             Math.trunc(
                                 Number(actor.system?.resources?.actionCurrency?.[id]?.value ?? 0),
                             ) || 0;
-                        const next = Math.max(0, cur + delta);
+                        const max = getActionCurrencyMax(actor, id);
+                        const nextRaw = Math.max(0, cur + delta);
+                        const next = max > 0 ? Math.min(max, nextRaw) : nextRaw;
                         await actor.update({
                             [`system.resources.actionCurrency.${id}.value`]: next,
                         });
@@ -414,8 +485,11 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
      */
     async #applyValueFromPath(path, n) {
         const actor = this.actor;
-        if (path.startsWith("system.resources.actionCurrency.") && path.endsWith(".value")) {
-            await actor.update({ [path]: n });
+        if (
+            path.startsWith("system.resources.actionCurrency.") &&
+            (path.endsWith(".value") || path.endsWith(".max"))
+        ) {
+            await applyActionCurrencyPathUpdate(actor, path, n);
             await this.render();
         }
     }
@@ -428,15 +502,13 @@ export class FarkPGApDrawer extends HandlebarsApplicationMixin(ApplicationV2) {
         /** @type {FarkPGApDrawer} */
         const self = this;
         const { FarkPGCharacterSheet } = await import("./sheets/character-sheet.mjs");
-        /** @type {FarkPGCharacterSheet|undefined} */
-        let sheet = Object.values(ui.applications).find(
-            (app) => app instanceof FarkPGCharacterSheet && app.actor?.id === self.actor.id,
-        );
-        if (!sheet) {
-            sheet = new FarkPGCharacterSheet({ document: self.actor });
-            await sheet.render(false);
+        try {
+            await FarkPGCharacterSheet.useItemForActor(self.actor, event, target);
+        } catch (err) {
+            console.error("FarkPG | AP drawer useItem failed", err);
+            ui.notifications?.error(game.i18n.localize("FARKPG.Notify.useItemFailed"));
+            return;
         }
-        await sheet.useItemFromTarget(target);
         await self.render();
         FarkPGApDrawer.refreshIfOpen(self.actor.id);
     }
