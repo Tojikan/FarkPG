@@ -28,17 +28,22 @@ npm install
 npm run dev
 ```
 
-### 3. Deploy to Cloudflare Pages
+### 3. Deploy to Cloudflare
 
-1. Create a Cloudflare Pages project linked to this repo.
+This app uses `@sveltejs/adapter-cloudflare`. Static files (`/_app/immutable/...`) are served through an `ASSETS` binding — without it you get `Cannot read properties of undefined (reading 'fetch')` in the worker logs.
+
+1. Create a Cloudflare Workers project linked to this repo (Workers & Pages → Create → Workers).
 2. Set **root directory**: `app`
 3. Set **build command**: `npm run build`
-4. Set **build output directory**: `.svelte-kit/cloudflare`
-5. Leave **deploy command** empty — Cloudflare publishes the build output automatically after the build finishes.
-6. Set Node.js version to **22** (Settings → Environment → `NODE_VERSION` = `22`, or use the repo’s `.nvmrc`)
-7. Add environment variables:
+4. Set **deploy command**: `npx wrangler deploy`
+5. Set Node.js version to **22** (Settings → Environment → `NODE_VERSION` = `22`, or use the repo’s `.nvmrc`)
+6. Add environment variables:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`
+
+`wrangler.toml` includes the `[assets]` block that wires up `ASSETS` for the worker. Do not remove it.
+
+If you use **Cloudflare Pages** (`*.pages.dev`) instead of Workers (`*.workers.dev`), you can omit the deploy command and set build output directory to `.svelte-kit/cloudflare` — Pages injects `ASSETS` automatically and you should not add the `[assets]` binding there.
 
 ## Features
 
@@ -46,7 +51,3 @@ npm run dev
 - Multi-campaign support (create/join via invite code)
 - Character sheets stored as JSONB (Basic, Neon City, ZnZ themes)
 - GM tools: view/edit all sheets, item store, grant items to characters
-
-
-
-# Test
