@@ -4,7 +4,4 @@ compatibility_flags = ["nodejs_compat"]
 main = ".svelte-kit/cloudflare/_worker.js"
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
-# Required when deploying as a Worker (workers.dev). SvelteKit serves JS/CSS via env.ASSETS.fetch().
-[assets]
-directory = ".svelte-kit/cloudflare"
-binding = "ASSETS"
+
