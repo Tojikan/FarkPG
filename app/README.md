@@ -34,7 +34,8 @@ npm run dev
 2. Set build command: `npm run build`
 3. Set build output directory: `.svelte-kit/cloudflare`
 4. Set root directory: `app`
-5. Add environment variables:
+5. Set Node.js version to **22** (Settings → Environment → NODE_VERSION = `22`, or add an `.nvmrc` file)
+6. Add environment variables:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`
 
