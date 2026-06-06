@@ -177,7 +177,7 @@ export const coreTheme: Theme = {
 	],
 	points: {
 		attributes: 10,
-		skills: { body: 20, adroit: 22, mind: 26 },
+		skills: { body: 12, adroit: 12, mind: 12 },
 		abilities: 1
 	},
 	healthFromAttribute: {
@@ -190,8 +190,10 @@ export const coreTheme: Theme = {
 
 export const DEFAULT_THEME_ID = 'core';
 
-/** Skill pool per attribute: 2 × listed skills in that category. */
+/** Skill pool per category; defaults to theme.points.skills when set. */
 export function getSkillPoolSize(theme: Theme, categoryId: string): number {
+	const fromPoints = theme.points.skills[categoryId];
+	if (fromPoints != null) return fromPoints;
 	const cat = theme.skills[categoryId];
 	if (!cat) return 0;
 	return 2 * cat.skills.length;

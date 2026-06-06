@@ -6,6 +6,7 @@
 	import {
 		getHealthMax,
 		getResourceLabel,
+		newLineId,
 		syncDerivedStats
 	} from '$lib/data/character';
 	import { knowledgeLabel, SKILL_RANK_CAP } from '$lib/data/themes/core';
@@ -29,7 +30,7 @@
 		MAX_EQUIPMENT_SLOTS,
 		MAX_INVENTORY_SLOTS
 	} from '$lib/data/sheet';
-	import type { CharacterData, InventoryEntry, Theme } from '$lib/data/types';
+	import type { CharacterData, CustomSkillLine, InventoryEntry, Theme } from '$lib/data/types';
 
 	interface Props {
 		theme: Theme;
@@ -69,6 +70,7 @@
 	} | null>(null);
 
 	let configModalOpen = $state(false);
+	let editingCustomSkillId = $state<string | null>(null);
 
 	let portraitInput = $state<HTMLInputElement | null>(null);
 	let portraitUploading = $state(false);
@@ -169,6 +171,61 @@
 			}
 		};
 		scheduleSave();
+	}
+
+	function addCustomSkill(categoryId: string) {
+		if (readonly) return;
+		const row: CustomSkillLine = {
+			id: newLineId('custom'),
+			label: '',
+			description: '',
+			attribute: categoryId,
+			rank: 0
+		};
+		data = {
+			...data,
+			znz: {
+				...data.znz,
+				customSkills: [...(data.znz?.customSkills ?? []), row]
+			}
+		};
+		editingCustomSkillId = row.id;
+		scheduleSave();
+	}
+
+	function updateCustomSkill(id: string, patch: Partial<Pick<CustomSkillLine, 'label' | 'description'>>) {
+		if (readonly) return;
+		const skills = data.znz?.customSkills ?? [];
+		data = {
+			...data,
+			znz: {
+				...data.znz,
+				customSkills: skills.map((skill) => (skill.id === id ? { ...skill, ...patch } : skill))
+			}
+		};
+		scheduleSave();
+	}
+
+	function removeCustomSkill(id: string) {
+		if (readonly) return;
+		data = {
+			...data,
+			znz: {
+				...data.znz,
+				customSkills: (data.znz?.customSkills ?? []).filter((skill) => skill.id !== id)
+			}
+		};
+		if (editingCustomSkillId === id) editingCustomSkillId = null;
+		scheduleSave();
+	}
+
+	function finishCustomSkillEdit(id: string) {
+		const skill = (data.znz?.customSkills ?? []).find((s) => s.id === id);
+		if (skill && !skill.label.trim()) {
+			removeCustomSkill(id);
+			return;
+		}
+		editingCustomSkillId = null;
 	}
 
 	function setHealthCurrent(value: number) {
@@ -470,16 +527,51 @@
 				{/if}
 
 				{#each (data.znz?.customSkills ?? []).filter((s) => s.attribute === cat.id) as custom}
-					<li class="skill-line skill-line-sub">
+					<li class="skill-line skill-line-sub skill-line-custom">
 						<span class="skill-dot"></span>
-						<span class="skill-name">{custom.label || 'Custom skill'}</span>
+						{#if !readonly && (editingCustomSkillId === custom.id || !custom.label.trim())}
+							<input
+								type="text"
+								class="custom-skill-input"
+								placeholder="Skill name"
+								value={custom.label}
+								oninput={(e) => updateCustomSkill(custom.id, { label: e.currentTarget.value })}
+								onkeydown={(e) => e.key === 'Enter' && finishCustomSkillEdit(custom.id)}
+								onblur={() => finishCustomSkillEdit(custom.id)}
+							/>
+						{:else}
+							<button
+								type="button"
+								class="skill-name skill-name-btn"
+								disabled={readonly}
+								onclick={() => !readonly && (editingCustomSkillId = custom.id)}
+							>
+								{custom.label || 'Custom skill'}
+							</button>
+						{/if}
 						<div class="skill-stepper">
 							<button type="button" class="mini-btn" disabled={readonly || custom.rank <= 0} onclick={() => bumpCustomSkill(custom.id, -1)}>−</button>
 							<span class="skill-rank">{custom.rank}</span>
 							<button type="button" class="mini-btn" disabled={readonly || custom.rank >= SKILL_RANK_CAP} onclick={() => bumpCustomSkill(custom.id, 1)}>+</button>
 						</div>
+						{#if !readonly}
+							<button
+								type="button"
+								class="remove-custom-skill"
+								aria-label="Remove custom skill"
+								onclick={() => removeCustomSkill(custom.id)}
+							>×</button>
+						{/if}
 					</li>
 				{/each}
+
+				{#if !readonly}
+					<li class="skill-add-custom">
+						<button type="button" class="add-custom-skill" onclick={() => addCustomSkill(cat.id)}>
+							+ custom skill
+						</button>
+					</li>
+				{/if}
 			</ul>
 		</section>
 	{/each}
@@ -630,40 +722,54 @@
 		<div class="panel-header">
 			<h3>Abilities</h3>
 		</div>
-		<div class="card-grid">
+		<div class="item-card-row">
 			{#each displayAbilities as ab}
-				<article class="ability-card ability-card-lg">
-					<div class="ability-icon">
-						{#if ab.imageUrl}
-							<img src={ab.imageUrl} alt="" class="ability-icon-img" />
-						{:else}
-							<i class={ab.icon} aria-hidden="true"></i>
-						{/if}
-					</div>
-					<div class="ability-body">
-						<div class="ability-top">
-							<h4>{ab.label}</h4>
+				<article class="item-card ability-card" style="--item-accent: #7b68ee">
+					<div class="item-card-media">
+						<div class="item-card-image">
+							{#if ab.imageUrl}
+								<img src={ab.imageUrl} alt="" class="item-thumb" />
+							{:else}
+								<i class={`${ab.icon} item-placeholder`} aria-hidden="true"></i>
+							{/if}
 						</div>
-						<p class="ability-desc">{ab.description}</p>
+					</div>
+
+					<div class="item-card-body">
+						<div class="item-card-head">
+							<div class="item-card-title-row">
+								<h4>{ab.label}</h4>
+								<span class="item-type-badge">{ab.source === 'theme' ? 'Starting' : 'Custom'}</span>
+							</div>
+							<p class="item-desc">{ab.description}</p>
+						</div>
+
 						{#if ab.details?.length}
-							<ul class="ability-details">
+							<ul class="ability-detail-list">
 								{#each ab.details as detail}
 									<li>{detail}</li>
 								{/each}
 							</ul>
 						{/if}
-						{#if ab.source === 'theme'}
-							<span class="ability-source">From build</span>
+
+						{#if ab.source === 'custom' && !readonly}
+							<div class="item-card-actions">
+								<button
+									type="button"
+									class="item-action-edit"
+									aria-label="Edit ability"
+									onclick={() => openEditAbility(ab.id, ab.source)}
+								>
+									<i class="fa-solid fa-pencil" aria-hidden="true"></i>
+								</button>
+							</div>
 						{/if}
 					</div>
-					{#if ab.source === 'custom'}
-						<button type="button" class="card-menu" aria-label="Edit ability" onclick={() => openEditAbility(ab.id, ab.source)}>⋯</button>
-					{/if}
 				</article>
 			{/each}
 
 			{#if !readonly && displayAbilities.length < MAX_ABILITY_SLOTS}
-				<button type="button" class="empty-slot" onclick={openAddAbility}>
+				<button type="button" class="empty-slot item-card" onclick={openAddAbility}>
 					<span class="empty-plus">+</span>
 					<span>Add ability</span>
 				</button>
@@ -1302,7 +1408,6 @@
 		border-right: 1px solid #2d3a4d;
 		padding: 1rem;
 		overflow-y: auto;
-		max-height: calc(100vh - 10rem);
 	}
 
 	.sidebar-title {
@@ -1373,6 +1478,88 @@
 	.skill-line-sub {
 		padding-left: 1rem;
 		opacity: 0.9;
+	}
+
+	.skill-line-custom {
+		position: relative;
+	}
+
+	.skill-name-btn {
+		flex: 1;
+		padding: 0;
+		border: none;
+		background: none;
+		color: #c5d0dc;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.skill-name-btn:disabled {
+		cursor: default;
+	}
+
+	.skill-name-btn:not(:disabled):hover {
+		color: #e8ecf1;
+	}
+
+	.custom-skill-input {
+		flex: 1;
+		min-width: 0;
+		padding: 0.1rem 0.25rem;
+		border: 1px solid #3a4d66;
+		border-radius: 0.2rem;
+		background: #141b26;
+		color: #e8ecf1;
+		font-size: 0.72rem;
+	}
+
+	.remove-custom-skill {
+		opacity: 0;
+		padding: 0;
+		width: 1rem;
+		height: 1rem;
+		border: none;
+		background: none;
+		color: #8899aa;
+		font-size: 0.85rem;
+		line-height: 1;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.skill-line-custom:hover .remove-custom-skill,
+	.skill-line-custom:focus-within .remove-custom-skill {
+		opacity: 1;
+	}
+
+	.remove-custom-skill:hover {
+		color: #e74c3c;
+	}
+
+	.skill-add-custom {
+		list-style: none;
+		padding: 0.15rem 0.35rem 0.15rem 1rem;
+	}
+
+	.add-custom-skill {
+		padding: 0;
+		border: none;
+		background: none;
+		font-size: 0.62rem;
+		color: #5a6a7d;
+		cursor: pointer;
+		opacity: 0.45;
+		transition: opacity 0.15s ease, color 0.15s ease;
+	}
+
+	.attr-block:hover .add-custom-skill,
+	.attr-block:focus-within .add-custom-skill {
+		opacity: 1;
+	}
+
+	.add-custom-skill:hover {
+		color: #8899aa;
 	}
 
 	.skill-dot {
@@ -1508,13 +1695,6 @@
 		letter-spacing: 0.05em;
 	}
 
-	.card-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-		gap: 0.85rem;
-		width: 100%;
-	}
-
 	.item-card-row {
 		display: flex;
 		flex-wrap: wrap;
@@ -1523,7 +1703,6 @@
 	}
 
 	.item-card,
-	.ability-card,
 	.empty-slot {
 		background: #1a2332;
 		border: 1px solid var(--item-accent, #2d3a4d);
@@ -1761,10 +1940,33 @@
 		border-color: #5dade2;
 	}
 
-	.ability-card,
-	.empty-slot {
-		padding: 0.75rem;
-		border-color: #2d3a4d;
+	.ability-detail-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		flex: 1;
+	}
+
+	.ability-detail-list li {
+		position: relative;
+		padding-left: 0.65rem;
+		font-size: 0.62rem;
+		color: #8899aa;
+		line-height: 1.35;
+	}
+
+	.ability-detail-list li::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0.45em;
+		width: 0.25rem;
+		height: 0.25rem;
+		border-radius: 9999px;
+		background: var(--item-accent, #7b68ee);
 	}
 
 	.empty-slot.item-card {
@@ -1784,91 +1986,6 @@
 		cursor: pointer;
 		font-size: 0.65rem;
 		box-shadow: none;
-	}
-
-	.ability-card {
-		display: flex;
-		flex-direction: column;
-		min-height: 8.5rem;
-	}
-
-	.ability-card-lg {
-		min-height: 9rem;
-	}
-
-	.ability-icon {
-		width: 2.25rem;
-		height: 2.25rem;
-		border-radius: 0.5rem;
-		background: rgba(93, 173, 226, 0.15);
-		color: #5dade2;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.95rem;
-		margin-bottom: 0.5rem;
-		overflow: hidden;
-		flex-shrink: 0;
-	}
-
-	.ability-icon-img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
-
-	.ability-top {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 0.25rem;
-		margin-bottom: 0.25rem;
-	}
-
-	.ability-top h4 {
-		font-size: 0.72rem;
-		font-weight: 600;
-	}
-
-	.ability-desc {
-		font-size: 0.62rem;
-		color: #8899aa;
-		line-height: 1.35;
-		flex: 1;
-	}
-
-	.ability-details {
-		margin: 0.35rem 0 0;
-		padding-left: 0.85rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.2rem;
-	}
-
-	.ability-details li {
-		font-size: 0.58rem;
-		color: #6a7a8d;
-		line-height: 1.35;
-	}
-
-	.ability-source {
-		font-size: 0.55rem;
-		color: #5a6a7a;
-		margin-top: 0.35rem;
-	}
-
-	.card-menu {
-		position: absolute;
-		bottom: 0.4rem;
-		right: 0.4rem;
-		background: none;
-		border: none;
-		color: #8899aa;
-		font-size: 1rem;
-		line-height: 1;
-		cursor: pointer;
-		padding: 0.15rem 0.25rem;
 	}
 
 	.empty-slot:not(.item-card) {
@@ -1907,7 +2024,8 @@
 		.sheet-header {
 			flex-direction: column;
 			align-items: stretch;
-			gap: 0.75rem;
+			gap: 0.5rem;
+			padding: 0.75rem 1rem;
 		}
 
 		.header-left {
@@ -1918,16 +2036,51 @@
 			width: 100%;
 			flex-direction: column;
 			align-items: stretch;
-			gap: 0.65rem;
+			gap: 0.3rem;
 		}
 
 		.stat-bar {
 			width: 100%;
 			min-width: 0;
+			flex: none;
+		}
+
+		.stat-bar-top {
+			margin-bottom: 0.2rem;
+			font-size: 0.72rem;
+		}
+
+		.stat-label {
+			font-size: 0.68rem;
+		}
+
+		.stat-values {
+			font-size: 0.72rem;
+		}
+
+		.stat-input {
+			width: 3.25rem;
+			padding: 0.05rem 0.2rem;
+		}
+
+		.stat-input-max {
+			width: 3.25rem;
+		}
+
+		.bar-track {
+			height: 0.35rem;
 		}
 
 		.stat-move {
-			align-self: flex-start;
+			align-self: stretch;
+			justify-content: space-between;
+			padding: 0.35rem 0.55rem;
+			font-size: 0.72rem;
+		}
+
+		.stat-input-move {
+			width: 2.5rem;
+			font-size: 0.85rem;
 		}
 
 		.sheet-body {
@@ -1947,18 +2100,18 @@
 		}
 
 		.sheet-tabs {
-			overflow-x: auto;
-			flex-wrap: nowrap;
+			flex-wrap: wrap;
+			overflow-x: visible;
+			gap: 0.15rem 0.25rem;
+			row-gap: 0;
 		}
 
 		.sheet-tab {
-			flex-shrink: 0;
-			padding: 0.55rem 0.75rem;
-			font-size: 0.68rem;
-		}
-
-		.card-grid {
-			grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+			flex: 1 1 calc(50% - 0.25rem);
+			justify-content: center;
+			padding: 0.5rem 0.45rem;
+			font-size: 0.62rem;
+			white-space: nowrap;
 		}
 
 		.item-card,

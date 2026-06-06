@@ -77,6 +77,10 @@
 	const activePool = $derived(
 		activeCategory ? getSkillPoolForCategory(build.sheetData, build.theme, activeCategory.id) : 0
 	);
+	const activeRemaining = $derived(
+		activeCategory ? getRemainingSkillPoints(build.sheetData, build.theme, activeCategory.id) : 0
+	);
+	const activeSpentPct = $derived(activePool > 0 ? Math.min(100, (activeSpent / activePool) * 100) : 0);
 
 	const customForActive = $derived(
 		(build.sheetData.znz?.customSkills ?? []).filter((c) => c.attribute === activeCategoryId)
@@ -246,6 +250,19 @@
 
 <BuildShell currentStep="skills">
 	<div class="step-page">
+		{#if activeCategory}
+			<div class="mobile-points-strip" style="--strip-accent: {activeStyle.accent}">
+				<div class="mobile-points-strip-main">
+					<span class="mobile-points-strip-label">{activeCategory.label} points</span>
+					<span class="mobile-points-strip-value">{activeRemaining} left</span>
+				</div>
+				<span class="mobile-points-strip-total">{activeSpent} / {activePool}</span>
+				<div class="mobile-points-strip-bar" aria-hidden="true">
+					<span style="width: {activeSpentPct}%"></span>
+				</div>
+			</div>
+		{/if}
+
 		<div class="step-header">
 			<div>
 				<h1 class="step-title">{build.characterName || 'Create New Character'}</h1>
@@ -430,10 +447,9 @@
 
 			<aside class="skills-sidebar">
 				{#if activeCategory}
-					{@const pct = activePool > 0 ? Math.min(100, (activeSpent / activePool) * 100) : 0}
 					<div class="sidebar-card">
 						<p class="sidebar-label">{activeCategory.label} points</p>
-						<div class="progress-ring" style="--pct: {pct}; --ring-color: {(tabStyles[activeCategory.id] ?? tabStyles.body).accent}">
+						<div class="progress-ring" style="--pct: {activeSpentPct}; --ring-color: {(tabStyles[activeCategory.id] ?? tabStyles.body).accent}">
 							<div class="progress-ring-inner">
 								<span class="progress-ring-value">{activeSpent} / {activePool}</span>
 							</div>
@@ -558,6 +574,22 @@
 	@media (max-width: 960px) {
 		.skills-layout {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.mobile-points-strip {
+			display: flex;
+		}
+
+		.skills-sidebar {
+			display: none;
+		}
+	}
+
+	@media (min-width: 769px) {
+		.mobile-points-strip {
+			display: none;
 		}
 	}
 

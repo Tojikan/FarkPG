@@ -51,6 +51,16 @@
 
 <BuildShell currentStep="attributes">
 	<div class="step-page">
+		<div class="points-card points-card-mobile">
+			<p class="points-card-label">Points remaining</p>
+			<p class="points-card-value">{remaining}</p>
+			<div class="points-card-divider" aria-hidden="true"><span>◆</span></div>
+			<div class="points-card-total">
+				<span>Total points</span>
+				<span>{spent} / {pool}</span>
+			</div>
+		</div>
+
 		<div class="step-header">
 			<div>
 				<h1 class="step-title">Create New Character</h1>
@@ -68,16 +78,6 @@
 				<p class="step-desc">
 					Set each attribute between 1 and 6. The total of Body, Adroit, and Mind cannot exceed {pool}.
 				</p>
-			</div>
-
-			<div class="points-card">
-				<p class="points-card-label">Points remaining</p>
-				<p class="points-card-value">{remaining}</p>
-				<div class="points-card-divider" aria-hidden="true"><span>◆</span></div>
-				<div class="points-card-total">
-					<span>Total points</span>
-					<span>{spent} / {pool}</span>
-				</div>
 			</div>
 		</div>
 
@@ -163,6 +163,93 @@
 		justify-content: space-between;
 		gap: 2rem;
 		align-items: flex-start;
+	}
+
+	.points-card {
+		background: #1a2332;
+		border: 1px solid #2d3a4d;
+		border-radius: 0.5rem;
+		padding: 1.25rem 1.5rem;
+		min-width: 10rem;
+		text-align: center;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+	}
+
+	@media (min-width: 769px) {
+		.step-page {
+			display: grid;
+			grid-template-columns: 1fr auto;
+			grid-template-areas:
+				'header points'
+				'grid grid'
+				'derived derived';
+			gap: 1.5rem 2rem;
+			align-items: start;
+		}
+
+		.step-header {
+			grid-area: header;
+		}
+
+		.points-card-mobile {
+			grid-area: points;
+			justify-self: end;
+		}
+
+		.attr-grid {
+			grid-area: grid;
+		}
+
+		.derived-panel {
+			grid-area: derived;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.step-page {
+			gap: 1rem;
+		}
+
+		.points-card-mobile {
+			position: sticky;
+			top: 3.5rem;
+			z-index: 40;
+			display: flex;
+			flex-wrap: nowrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.5rem;
+			width: 100%;
+			min-width: 0;
+			padding: 0.4rem 0.65rem;
+			margin-bottom: 0;
+			text-align: left;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+		}
+
+		.points-card-mobile .points-card-label {
+			margin: 0;
+			font-size: 0.58rem;
+			text-align: left;
+			flex-shrink: 0;
+		}
+
+		.points-card-mobile .points-card-value {
+			font-size: 1.1rem;
+			margin: 0;
+			line-height: 1;
+			flex-shrink: 0;
+		}
+
+		.points-card-mobile .points-card-divider {
+			display: none;
+		}
+
+		.points-card-mobile .points-card-total {
+			font-size: 0.68rem;
+			margin-left: auto;
+			flex-shrink: 0;
+		}
 	}
 
 	.step-title {

@@ -104,7 +104,7 @@ export function getCostToRaiseSkill(currentLevel: number): number {
 }
 
 export function getSkillPoolForCategory(_character: CharacterData, theme: Theme, categoryId: string): number {
-	return getSkillPoolSize(theme, categoryId) || theme.points.skills[categoryId] || 0;
+	return getSkillPoolSize(theme, categoryId);
 }
 
 export function getSkillPointsSpentForCategory(
