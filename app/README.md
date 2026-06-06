@@ -31,20 +31,14 @@ npm run dev
 ### 3. Deploy to Cloudflare Pages
 
 1. Create a Cloudflare Pages project linked to this repo.
-2. Set build command: `npm run build`
-3. Set build output directory: `.svelte-kit/cloudflare`
-4. Set root directory: `app`
-5. Set Node.js version to **22** (Settings → Environment → NODE_VERSION = `22`, or add an `.nvmrc` file)
-6. Add environment variables:
+2. Set **root directory**: `app`
+3. Set **build command**: `npm run build`
+4. Set **build output directory**: `.svelte-kit/cloudflare`
+5. Leave **deploy command** empty — Cloudflare publishes the build output automatically after the build finishes.
+6. Set Node.js version to **22** (Settings → Environment → `NODE_VERSION` = `22`, or use the repo’s `.nvmrc`)
+7. Add environment variables:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`
-
-Or use the GitHub Actions workflow in [`.github/workflows/deploy-app.yml`](../.github/workflows/deploy-app.yml) with repository secrets:
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `PUBLIC_SUPABASE_URL`
-- `PUBLIC_SUPABASE_ANON_KEY`
 
 ## Features
 
