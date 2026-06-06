@@ -1,11 +1,11 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { mergeCharacterData } from '$lib/data/character';
+import { error, redirect } from '@sveltejs/kit';
+import { isBuilderComplete, mergeCharacterData } from '$lib/data/character';
 import { getTheme } from '$lib/data/themes';
 import { canEditCharacter, canViewCharacter } from '$lib/server/characterAccess';
 import type { CharacterData } from '$lib/data/types';
-import type { Actions, PageServerLoad } from './$types';
+import type { LayoutServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, params }) => {
+export const load: LayoutServerLoad = async ({ locals, params }) => {
 	const user = locals.user;
 	if (!user) error(401, 'Unauthorized');
 
@@ -21,10 +21,13 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!canView) error(404, 'Character not found');
 
 	const canEdit = await canEditCharacter(locals.supabase, user.id, character);
+	if (!canEdit) redirect(303, `/characters/${params.charId}`);
+
 	const theme = getTheme(character.theme_id);
 	if (!theme) error(500, 'Unknown theme');
 
 	const sheet = mergeCharacterData(character.data as CharacterData, theme);
+	if (isBuilderComplete(sheet)) redirect(303, `/characters/${params.charId}`);
 
 	let campaignName: string | null = null;
 	if (character.campaign_id) {
@@ -37,41 +40,11 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	}
 
 	return {
-		character,
+		characterId: character.id,
+		characterName: character.name,
+		sheetData: sheet,
 		theme,
-		canEdit,
-		isOwner: character.owner_id === user.id,
 		campaignId: character.campaign_id,
 		campaignName
 	};
-};
-
-export const actions: Actions = {
-	delete: async ({ locals, params }) => {
-		const user = locals.user;
-		if (!user) return fail(401, { error: 'Not authenticated.' });
-
-		const { data: character } = await locals.supabase
-			.from('characters')
-			.select('owner_id, campaign_id')
-			.eq('id', params.charId)
-			.single();
-
-		if (!character) return fail(404, { error: 'Character not found.' });
-		if (!(await canEditCharacter(locals.supabase, user.id, character))) {
-			return fail(403, { error: 'Not allowed.' });
-		}
-
-		const { error: deleteError } = await locals.supabase
-			.from('characters')
-			.delete()
-			.eq('id', params.charId);
-
-		if (deleteError) return fail(400, { error: deleteError.message });
-
-		if (character.campaign_id) {
-			redirect(303, `/campaigns/${character.campaign_id}`);
-		}
-		redirect(303, '/campaigns');
-	}
 };

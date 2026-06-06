@@ -1,0 +1,15 @@
+/* Shared dark theme tokens for character builder steps */
+.build-root {
+	--build-page-bg: #0a0e14;
+	--build-surface: #141b26;
+	--build-surface-raised: #1a2332;
+	--build-surface-hover: #1e2736;
+	--build-border: #2d3a4d;
+	--build-border-strong: #3a4d66;
+	--build-text: #e8ecf1;
+	--build-text-secondary: #c5d0dc;
+	--build-text-muted: #8899aa;
+	--build-accent: #5dade2;
+	--build-input-bg: #0f141c;
+	--build-active-tint: rgba(93, 173, 226, 0.12);
+}

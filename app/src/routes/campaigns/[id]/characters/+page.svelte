@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { themeList } from '$lib/data/themes';
 
 	let { data, form } = $props();
 </script>
@@ -26,14 +25,6 @@
 			<div class="min-w-48 flex-1">
 				<label class="field-label" for="name">Name</label>
 				<input class="field-input" id="name" name="name" type="text" required />
-			</div>
-			<div class="min-w-48">
-				<label class="field-label" for="themeId">Theme</label>
-				<select class="field-input" id="themeId" name="themeId" required>
-					{#each themeList as theme}
-						<option value={theme.id}>{theme.label}</option>
-					{/each}
-				</select>
 			</div>
 			<button type="submit" class="btn btn-primary">Create</button>
 		</form>

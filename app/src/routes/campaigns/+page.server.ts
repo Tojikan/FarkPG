@@ -1,11 +1,32 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { createEmptyCharacterData, generateInviteCode } from '$lib/data/character';
-import { getTheme } from '$lib/data/themes';
+import { portraitPublicUrl } from '$lib/data/portrait';
+import { coreTheme, DEFAULT_THEME_ID, getTheme } from '$lib/data/themes';
+import type { CharacterData } from '$lib/data/types';
 import type { Actions, PageServerLoad } from './$types';
+
+function portraitUrlFromData(data: unknown): string | null {
+	const sheet = data as CharacterData | null;
+	const path = sheet?.znz?.portraitPath;
+	if (!path) return null;
+	return portraitPublicUrl(path, sheet.znz?.portraitUpdatedAt);
+}
+
+function characterLevel(data: unknown): number {
+	const sheet = data as CharacterData | null;
+	const xp = sheet?.xp ?? 0;
+	return Math.max(1, Math.floor(xp / 1000) + 1);
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = locals.user;
-	if (!user) return { campaigns: [], characters: [] };
+	if (!user) return { campaigns: [], characters: [], displayName: 'Adventurer' };
+
+	const { data: profile } = await locals.supabase
+		.from('profiles')
+		.select('display_name')
+		.eq('id', user.id)
+		.single();
 
 	const { data: memberships, error: memberError } = await locals.supabase
 		.from('campaign_members')
@@ -14,7 +35,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	if (memberError) console.error(memberError);
 
-	const campaigns =
+	const campaignsRaw =
 		memberships?.flatMap((m) => {
 			const c = m.campaigns as
 				| { id: string; name: string; invite_code: string; created_at: string }
@@ -34,25 +55,63 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const { data: characters, error: charError } = await locals.supabase
 		.from('characters')
-		.select('id, name, theme_id, campaign_id, updated_at, campaigns(name)')
+		.select('id, name, theme_id, campaign_id, updated_at, data, campaigns(name)')
 		.eq('owner_id', user.id)
 		.order('updated_at', { ascending: false });
 
 	if (charError) console.error(charError);
 
+	const charactersList =
+		characters?.map((c) => {
+			const campaign = Array.isArray(c.campaigns) ? c.campaigns[0] : c.campaigns;
+			const theme = getTheme(c.theme_id);
+			return {
+				id: c.id,
+				name: c.name,
+				theme_id: c.theme_id,
+				theme_label: theme.label,
+				campaign_id: c.campaign_id,
+				campaign_name: (campaign as { name: string } | null)?.name ?? null,
+				level: characterLevel(c.data),
+				portrait_url: portraitUrlFromData(c.data),
+				updated_at: c.updated_at
+			};
+		}) ?? [];
+
+	const campaigns = await Promise.all(
+		campaignsRaw.map(async (campaign) => {
+			const [{ count: memberCount }, { count: characterCount }] = await Promise.all([
+				locals.supabase
+					.from('campaign_members')
+					.select('*', { count: 'exact', head: true })
+					.eq('campaign_id', campaign.id),
+				locals.supabase
+					.from('characters')
+					.select('*', { count: 'exact', head: true })
+					.eq('campaign_id', campaign.id)
+			]);
+
+			const myCharacters = charactersList
+				.filter((ch) => ch.campaign_id === campaign.id)
+				.map((ch) => ({
+					id: ch.id,
+					name: ch.name,
+					portrait_url: ch.portrait_url
+				}));
+
+			return {
+				...campaign,
+				member_count: memberCount ?? 0,
+				character_count: characterCount ?? 0,
+				my_characters: myCharacters
+			};
+		})
+	);
+
 	return {
+		displayName: profile?.display_name ?? 'Adventurer',
 		campaigns,
-		characters:
-			characters?.map((c) => {
-				const campaign = Array.isArray(c.campaigns) ? c.campaigns[0] : c.campaigns;
-				return {
-					id: c.id,
-					name: c.name,
-					theme_id: c.theme_id,
-					campaign_id: c.campaign_id,
-					campaign_name: (campaign as { name: string } | null)?.name ?? null
-				};
-			}) ?? []
+		characters: charactersList
 	};
 };
 
@@ -92,10 +151,6 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const name = String(formData.get('name') ?? '').trim();
-		const themeId = String(formData.get('themeId') ?? 'basic');
-
-		const theme = getTheme(themeId);
-		if (!theme) return fail(400, { error: 'Invalid theme.' });
 		if (!name) return fail(400, { error: 'Name is required.' });
 
 		const { data, error: insertError } = await locals.supabase
@@ -103,14 +158,100 @@ export const actions: Actions = {
 			.insert({
 				campaign_id: null,
 				owner_id: locals.user.id,
-				theme_id: themeId,
+				theme_id: DEFAULT_THEME_ID,
 				name,
-				data: createEmptyCharacterData(theme)
+				data: createEmptyCharacterData(coreTheme)
 			})
 			.select('id')
 			.single();
 
 		if (insertError) return fail(400, { error: insertError.message });
-		redirect(303, `/characters/${data.id}`);
+		redirect(303, `/characters/${data.id}/build/attributes`);
+	},
+
+	deleteCharacter: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { error: 'Not authenticated.' });
+
+		const characterId = String((await request.formData()).get('characterId') ?? '');
+		if (!characterId) return fail(400, { error: 'Character id required.' });
+
+		const { data: character } = await locals.supabase
+			.from('characters')
+			.select('owner_id')
+			.eq('id', characterId)
+			.single();
+
+		if (!character || character.owner_id !== locals.user.id) {
+			return fail(403, { error: 'Not allowed.' });
+		}
+
+		const { error: deleteError } = await locals.supabase.from('characters').delete().eq('id', characterId);
+		if (deleteError) return fail(400, { error: deleteError.message });
+		redirect(303, '/campaigns');
+	},
+
+	assignCharacter: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const characterId = String(formData.get('characterId') ?? '');
+		const campaignId = String(formData.get('campaignId') ?? '');
+		if (!characterId || !campaignId) {
+			return fail(400, { error: 'Character and campaign are required.' });
+		}
+
+		const { data: character } = await locals.supabase
+			.from('characters')
+			.select('owner_id, campaign_id')
+			.eq('id', characterId)
+			.single();
+
+		if (!character || character.owner_id !== locals.user.id) {
+			return fail(403, { error: 'Not allowed.' });
+		}
+
+		const { data: membership } = await locals.supabase
+			.from('campaign_members')
+			.select('role')
+			.eq('campaign_id', campaignId)
+			.eq('user_id', locals.user.id)
+			.single();
+
+		if (!membership) {
+			return fail(403, { error: 'You are not a member of that campaign.' });
+		}
+
+		const { error: updateError } = await locals.supabase
+			.from('characters')
+			.update({ campaign_id: campaignId })
+			.eq('id', characterId);
+
+		if (updateError) return fail(400, { error: updateError.message });
+		return { success: true };
+	},
+
+	unassignCharacter: async ({ request, locals }) => {
+		if (!locals.user) return fail(401, { error: 'Not authenticated.' });
+
+		const characterId = String((await request.formData()).get('characterId') ?? '');
+		if (!characterId) return fail(400, { error: 'Character id required.' });
+
+		const { data: character } = await locals.supabase
+			.from('characters')
+			.select('owner_id')
+			.eq('id', characterId)
+			.single();
+
+		if (!character || character.owner_id !== locals.user.id) {
+			return fail(403, { error: 'Not allowed.' });
+		}
+
+		const { error: updateError } = await locals.supabase
+			.from('characters')
+			.update({ campaign_id: null })
+			.eq('id', characterId);
+
+		if (updateError) return fail(400, { error: updateError.message });
+		return { success: true };
 	}
 };

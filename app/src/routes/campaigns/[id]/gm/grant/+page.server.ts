@@ -85,10 +85,11 @@ export const actions: Actions = {
 		} else {
 			const entry: InventoryEntry = {
 				itemId,
-				quantity,
 				equipped: false,
-				slot: null,
-				label: item.name
+				label: item.name,
+				itemKind: 'consumable',
+				features: { hasQuantity: true, hasDurability: false, hasAmmo: false, hasDamage: false },
+				quantity
 			};
 			inventory.push(entry);
 		}

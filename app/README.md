@@ -14,7 +14,7 @@ Authenticated web app for creating, saving, and managing FarkPG character sheets
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. Run the SQL in [`supabase/migrations/001_initial.sql`](supabase/migrations/001_initial.sql) via the SQL editor.
-   If upgrading an existing database, also run [`002_campaign_delete.sql`](supabase/migrations/002_campaign_delete.sql) and [`003_unassigned_characters.sql`](supabase/migrations/003_unassigned_characters.sql).
+   If upgrading an existing database, also run [`002_campaign_delete.sql`](supabase/migrations/002_campaign_delete.sql), [`003_unassigned_characters.sql`](supabase/migrations/003_unassigned_characters.sql), and [`004_character_portraits.sql`](supabase/migrations/004_character_portraits.sql).
 3. Copy the project URL and anon key from **Settings → API**.
 4. Disable email confirmation for a small friends group (**Authentication → Providers → Email**) if you want instant signup.
 

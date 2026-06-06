@@ -6,6 +6,8 @@ export interface AttributeDef {
 	min: number;
 	max: number;
 	default: number;
+	/** Shown on the attribute step of the builder */
+	description?: string;
 }
 
 /** Skill definition within a category */
@@ -14,6 +16,28 @@ export interface SkillDef {
 	label: string;
 	attribute?: string;
 	description?: string;
+	/** Knowledge uses specialization lines instead of a single rank field */
+	kind?: 'normal' | 'knowledge';
+}
+
+export interface KnowledgePreset {
+	id: string;
+	label: string;
+}
+
+export interface KnowledgeLine {
+	id: string;
+	presetId: string;
+	detail: string;
+	rank: number;
+}
+
+export interface CustomSkillLine {
+	id: string;
+	label: string;
+	description: string;
+	attribute: string;
+	rank: number;
 }
 
 /** Skill category */
@@ -33,6 +57,10 @@ export interface AbilityDef {
 	levelable?: boolean;
 	maxLevel?: number;
 	description: string;
+	/** Additional detail paragraphs shown in the builder and sheet */
+	details?: string[];
+	/** Font Awesome icon class for builder / sheet display */
+	icon?: string;
 }
 
 /** Point pools for a theme */
@@ -67,17 +95,51 @@ export interface Theme {
 	resourceLabel?: string;
 }
 
+export type ItemKind = 'consumable' | 'equipment' | 'melee_weapon' | 'ranged_weapon';
+
+export interface ItemFeatures {
+	hasQuantity?: boolean;
+	hasDurability?: boolean;
+	hasAmmo?: boolean;
+	hasDamage?: boolean;
+}
+
+export interface ItemResourcePair {
+	current: number;
+	max: number;
+}
+
+export interface ItemDamage {
+	base: number;
+	additional: number;
+}
+
 export interface InventoryEntry {
 	itemId: string;
-	quantity: number;
 	equipped: boolean;
-	slot: string | null;
 	label?: string;
+	description?: string;
+	itemKind?: ItemKind;
+	features?: ItemFeatures;
+	quantity?: number;
+	durability?: ItemResourcePair;
+	ammo?: ItemResourcePair;
+	damage?: ItemDamage;
+	imagePath?: string;
+	imageUpdatedAt?: string;
+	/** @deprecated Legacy slot label */
+	slot?: string | null;
+	/** @deprecated Legacy type string */
+	itemType?: string;
+	/** @deprecated Legacy free-form stats */
+	stats?: Record<string, string | number>;
 }
 
 /** Character state stored in characters.data jsonb */
 export interface CharacterData {
 	schemaVersion: number;
+	/** When false, user is guided through the build wizard before the play sheet */
+	builderComplete?: boolean;
 	attributes: Record<string, number>;
 	skills: Record<string, Record<string, number>>;
 	abilities: Record<string, number>;
@@ -89,19 +151,36 @@ export interface CharacterData {
 	fate: { current: number; max: number };
 	notes?: string;
 	inventory?: InventoryEntry[];
+	xpMax?: number;
 	custom?: {
 		skills?: Record<string, Array<{ label: string; value: number; attribute?: string }>>;
-		abilities?: Array<{ id: string; label: string; text?: string; description: string; cost: number }>;
+		abilities?: Array<{
+			id: string;
+			label: string;
+			text?: string;
+			description: string;
+			cost?: number;
+			imagePath?: string;
+			imageUpdatedAt?: string;
+			/** @deprecated Legacy active/passive flag */
+			kind?: 'passive' | 'active';
+			/** @deprecated Legacy active slot flag */
+			active?: boolean;
+		}>;
 		enhancements?: Array<{ id: string; label: string; text?: string; description: string; cost: number }>;
 	};
-	/** ZnZ-specific fields when theme_id is znz */
 	znz?: {
 		biography?: string;
 		addonSkills?: Array<{ key: string; label: string; rank: number; attribute: string }>;
-		customSkills?: Array<{ id: string; label: string; rank: number; attribute: string }>;
+		customSkills?: CustomSkillLine[];
+		knowledgeLines?: KnowledgeLine[];
 		movement?: number;
 		actionPoints?: { current: number; max: number };
 		startingAbilityId?: string;
+		equipmentSlotsMax?: number;
+		inventorySlotsMax?: number;
+		portraitPath?: string;
+		portraitUpdatedAt?: string;
 	};
 }
 
