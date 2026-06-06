@@ -51,3 +51,5 @@ If you use **Cloudflare Pages** (`*.pages.dev`) instead of Workers (`*.workers.d
 - Multi-campaign support (create/join via invite code)
 - Character sheets stored as JSONB (Basic, Neon City, ZnZ themes)
 - GM tools: view/edit all sheets, item store, grant items to characters
+
+## test deploy
