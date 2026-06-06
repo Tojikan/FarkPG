@@ -1,2 +1,7 @@
-# app/wrangler.toml
-name = 'farkpg'
+name = "farkpg"
+compatibility_date = "2026-06-06"
+compatibility_flags = ["nodejs_compat"]
+main = ".svelte-kit/cloudflare/_worker.js"
+pages_build_output_dir = ".svelte-kit/cloudflare"
+
+
