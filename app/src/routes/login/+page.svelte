@@ -2,35 +2,53 @@
 	import { enhance } from '$app/forms';
 
 	let { form } = $props();
+	let submitting = $state(false);
 </script>
 
-<section class="mx-auto max-w-md space-y-4 py-8">
-	<h1 class="text-2xl font-bold">Log in</h1>
+<svelte:head><title>GM Login · FarkPG</title></svelte:head>
 
-	{#if form?.error}
-		<p class="alert-error">{form.error}</p>
-	{/if}
+<div class="mx-auto mt-16 max-w-sm">
+	<div class="card">
+		<h1 class="font-display text-xl font-bold">GM Login</h1>
 
-	<form method="POST" use:enhance class="card space-y-4">
-		<div>
-			<label class="field-label" for="email">Email</label>
-			<input class="field-input" id="email" name="email" type="email" required autocomplete="email" />
-		</div>
-		<div>
-			<label class="field-label" for="password">Password</label>
+		<form
+			method="POST"
+			class="mt-5 space-y-3"
+			use:enhance={() => {
+				submitting = true;
+				return async ({ update }) => {
+					submitting = false;
+					await update();
+				};
+			}}
+		>
 			<input
-				class="field-input"
-				id="password"
-				name="password"
-				type="password"
+				class="field"
+				type="email"
+				name="email"
+				placeholder="Email"
+				autocomplete="email"
+				value={form?.email ?? ''}
 				required
-				autocomplete="current-password"
 			/>
-		</div>
-		<button type="submit" class="btn btn-primary w-full">Log in</button>
-	</form>
+			<input
+				class="field"
+				type="password"
+				name="password"
+				placeholder="Password"
+				autocomplete="current-password"
+				required
+			/>
+			{#if form?.message}
+				<p class="text-sm text-danger">{form.message}</p>
+			{/if}
+			<button type="submit" class="btn-primary w-full" disabled={submitting}>
+				{submitting ? 'Signing in…' : 'Sign in'}
+			</button>
+		</form>
+	</div>
 
-	<p class="text-sm text-neutral-600">
-		No account? <a href="/signup" class="underline">Sign up</a>
+	<p class="mt-6 text-center text-sm text-muted">
+		Playing in a campaign? <a href="/join" class="text-accent hover:underline">Join with a code</a>
 	</p>
-</section>
+</div>

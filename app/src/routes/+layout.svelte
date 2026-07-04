@@ -1,22 +1,37 @@
 <script lang="ts">
-	import '../routes/layout.css';
-	import Nav from '$lib/components/Nav.svelte';
+	import '../app.css';
 	import { page } from '$app/state';
 
-	let { data, children } = $props();
+	let { children, data } = $props();
+
+	const isPlayerView = $derived(
+		page.url.pathname.startsWith('/join') || page.url.pathname.startsWith('/sheet')
+	);
 </script>
 
-<Nav session={data.session} activePath={page.url.pathname} />
-<main
-	class:main-full={page.url.pathname.startsWith('/campaigns') ||
-		page.url.pathname.startsWith('/characters')}
->{@render children()}</main>
+<svelte:head>
+	<title>FarkPG</title>
+</svelte:head>
 
-<style>
-	:global(main.main-full) {
-		max-width: none;
-		padding: 0;
-		background: #0a0e14;
-		min-height: calc(100vh - 3.5rem);
-	}
-</style>
+<div class="flex min-h-screen flex-col">
+	<header class="border-b border-edge bg-surface/60">
+		<div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
+			<a href={data.session ? '/' : '/join'} class="font-display text-lg font-bold tracking-wide text-accent">
+				FarkPG
+			</a>
+			{#if data.session && !isPlayerView}
+				<nav class="flex items-center gap-4 text-sm">
+					<a href="/" class="text-muted hover:text-ink">Campaigns</a>
+					<span class="hidden text-muted/60 sm:inline">{data.userEmail}</span>
+					<form method="POST" action="/logout">
+						<button type="submit" class="text-muted hover:text-danger">Log out</button>
+					</form>
+				</nav>
+			{/if}
+		</div>
+	</header>
+
+	<main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+		{@render children()}
+	</main>
+</div>

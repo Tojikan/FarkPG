@@ -1,7 +1,0 @@
-import { redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
-
-/** Legacy URL — redirect to canonical campaign page */
-export const load: PageServerLoad = ({ params }) => {
-	redirect(301, `/campaigns/${params.id}`);
-};

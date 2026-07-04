@@ -1,0 +1,78 @@
+{
+	"id": "zombie",
+	"name": "Zombie",
+	"tagline": "Generic survival after the dead got up.",
+	"abilitiesLabel": "Perks",
+	"attributes": [
+		{ "id": "strength", "name": "Strength", "description": "Muscle for swinging, carrying, and breaking." },
+		{ "id": "agility", "name": "Agility", "description": "Speed, balance, and steady hands." },
+		{ "id": "wits", "name": "Wits", "description": "Thinking fast and noticing first." },
+		{ "id": "grit", "name": "Grit", "description": "Toughness of body and nerve." }
+	],
+	"resources": [
+		{
+			"id": "health",
+			"name": "Health",
+			"formula": { "base": 10, "attribute": "grit", "baseline": 2, "perPoint": 2 }
+		},
+		{
+			"id": "stamina",
+			"name": "Stamina",
+			"formula": { "base": 8, "attribute": "agility", "baseline": 2, "perPoint": 1 }
+		}
+	],
+	"skills": [
+		{ "id": "melee", "name": "Melee", "attribute": "strength", "description": "Bats, crowbars, machetes — quiet and reliable." },
+		{ "id": "athletics", "name": "Athletics", "attribute": "strength", "description": "Running, climbing, and hauling." },
+		{ "id": "firearms", "name": "Firearms", "attribute": "agility", "description": "Pistols, rifles, shotguns — loud but decisive." },
+		{ "id": "stealth", "name": "Stealth", "attribute": "agility", "description": "Staying off the horde's radar." },
+		{ "id": "driving", "name": "Driving", "attribute": "agility", "description": "Getting the vehicle through, over, or around." },
+		{ "id": "scavenging", "name": "Scavenging", "attribute": "wits", "description": "Finding the useful stuff everyone else missed." },
+		{ "id": "first-aid", "name": "First Aid", "attribute": "wits", "description": "Bandages, splints, and keeping people breathing." },
+		{ "id": "mechanics", "name": "Mechanics", "attribute": "wits", "description": "Fixing engines, generators, and barricades." },
+		{ "id": "survival", "name": "Survival", "attribute": "wits", "description": "Water, fire, shelter, and safe routes." },
+		{ "id": "intimidation", "name": "Intimidation", "attribute": "grit", "description": "The living are dangerous too." }
+	],
+	"abilities": [
+		{ "id": "tough-as-nails", "name": "Tough as Nails", "description": "Shrug off hits that would drop anyone else." },
+		{ "id": "fast-runner", "name": "Fast Runner", "description": "You outpace the dead — and most of the living." },
+		{ "id": "quiet-step", "name": "Quiet Step", "description": "You move silently by habit." },
+		{ "id": "field-medic", "name": "Field Medic", "description": "Your patches hold under pressure." },
+		{ "id": "pack-mule", "name": "Pack Mule", "description": "Carry far more than your share." },
+		{ "id": "dead-eye", "name": "Dead Eye", "description": "One shot, one dropped walker." }
+	],
+	"itemFields": [
+		{ "id": "durability", "name": "Durability", "type": "number" },
+		{ "id": "ammo", "name": "Ammo", "type": "number" }
+	],
+	"itemTemplates": [
+		{ "name": "Baseball Bat", "description": "Quiet and dependable.", "data": { "durability": 5 } },
+		{ "name": "Pistol", "description": "Loud. Use it when quiet stops working.", "data": { "durability": 8, "ammo": 12 } },
+		{ "name": "First Aid Kit", "description": "Three uses of bandages and antiseptic.", "data": { "durability": 3 } },
+		{ "name": "Crowbar", "description": "Opens doors, crates, and skulls.", "data": { "durability": 10 } },
+		{ "name": "Canned Food", "description": "A day's meal, if you're not picky." }
+	],
+	"creation": {
+		"attributes": {
+			"mode": "flat",
+			"pool": 6,
+			"start": 2,
+			"min": 1,
+			"max": 5
+		},
+		"skills": {
+			"pool": 5,
+			"maxRank": 3,
+			"rankCosts": [1, 1, 1]
+		},
+		"abilities": {
+			"mode": "pick",
+			"count": 2
+		}
+	},
+	"flags": {
+		"allowCustomSkills": true,
+		"allowCustomAbilities": true,
+		"playersCanAddAbilities": true
+	}
+}

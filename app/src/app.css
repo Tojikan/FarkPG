@@ -1,0 +1,91 @@
+@import 'tailwindcss';
+
+/*
+ * Theme tokens. The neutral shell values live on :root; each setting
+ * overrides them under [data-setting="…"] (set on the page root when a
+ * campaign/character is in view).
+ */
+:root {
+	--app-bg: #14151a;
+	--app-surface: #1d1f26;
+	--app-raised: #262933;
+	--app-edge: #33374233;
+	--app-edge-strong: #3d4150;
+	--app-ink: #e8e9ec;
+	--app-muted: #9ba0ab;
+	--app-accent: #818cf8;
+	--app-accent-ink: #101122;
+	--app-danger: #f87171;
+	--app-font-display: ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-setting='last-empire'] {
+	--app-bg: #171318;
+	--app-surface: #211b22;
+	--app-raised: #2b232c;
+	--app-edge: #c9a34a22;
+	--app-edge-strong: #4a3f4a;
+	--app-ink: #e9e2d4;
+	--app-muted: #a1948c;
+	--app-accent: #c9a34a;
+	--app-accent-ink: #241a08;
+	--app-danger: #c0564b;
+	--app-font-display: Georgia, 'Times New Roman', serif;
+}
+
+[data-setting='zombie'] {
+	--app-bg: #131512;
+	--app-surface: #1b1f1a;
+	--app-raised: #242923;
+	--app-edge: #a3b18a22;
+	--app-edge-strong: #3c443a;
+	--app-ink: #d9ded4;
+	--app-muted: #8d968a;
+	--app-accent: #a3b18a;
+	--app-accent-ink: #16190f;
+	--app-danger: #b0563b;
+	--app-font-display: 'Arial Narrow', Impact, ui-sans-serif, sans-serif;
+}
+
+@theme inline {
+	--color-bg: var(--app-bg);
+	--color-surface: var(--app-surface);
+	--color-raised: var(--app-raised);
+	--color-edge: var(--app-edge);
+	--color-edge-strong: var(--app-edge-strong);
+	--color-ink: var(--app-ink);
+	--color-muted: var(--app-muted);
+	--color-accent: var(--app-accent);
+	--color-accent-ink: var(--app-accent-ink);
+	--color-danger: var(--app-danger);
+	--font-display: var(--app-font-display);
+}
+
+body {
+	@apply bg-bg text-ink antialiased;
+}
+
+/* Shared form styling */
+.field {
+	@apply w-full rounded-md border border-edge-strong bg-raised px-3 py-2 text-sm text-ink
+		placeholder:text-muted/60 focus:border-accent focus:outline-none;
+}
+
+.btn,
+.btn-primary,
+.btn-ghost {
+	@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2
+		text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.btn-primary {
+	@apply bg-accent text-accent-ink hover:brightness-110;
+}
+
+.btn-ghost {
+	@apply border border-edge-strong text-ink hover:border-accent hover:text-accent;
+}
+
+.card {
+	@apply rounded-lg border border-edge bg-surface p-4;
+}

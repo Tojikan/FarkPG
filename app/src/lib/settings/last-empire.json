@@ -1,0 +1,107 @@
+{
+	"id": "last-empire",
+	"name": "The Last Empire",
+	"tagline": "Nobility, thievery, and intrigue in a dying empire.",
+	"abilitiesLabel": "Magic",
+	"attributes": [
+		{ "id": "body", "name": "Body", "description": "Raw strength, toughness, and physical capability." },
+		{ "id": "dexterity", "name": "Dexterity", "description": "Speed, precision, and quiet feet." },
+		{ "id": "social", "name": "Social", "description": "Charm, guile, and charisma." },
+		{ "id": "mind", "name": "Mind", "description": "Learning, memory, senses,and deduction." }
+	],
+	"resources": [
+		{
+			"id": "health",
+			"name": "Health",
+			"formula": { "base": 10000, "attribute": "body", "baseline": 6, "perPoint": 1000 }
+		}
+	],
+	"skills": [
+		{ "id": "hand-to-hand", "name": "Hand-to-Hand", "attribute": "body", "description": "Unarmed fighting: fists, grapples, and dirty tricks." },
+		{ "id": "melee-weapons", "name": "Melee Weapons", "attribute": "body", "description": "Blades, clubs, and anything else swung in anger." },
+		{ "id": "blocking", "name": "Blocking", "attribute": "body", "description": "Turning blows aside with shield, weapon, or forearm." },
+		{ "id": "dodging", "name": "Dodging", "attribute": "dexterity", "description": "Not being where the attack lands." },
+		{ "id": "ranged-weapons", "name": "Ranged Weapons", "attribute": "dexterity", "description": "Bows, crossbows, and thrown blades." },
+		{ "id": "sneaking", "name": "Sneaking", "attribute": "dexterity", "description": "Moving unseen and unheard." },
+		{ "id": "thievery", "name": "Thievery", "attribute": "dexterity", "description": "Picking locks, lifting purses, palming valuables." },
+		{ "id": "persuasion", "name": "Persuasion", "attribute": "social", "description": "Winning someone over with honest argument." },
+		{ "id": "intimidation", "name": "Intimidation", "attribute": "social", "description": "Getting your way through fear." },
+		{ "id": "charm", "name": "Charm", "attribute": "social", "description": "Being liked, quickly and deliberately." },
+		{ "id": "etiquette", "name": "Etiquette", "attribute": "social", "description": "The rituals and manners of noble society." },
+		{ "id": "dance", "name": "Dance", "attribute": "social", "description": "Grace at balls and festivals — where deals are made." },
+		{ "id": "streetwise", "name": "Streetwise", "attribute": "social", "description": "Knowing the gutters: fences, gangs, and rumors below." },
+		{ "id": "politics", "name": "Politics", "attribute": "social", "description": "Factions, favors, and the machinery of power." },
+		{ "id": "deception", "name": "Deception", "attribute": "social", "description": "Lying convincingly, in word and in bearing." },
+		{ "id": "gossip", "name": "Gossip", "attribute": "social", "description": "Hearing secrets first and planting your own." },
+		{ "id": "research", "name": "Research", "attribute": "mind", "description": "Digging truth out of archives and libraries." },
+		{ "id": "history", "name": "History", "attribute": "mind", "description": "The rise and rot of the Empire and its houses." },
+		{ "id": "lore", "name": "Lore", "attribute": "mind", "description": "Magic, myth, and the things scholars whisper about." },
+		{ "id": "investigation", "name": "Investigation", "attribute": "mind", "description": "Reading scenes, connecting clues, finding what's hidden." },
+		{ "id": "medicine", "name": "Medicine", "attribute": "mind", "description": "Treating wounds, poisons, and fevers." }
+	],
+	"abilities": [
+		{ "id": "bodymancy", "name": "Bodymancy", "description": "Magic of flesh: mending, hardening, and reshaping the body." },
+		{ "id": "emomancy", "name": "Emomancy", "description": "Magic of emotion: stoking fear, calm, love, and rage." },
+		{ "id": "ferromancy", "name": "Ferromancy", "description": "Magic of iron and steel: shaping and commanding metal." },
+		{ "id": "magnetomancy", "name": "Magnetomancy", "description": "Magic of attraction and repulsion: pushing and pulling the world." },
+		{ "id": "sensomancy", "name": "Sensomancy", "description": "Magic of the senses: sharpening, dulling, and deceiving them." },
+		{ "id": "manamancy", "name": "Manamancy", "description": "Magic of magic itself: sensing, weaving, and unraveling spells." }
+	],
+	"backgrounds": [
+		{
+			"id": "fallen-noble",
+			"name": "Fallen Noble",
+			"description": "Your house lost everything but its manners. You keep the manners.",
+			"bonus": { "pool": "skills", "amount": 3 }
+		},
+		{
+			"id": "street-rat",
+			"name": "Street Rat",
+			"description": "The gutters raised you hard and quick.",
+			"bonus": { "pool": "attributes", "amount": 3 }
+		},
+		{
+			"id": "slave-prodigy",
+			"name": "Slave Prodigy",
+			"description": "Born with a gift your masters tried to own.",
+			"bonus": { "pool": "abilities", "amount": 3 }
+		}
+	],
+	"itemFields": [
+		{ "id": "damage", "name": "Damage", "type": "text" },
+		{ "id": "value", "name": "Value", "type": "text" }
+	],
+	"itemTemplates": [
+		{ "name": "Dagger", "description": "Easily hidden, quickly drawn.", "data": { "damage": "1000", "value": "5 crowns" } },
+		{ "name": "Lockpicks", "description": "A quality set, wrapped in oilcloth.", "data": { "value": "20 crowns" } },
+		{ "name": "Court Attire", "description": "Fine enough to pass at a minor ball.", "data": { "value": "60 crowns" } },
+		{ "name": "Rope & Grapnel", "description": "Fifty feet of silk rope with a padded hook.", "data": { "value": "15 crowns" } },
+		{ "name": "Vial of Poison", "description": "Slow, quiet, and hard to trace.", "data": { "value": "80 crowns" } }
+	],
+	"creation": {
+		"attributes": {
+			"mode": "escalating",
+			"pool": 15,
+			"start": 3,
+			"min": 1,
+			"max": 8,
+			"belowStartRefund": 1
+		},
+		"skills": {
+			"pool": 6,
+			"maxRank": 3,
+			"rankCosts": [1, 2, 3]
+		},
+		"abilities": {
+			"mode": "point-buy",
+			"pool": 6,
+			"maxRank": 3,
+			"rankCosts": [1, 2, 3]
+		}
+	},
+	"flags": {
+		"allowCustomSkills": true,
+		"allowCustomAbilities": false,
+		"playersCanAddAbilities": false
+	}
+}

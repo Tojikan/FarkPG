@@ -1,67 +1,76 @@
-# FarkPG Character Sheets App – AI context
-Instructions for AI and developers working in this folder.
+# RPG Character App – AI context
+
+Instructions for AI and developers working in this folder. This is the **campaign/character
+app** of the monorepo; it does not share code with [`../web/`](../web/) (static rules site) or
+[`../foundry/`](../foundry/).
+
 ## Purpose
-This folder is the **authenticated character sheets app** for FarkPG: players create and save character sheets to a database; GMs manage campaigns, edit any sheet, and maintain an item store.
-It complements but does **not replace** the static site in [`../web/`](../web/) (rules + offline builders on GitHub Pages) or Foundry packages in [`../foundry/`](../foundry/).
-**Audience:** a small group of friends. Keep the stack and schema simple; prefer free-tier hosting.
+
+GMs (Supabase email/password login, accounts created manually — **no signup route**) create
+campaigns and manage an item list. Players join **without accounts** using a 6-char campaign
+code, build a character in a wizard, and get an 8-char character code that opens their sheet.
+Audience is a small group of friends: keep the schema thin and prefer free-tier hosting.
+
 ## Stack
-| Layer | Choice | Notes |
-|-------|--------|-------|
-| Frontend | SvelteKit 5 + Tailwind 4 | Same stack as `web/` for familiarity |
-| Adapter | `@sveltejs/adapter-cloudflare` | Deploy to Cloudflare Pages |
-| Backend | **Supabase** (PostgreSQL + Auth + RLS) | No custom API server; app talks to Supabase directly |
-| CI | [`.github/workflows/deploy-app.yml`](../.github/workflows/deploy-app.yml) | Builds on push to `main` when `app/**` changes |
-**Env vars (required):**
-- `PUBLIC_SUPABASE_URL`
-- `PUBLIC_SUPABASE_ANON_KEY`
-Copy from `.env.example` for local dev. RLS protects data; the anon key is safe in the frontend.
-## Game system (brief)
-FarkPG is a **rules-lite, flexible** tabletop RPG. See [`../web/ai/`](../web/ai/) for canonical rules and schemas.
-│                   └── grant/     # grant item → character inventory
-└── supabase/migrations/         # SQL schema + RLS (source of truth for DB)
-```
-**Auth flow:** `@supabase/ssr` in `hooks.server.ts` refreshes session cookies. Routes under `/campaigns` require login.
-**Save flow:** `SheetEditor` debounces edits (~600ms) → `POST …/characters/[charId]/save` → merges with existing JSON, syncs derived stats, updates Supabase.
+
+- SvelteKit 5 (runes: `$state`, `$derived`, `$props`, `$effect`) + Tailwind 4
+- `@sveltejs/adapter-cloudflare` → Cloudflare Pages (`wrangler.toml`, output `.svelte-kit/cloudflare`)
+- Supabase Postgres + Auth + Storage + Realtime; env vars `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`
+
+## Access model (important)
+
+- **GM path**: `hooks.server.ts` (`@supabase/ssr`) guards everything except `/login`, `/join`,
+  `/sheet`. GM pages use server loads / form actions with `locals.supabase`; RLS scopes rows
+  to `gm_id = auth.uid()`.
+- **Player path**: browser anon client → **security-definer RPCs only**
+  (`join_campaign`, `create_character`, `load_character`, `save_character`,
+  `list_campaign_items`). Every RPC re-validates `campaign_code` + `character_code`.
+  Never add anon RLS policies on the tables; add/extend RPCs instead.
+
 ## Data model
-### Relational tables (thin — identity + access control only)
-Defined in [`supabase/migrations/001_initial.sql`](supabase/migrations/001_initial.sql):
-- `profiles` — extends `auth.users`; auto-created on signup
-- `campaigns` — `name`, `invite_code`, `created_by`
-- `campaign_members` — `(campaign_id, user_id, role)` where `role` is `gm` | `player`
-- `characters` — `campaign_id`, `owner_id`, `theme_id`, `name`, **`data jsonb`**
-- `items` — `campaign_id`, `name`, **`data jsonb`**, `created_by`
-RPC helpers (security definer):
-- `create_campaign(name, invite_code)` — inserts campaign + adds caller as GM
-- `join_campaign(invite_code)` — adds caller as player
-Access helpers used in RLS:
-- `is_campaign_member(campaign_id)`
-- `is_campaign_gm(campaign_id)`
-### JSON documents (flexible — rules evolve here)
-- **Promote player to GM**
-- **Import helper** — one-time migration from `localStorage` / clipboard export
-- **Shared package** — extract types/themes into `packages/farkpg-core`
-When extending the sheet editor, prefer extending `SheetEditor.svelte` and theme config over one-off route logic.
-## Code conventions
-- **Svelte 5 runes** (`$state`, `$effect`, `$props`, `$derived`)
-- **Server loads** use `locals.supabase` and `locals.user` (never trust client for auth)
-- **Minimal scope** — small diffs; don't refactor unrelated code
-- **Theme-driven UI** — render attributes/skills from `Theme`, not hardcoded lists
-- **Derived stats** — always run `syncDerivedStats()` before persisting (health max, fate/luck max, ZnZ movement/AP)
+
+`supabase/migrations/001_initial.sql` is the source of truth (000_reset.sql only clears the
+pre-rebuild schema).
+
+- `campaigns` — `gm_id`, `name`, `setting_id`, `campaign_code`, `max_characters`,
+  `config_overrides jsonb`, `notes`
+- `characters` — `campaign_id`, `name`, `player_name`, `image_path`, `character_code`,
+  **`data jsonb`**, `deleted_at` (soft delete)
+- `items` — `campaign_id`, `name`, `description`, `data jsonb` (per-setting fields)
+
+Character attributes/skills/resources/abilities/inventory/notes all live in `characters.data`
+(shape: `CharacterData` in `src/lib/character.ts`). Items are **copied** into inventory on add
+(snapshot, no join table). Storage bucket `character-images` holds portraits.
+
+## Setting engine
+
+Settings are JSON in `src/lib/settings/` (`last-empire.json`, `zombie.json`), typed by
+`types.ts`, validated + registered in `index.ts`. Numeric rules are parameterized formulas
+(`formulas.ts`), point-buy math is in `costs.ts`. Per-setting CSS themes live in `src/app.css`
+under `[data-setting='<id>']`. **Render everything from the setting definition — never
+hardcode attribute/skill/ability lists in components.**
+
+Behavior flags per setting: `allowCustomSkills`, `allowCustomAbilities`,
+`playersCanAddAbilities`. Last Empire: escalating attribute costs, one-time refund for
+dropping below start, health = 10000 + (Body − 6) × 1000, six fixed magic abilities.
+Zombie: flat pools, pick-N perks, everything customizable.
+
 ## Key files
+
 | File | Purpose |
-|------|---------|
-| `supabase/migrations/001_initial.sql` | DB schema + RLS — edit here for schema changes |
-| `src/lib/data/types.ts` | TypeScript types for themes, character JSON, items |
-| `src/lib/data/character.ts` | `createEmptyCharacterData`, `mergeCharacterData`, `syncDerivedStats` |
-| `src/lib/components/SheetEditor.svelte` | Main editable sheet UI |
-| `src/hooks.server.ts` | Supabase SSR + protected routes |
-| `README.md` | Human setup/deploy instructions |
-## Deploy checklist
-1. Run migration SQL in Supabase SQL editor
-2. Set `PUBLIC_SUPABASE_*` in Cloudflare Pages (or GitHub Actions secrets)
-3. Deploy; note Pages URL
-4. Set `SHEETS_APP_URL` in [`../web/src/lib/sheetsApp.ts`](../web/src/lib/sheetsApp.ts) so the static site nav links here
-## Risks
-- **Rules change often** → keep bodies in JSONB; thin relational schema; preserve unknown keys
-- **Supabase free tier pauses after 7 days inactive** → periodic use or upgrade if needed
-- **Theme duplication vs `web/`** → sync manually until shared package exists
+|---|---|
+| `supabase/migrations/001_initial.sql` | Schema, RLS, RPCs, storage — edit here for DB changes |
+| `src/lib/settings/` | Setting JSONs + types + loader + cost/formula math |
+| `src/lib/character.ts` | `CharacterData`, `createEmptyData`, `syncDerived`, `normalizeData` |
+| `src/lib/components/Sheet.svelte` | Shared sheet (GM + player modes, autosave, realtime, DnD) |
+| `src/lib/realtime.ts` | Broadcast channel per character (`character:{id}`) |
+| `src/lib/playerCodes.ts` | localStorage persistence of player codes |
+| `src/hooks.server.ts` | Supabase SSR + GM auth guard |
+
+## Conventions
+
+- Always run `syncDerived()` before persisting character data (recomputes resource maxima).
+- Player pages (`/join`, `/sheet`) are `ssr = false`; GM pages use server loads.
+- Saves are debounced (~600 ms) and broadcast `saved` on the character channel; other clients
+  refetch (never table-level realtime — anon can't subscribe to it).
+- Minimal scope: small diffs, no unrelated refactors.
