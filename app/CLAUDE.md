@@ -51,8 +51,8 @@ under `[data-setting='<id>']`. **Render everything from the setting definition �
 hardcode attribute/skill/ability lists in components.**
 
 Behavior flags per setting: `allowCustomSkills`, `allowCustomAbilities`,
-`playersCanAddAbilities`. Last Empire: escalating attribute costs, one-time refund for
-dropping below start, health = 10000 + (Body − 6) × 1000, six fixed magic abilities.
+`playersCanAddAbilities`. Last Empire: escalating costs above the default, 1 point
+refunded per step below the default.
 Zombie: flat pools, pick-N perks, everything customizable.
 
 ## Key files

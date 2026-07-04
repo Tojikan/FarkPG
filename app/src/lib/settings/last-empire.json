@@ -18,52 +18,58 @@
 	],
 	"skills": [
 		{ "id": "hand-to-hand", "name": "Hand-to-Hand", "attribute": "body", "description": "Unarmed fighting: fists, grapples, and dirty tricks." },
-		{ "id": "melee-weapons", "name": "Melee Weapons", "attribute": "body", "description": "Blades, clubs, and anything else swung in anger." },
+		{ "id": "melee-weapons", "name": "Melee Weapons", "attribute": "body", "description": "Swing something at someone until they drop." },
 		{ "id": "blocking", "name": "Blocking", "attribute": "body", "description": "Turning blows aside with shield, weapon, or forearm." },
+		{ "id": "acrobatics", "name": "Acrobatics", "attribute": "body", "description": "Moving quickly and gracefully." },
 		{ "id": "dodging", "name": "Dodging", "attribute": "dexterity", "description": "Not being where the attack lands." },
 		{ "id": "ranged-weapons", "name": "Ranged Weapons", "attribute": "dexterity", "description": "Bows, crossbows, and thrown blades." },
-		{ "id": "sneaking", "name": "Sneaking", "attribute": "dexterity", "description": "Moving unseen and unheard." },
-		{ "id": "thievery", "name": "Thievery", "attribute": "dexterity", "description": "Picking locks, lifting purses, palming valuables." },
+		{ "id": "stealth", "name": "Stealth", "attribute": "dexterity", "description": "Moving unseen and unheard." },
+		{ "id": "thievery", "name": "Thievery", "attribute": "dexterity", "description": "Picking locks, lifting purses, breaking and entering." },
+		{ "id": "disguise", "name": "Disguise", "attribute": "dexterity", "description": "Hiding your true identity with a mask or disguise." },
+		{ "id": "dance", "name": "Dance", "attribute": "dexterity", "description": "Grace at balls and festivals." },
 		{ "id": "persuasion", "name": "Persuasion", "attribute": "social", "description": "Winning someone over with honest argument." },
 		{ "id": "intimidation", "name": "Intimidation", "attribute": "social", "description": "Getting your way through fear." },
 		{ "id": "charm", "name": "Charm", "attribute": "social", "description": "Being liked, quickly and deliberately." },
 		{ "id": "etiquette", "name": "Etiquette", "attribute": "social", "description": "The rituals and manners of noble society." },
-		{ "id": "dance", "name": "Dance", "attribute": "social", "description": "Grace at balls and festivals — where deals are made." },
-		{ "id": "streetwise", "name": "Streetwise", "attribute": "social", "description": "Knowing the gutters: fences, gangs, and rumors below." },
+		{ "id": "bargaining", "name": "Bargaining", "attribute": "social", "description": "Negotiating for goods, services, or favors." },
+		{ "id": "streetwise", "name": "Streetwise", "attribute": "social", "description": "Knowing the streets: fences, gangs, and rumors below." },
 		{ "id": "politics", "name": "Politics", "attribute": "social", "description": "Factions, favors, and the machinery of power." },
 		{ "id": "deception", "name": "Deception", "attribute": "social", "description": "Lying convincingly, in word and in bearing." },
 		{ "id": "gossip", "name": "Gossip", "attribute": "social", "description": "Hearing secrets first and planting your own." },
-		{ "id": "research", "name": "Research", "attribute": "mind", "description": "Digging truth out of archives and libraries." },
+		{ "id": "magicknowledge", "name": "Magic Knowledge", "attribute": "mind", "description": "Understanding of magic and its workings." },
+		{ "id": "magictech", "name": "Magitech", "attribute": "mind", "description": "Skill and trainig with the usage of magic tools." },
 		{ "id": "history", "name": "History", "attribute": "mind", "description": "The rise and rot of the Empire and its houses." },
 		{ "id": "lore", "name": "Lore", "attribute": "mind", "description": "Magic, myth, and the things scholars whisper about." },
 		{ "id": "investigation", "name": "Investigation", "attribute": "mind", "description": "Reading scenes, connecting clues, finding what's hidden." },
-		{ "id": "medicine", "name": "Medicine", "attribute": "mind", "description": "Treating wounds, poisons, and fevers." }
+		{ "id": "medicine", "name": "Medicine", "attribute": "mind", "description": "Treating wounds, poisons, and fevers." },
+		{ "id": "construction", "name": "Construction", "attribute": "mind", "description": "Building and repairing and knowing structures." }
+
 	],
 	"abilities": [
-		{ "id": "bodymancy", "name": "Bodymancy", "description": "Magic of flesh: mending, hardening, and reshaping the body." },
-		{ "id": "emomancy", "name": "Emomancy", "description": "Magic of emotion: stoking fear, calm, love, and rage." },
-		{ "id": "ferromancy", "name": "Ferromancy", "description": "Magic of iron and steel: shaping and commanding metal." },
-		{ "id": "magnetomancy", "name": "Magnetomancy", "description": "Magic of attraction and repulsion: pushing and pulling the world." },
-		{ "id": "sensomancy", "name": "Sensomancy", "description": "Magic of the senses: sharpening, dulling, and deceiving them." },
-		{ "id": "manamancy", "name": "Manamancy", "description": "Magic of magic itself: sensing, weaving, and unraveling spells." }
+		{ "id": "bodymancy", "name": "Bodymancy", "description": "Strengthen your body and resilience to perform supernatural physical feats." },
+		{ "id": "emomancy", "name": "Emomancy", "description": "Influence and read the emotions of others." },
+		{ "id": "ferromancy", "name": "Ferromancy", "description": "Push and pull metal objects from and to yourself." },
+		{ "id": "magnetomancy", "name": "Magnetomancy", "description": "Attract and repel yourself off of metallic objects." },
+		{ "id": "sensomancy", "name": "Sensomancy", "description": "Enhance your perception and sensory powers." },
+		{ "id": "manamancy", "name": "Manamancy", "description": "Hide or detect the usage of magic nearby." }
 	],
 	"backgrounds": [
 		{
 			"id": "fallen-noble",
 			"name": "Fallen Noble",
-			"description": "Your house lost everything but its manners. You keep the manners.",
-			"bonus": { "pool": "skills", "amount": 3 }
+			"description": "Fallen from grace, you seek to reclaim your family's honor and status.",
+			"bonus": { "pool": "skills", "amount": 4 }
 		},
 		{
 			"id": "street-rat",
 			"name": "Street Rat",
-			"description": "The gutters raised you hard and quick.",
+			"description": "Raised on the streets, you scrounge and struggle for survival in a harsh world.",
 			"bonus": { "pool": "attributes", "amount": 3 }
 		},
 		{
 			"id": "slave-prodigy",
 			"name": "Slave Prodigy",
-			"description": "Born with a gift your masters tried to own.",
+			"description": "Born with untapped potential for magic, you were born into a life of drudgery until fate had other plans",
 			"bonus": { "pool": "abilities", "amount": 3 }
 		}
 	],
@@ -84,8 +90,7 @@
 			"pool": 15,
 			"start": 3,
 			"min": 1,
-			"max": 8,
-			"belowStartRefund": 1
+			"max": 8
 		},
 		"skills": {
 			"pool": 6,
@@ -94,7 +99,7 @@
 		},
 		"abilities": {
 			"mode": "point-buy",
-			"pool": 6,
+			"pool": 3,
 			"maxRank": 3,
 			"rankCosts": [1, 2, 3]
 		}

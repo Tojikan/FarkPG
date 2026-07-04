@@ -34,6 +34,9 @@
 			</p>
 		</div>
 		<div class="flex items-center gap-2">
+			{#if data.characters.length < data.campaign.max_characters}
+				<a href="/campaign/{data.campaign.id}/create" class="btn-primary">Create character</a>
+			{/if}
 			<a href="/campaign/{data.campaign.id}/items" class="btn-ghost">Items</a>
 			<button class="btn-ghost" onclick={() => (editingSettings = !editingSettings)}>
 				{editingSettings ? 'Close settings' : 'Settings'}
@@ -90,7 +93,15 @@
 	<h2 class="mt-8 font-display text-lg font-bold">Characters</h2>
 	{#if data.characters.length === 0}
 		<div class="card mt-3 text-center text-muted">
-			No characters yet. Share the campaign code and have players visit /join.
+			No characters yet.
+			{#if data.characters.length < data.campaign.max_characters}
+				<a href="/campaign/{data.campaign.id}/create" class="mt-2 block text-accent hover:underline">
+					Create one yourself
+				</a>
+				or share the campaign code and have players visit /join.
+			{:else}
+				Share the campaign code and have players visit /join.
+			{/if}
 		</div>
 	{:else}
 		<ul class="mt-3 space-y-3">

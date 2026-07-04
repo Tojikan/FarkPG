@@ -60,7 +60,8 @@ export interface ItemTemplate {
 export interface AttributeCreationRules {
 	/**
 	 * escalating: each step above `start` costs its distance from `start`
-	 *   (start+1 costs 1, start+2 costs 2, ...), cumulative.
+	 *   (start+1 costs 1, start+2 costs 2, ...). Each step below `start`
+	 *   refunds 1 point.
 	 * flat: every step above `start` costs 1; steps below refund 1 each.
 	 */
 	mode: 'escalating' | 'flat';
@@ -68,11 +69,6 @@ export interface AttributeCreationRules {
 	start: number;
 	min: number;
 	max: number;
-	/**
-	 * escalating mode only: dropping any attribute below `start` refunds
-	 * exactly this many points, once per character total.
-	 */
-	belowStartRefund?: number;
 }
 
 export interface SkillCreationRules {

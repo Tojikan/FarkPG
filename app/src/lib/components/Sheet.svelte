@@ -171,6 +171,8 @@
 	}
 
 	function removeSkill(id: string) {
+		const skill = data.skills.find((s) => s.id === id);
+		if (!skill || !confirm(`Remove ${skill.name} from this character?`)) return;
 		data.skills = data.skills.filter((s) => s.id !== id);
 		scheduleSave();
 	}
@@ -367,6 +369,47 @@
 
 	<div class="mt-6 grid gap-6 {mode === 'gm' ? 'lg:grid-cols-[1fr_280px]' : ''}">
 		<div class="min-w-0 space-y-6">
+			<!-- Resources -->
+			<section class="card">
+				<h2 class="font-display text-lg font-bold">Resources</h2>
+				<div class="mt-3 flex flex-wrap gap-4">
+					{#each setting.resources as res (res.id)}
+						{@const r = data.resources[res.id]}
+						<div class="min-w-40 flex-1 rounded-md bg-raised p-3">
+							<p class="text-xs tracking-wide text-muted uppercase">{res.name}</p>
+							<p class="mt-1 font-mono text-xl">
+								{#if editKey === `res:${res.id}`}
+									<!-- svelte-ignore a11y_autofocus -->
+									<input
+										class="field inline-block w-28 px-2 py-0.5 text-center font-mono"
+										type="number"
+										bind:value={editValue}
+										onblur={commitEdit}
+										onkeydown={editKeydown}
+										autofocus
+									/>
+								{:else}
+									<button
+										class="cursor-pointer rounded px-1 hover:bg-surface"
+										onclick={() => beginEdit(`res:${res.id}`, r?.current ?? 0)}
+										title="Click to edit current value"
+									>
+										{(r?.current ?? 0).toLocaleString()}
+									</button>
+								{/if}
+								<span class="text-muted">/ {(r?.max ?? 0).toLocaleString()}</span>
+							</p>
+							<div class="mt-2 h-1.5 overflow-hidden rounded bg-surface">
+								<div
+									class="h-full bg-accent"
+									style="width: {r?.max ? Math.round(((r?.current ?? 0) / r.max) * 100) : 0}%"
+								></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+
 			<!-- Attributes + skills -->
 			<section class="card">
 				<h2 class="font-display text-lg font-bold">Attributes & skills</h2>
@@ -381,7 +424,7 @@
 								{#if editKey === `attr:${group.attribute.id}`}
 									<!-- svelte-ignore a11y_autofocus -->
 									<input
-										class="field w-16 px-2 py-0.5 text-center font-mono"
+										class="field w-10 px-1 py-0.5 text-center font-mono text-sm"
 										type="number"
 										bind:value={editValue}
 										onblur={commitEdit}
@@ -406,7 +449,7 @@
 											{#if editKey === `skill:${skill.id}`}
 												<!-- svelte-ignore a11y_autofocus -->
 												<input
-													class="field w-12 px-1 py-0 text-center font-mono text-sm"
+													class="field w-8 px-0.5 py-0 text-center font-mono text-sm"
 													type="number"
 													bind:value={editValue}
 													onblur={commitEdit}
@@ -468,47 +511,6 @@
 							+ Add skill
 						</button>
 					{/if}
-				</div>
-			</section>
-
-			<!-- Resources -->
-			<section class="card">
-				<h2 class="font-display text-lg font-bold">Resources</h2>
-				<div class="mt-3 flex flex-wrap gap-4">
-					{#each setting.resources as res (res.id)}
-						{@const r = data.resources[res.id]}
-						<div class="min-w-40 flex-1 rounded-md bg-raised p-3">
-							<p class="text-xs tracking-wide text-muted uppercase">{res.name}</p>
-							<p class="mt-1 font-mono text-xl">
-								{#if editKey === `res:${res.id}`}
-									<!-- svelte-ignore a11y_autofocus -->
-									<input
-										class="field inline-block w-28 px-2 py-0.5 text-center font-mono"
-										type="number"
-										bind:value={editValue}
-										onblur={commitEdit}
-										onkeydown={editKeydown}
-										autofocus
-									/>
-								{:else}
-									<button
-										class="cursor-pointer rounded px-1 hover:bg-surface"
-										onclick={() => beginEdit(`res:${res.id}`, r?.current ?? 0)}
-										title="Click to edit current value"
-									>
-										{(r?.current ?? 0).toLocaleString()}
-									</button>
-								{/if}
-								<span class="text-muted">/ {(r?.max ?? 0).toLocaleString()}</span>
-							</p>
-							<div class="mt-2 h-1.5 overflow-hidden rounded bg-surface">
-								<div
-									class="h-full bg-accent"
-									style="width: {r?.max ? Math.round(((r?.current ?? 0) / r.max) * 100) : 0}%"
-								></div>
-							</div>
-						</div>
-					{/each}
 				</div>
 			</section>
 
