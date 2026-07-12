@@ -19,15 +19,16 @@
 			<a href={data.session ? '/' : '/join'} class="font-display text-lg font-bold tracking-wide text-accent">
 				FarkPG
 			</a>
-			{#if data.session && !isPlayerView}
-				<nav class="flex items-center gap-4 text-sm">
+			<nav class="flex items-center gap-4 text-sm">
+				<a href="/dice" class="text-muted hover:text-ink">Dice Roller</a>
+				{#if data.session && !isPlayerView}
 					<a href="/" class="text-muted hover:text-ink">Campaigns</a>
 					<span class="hidden text-muted/60 sm:inline">{data.userEmail}</span>
 					<form method="POST" action="/logout">
 						<button type="submit" class="text-muted hover:text-danger">Log out</button>
 					</form>
-				</nav>
-			{/if}
+				{/if}
+			</nav>
 		</div>
 	</header>
 

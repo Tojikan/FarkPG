@@ -36,7 +36,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 	});
 };
 
-/** GM-only routes: everything except /login, /join, /sheet. */
+/** GM-only routes: everything except /login, /join, /sheet, /dice. */
 const authGuard: Handle = async ({ event, resolve }) => {
 	const { session, user } = await event.locals.safeGetSession();
 	event.locals.session = session;
@@ -44,7 +44,10 @@ const authGuard: Handle = async ({ event, resolve }) => {
 
 	const path = event.url.pathname;
 	const isPublic =
-		path.startsWith('/login') || path.startsWith('/join') || path.startsWith('/sheet');
+		path.startsWith('/login') ||
+		path.startsWith('/join') ||
+		path.startsWith('/sheet') ||
+		path.startsWith('/dice');
 
 	if (!isPublic && !session) {
 		redirect(303, '/login');
